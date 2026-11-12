@@ -1,0 +1,20 @@
+# Todos los valores son iniciales hasta validarlos con datos reales.
+coherence_min:
+  value: 0.3
+  initial: true
+  tune_with: histograma de coherencia de cada zona
+backscatter_change:
+  method: statistical
+  k_sigma: 3
+  initial: true
+  tune_with: histograma de diferencia y validación independiente
+valid_area_min_pct:
+  value: null
+  note: Definir con el equipo tras las primeras pruebas reales.
+alert_confidence_min:
+  value: null
+  note: Definir con el equipo tras validar contra OPERA, USGS u otras fuentes.
+min_alert_pixels:
+  value: 25
+  initial: true
+  tune_with: tamaño mínimo de mancha a reportar (píxeles)

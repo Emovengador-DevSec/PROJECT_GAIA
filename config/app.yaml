@@ -1,0 +1,19 @@
+name: Bailando con los SARs
+default_profile: dev
+language: es
+languages: [es, en]
+limits:
+  max_aoi_km2: null          # lo define la variable MAX_AOI_KM2; null = sin valor definido
+  job_timeout_minutes: null  # definir tras las primeras pruebas reales
+profiles:
+  dev:
+    log_level: DEBUG
+    cache: local
+  demo:
+    log_level: INFO
+    cache: local
+    offline_bundle: true     # lee solo de data/04_published y data/catalog
+  prod:
+    log_level: INFO
+    cache: remote
+    strict_cors: true

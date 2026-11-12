@@ -1,0 +1,148 @@
+{
+  "1440x900": {
+    "capturas": [
+      {
+        "label": "0.5s",
+        "file": "portada_1440x900_0.5s.png",
+        "stage": "0",
+        "intro": 0.53,
+        "loop": 0,
+        "looping": false,
+        "src": "gaia-intro.webm"
+      },
+      {
+        "label": "3s",
+        "file": "portada_1440x900_3s.png",
+        "stage": "0",
+        "intro": 3.02,
+        "loop": 0,
+        "looping": false,
+        "src": "gaia-intro.webm"
+      },
+      {
+        "label": "6s",
+        "file": "portada_1440x900_6s.png",
+        "stage": "4",
+        "intro": 6,
+        "loop": 0.03,
+        "looping": true,
+        "src": "gaia-intro.webm"
+      },
+      {
+        "label": "bucle",
+        "file": "portada_1440x900_bucle.png",
+        "stage": "4",
+        "intro": 6,
+        "loop": 5.02,
+        "looping": true,
+        "src": "gaia-intro.webm"
+      }
+    ],
+    "contraste_min": {
+      ".gaia-kicker": 9.9,
+      ".gaia-title-main": 16.1,
+      ".gaia-sub": 17.7,
+      ".gaia-lead": 12.4,
+      ".gaia-fact-label": 6.3,
+      ".gaia-credit": 11.5
+    },
+    "fps": 180,
+    "video": {
+      "cuadros": 539,
+      "perdidos": 2
+    },
+    "cls": 0.003,
+    "lcp": {
+      "ms": 5456,
+      "url": "",
+      "el": "gaia-title gaia-in"
+    },
+    "poster_ms": 67,
+    "desborde_horizontal": false,
+    "foco": {
+      "el": "gaia-cta gaia-in",
+      "outline": "3px solid"
+    },
+    "tras_entrar": {
+      "portada": false,
+      "lienzo_globo": 1,
+      "menu": true
+    },
+    "errores_js": []
+  },
+  "390x844": {
+    "capturas": [
+      {
+        "label": "0.5s",
+        "file": "portada_390x844_0.5s.png",
+        "stage": "0",
+        "intro": 0.52,
+        "loop": 0,
+        "looping": false,
+        "src": "gaia-intro-v.webm"
+      },
+      {
+        "label": "3s",
+        "file": "portada_390x844_3s.png",
+        "stage": "0",
+        "intro": 3.02,
+        "loop": 0,
+        "looping": false,
+        "src": "gaia-intro-v.webm"
+      },
+      {
+        "label": "6s",
+        "file": "portada_390x844_6s.png",
+        "stage": "4",
+        "intro": 6,
+        "loop": 0.02,
+        "looping": true,
+        "src": "gaia-intro-v.webm"
+      },
+      {
+        "label": "bucle",
+        "file": "portada_390x844_bucle.png",
+        "stage": "4",
+        "intro": 6,
+        "loop": 5.02,
+        "looping": true,
+        "src": "gaia-intro-v.webm"
+      }
+    ],
+    "contraste_min": {
+      ".gaia-kicker": 12.2,
+      ".gaia-title-main": 17.9,
+      ".gaia-sub": 12.8,
+      ".gaia-fact-label": 7.2,
+      ".gaia-credit": 13.1
+    },
+    "fps": 180,
+    "video": {
+      "cuadros": 534,
+      "perdidos": 0
+    },
+    "cls": 0.0054,
+    "lcp": {
+      "ms": 5092,
+      "url": "",
+      "el": "gaia-title-main"
+    },
+    "poster_ms": 18,
+    "desborde_horizontal": false,
+    "foco": {
+      "el": "gaia-cta gaia-in",
+      "outline": "3px solid"
+    },
+    "tras_entrar": {
+      "portada": false,
+      "lienzo_globo": 1,
+      "menu": true
+    },
+    "errores_js": []
+  },
+  "movimiento_reducido": {
+    "stage": "4",
+    "videos": 0,
+    "titulo_opacidad": "1"
+  }
+}

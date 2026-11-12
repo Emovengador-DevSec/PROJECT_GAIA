@@ -1,0 +1,30 @@
+.env
+.env.*
+!.env.example
+apps/web/.env
+data/**
+!data/README.md
+!data/**/.gitkeep
+tests/fixtures/real_samples/*
+!tests/fixtures/real_samples/README.md
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+node_modules/
+dist/
+*.h5
+*.hdf5
+*.nc
+*.tif
+*.tiff
+.claude/settings.local.json
+.DS_Store
+
+# MCP local (rutas del usuario)
+.mcp.json
+# Recursos pesados de arte (se regeneran; ver art/CREDITOS.md)
+art/textures/
+art/render/
+*.blend1

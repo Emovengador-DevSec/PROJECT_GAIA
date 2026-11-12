@@ -1,0 +1,16 @@
+id: nisar_gcov
+label: NISAR GCOV (retrodispersión polarimétrica geocodificada)
+source: nisar
+level: L2
+format: hdf5
+# Rutas verificadas en la documentación de ASF (nov. 2026). Confirma con `sarlab inspect`.
+grid_group: /science/LSAR/GCOV/grids/frequencyA
+layers:
+  HHHH: { unit: linear_power, description: Potencia co-polarizada HH }
+  HVHV: { unit: linear_power, description: Potencia de polarización cruzada HV (sensible a vegetación) }
+  mask: { unit: flags, description: Máscara de validez }
+  numberOfLooks: { unit: count }
+  rtcGammaToSigmaFactor: { unit: factor, description: Pasa de gamma0 a sigma0 }
+coordinates: { x: xCoordinates, y: yCoordinates, epsg_attr: "projection.epsg_code" }
+unit_conversions:
+  backscatter: db_from_linear

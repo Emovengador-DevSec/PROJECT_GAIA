@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(make test)", "Bash(make lint)", "Bash(make doctor)",
+      "Bash(uv run pytest:*)", "Bash(uv run ruff:*)", "Bash(uv run sarlab inspect:*)",
+      "Bash(uv run sarlab search:*)", "Bash(npm run build)", "Bash(npm run typecheck)"
+    ],
+    "deny": [
+      "Read(./.env)", "Read(./.env.*)", "Read(./apps/web/.env)",
+      "Edit(./data/01_raw/**)", "Write(./data/01_raw/**)",
+      "Bash(rm -rf data:*)", "Bash(git push --force:*)"
+    ]
+  }
+}

@@ -1,0 +1,28 @@
+aoi: madre-de-dios-la-pampa
+title: De bosque a mina, visto a través de las nubes
+question: ¿Dónde y cuánto bosque se perdió en La Pampa entre las fechas analizadas?
+audience_summary:
+  publico: La selva amazónica suele estar cubierta de nubes. El radar de NISAR la ve igual y muestra dónde el bosque desaparece.
+  tecnico: Caída de retrodispersión HV (dispersión de volumen) entre dos pasadas del mismo track, umbral robusto mediana + k·MAD.
+hypotheses:
+  - id: h1
+    text: Si la caída de señal se concentra en HV más que en HH, el cambio es compatible con pérdida de dosel (menos dispersión de volumen).
+    test: Comparar `polarizations.json` (strongest) y las medianas por fecha.
+    status: por_verificar
+  - id: h2
+    text: Si aparecen zonas con HH muy baja, puede haber pozas de agua abierta asociadas a minería aluvial.
+    test: Buscar manchas oscuras en HH después del cambio y contrastar con imagen óptica.
+    status: por_verificar
+physics: >
+  La banda L (unos 24 cm) penetra el dosel e interactúa con ramas y troncos. HV es sensible a esa
+  dispersión de volumen: cuando el bosque se tala, HV cae. El agua abierta refleja el pulso lejos
+  del satélite (reflexión especular) y aparece oscura en HH y HV.
+human_factors: Minería aluvial de oro y apertura de caminos.
+complementary: [Imagen óptica posterior, alertas de pérdida de bosque (OPERA DIST, GeoBosques)]
+future: Alertas tempranas de deforestación bajo nubes, con revisita de unos 12 días.
+steps:
+  - { title: La selva bajo las nubes, layer: none, camera: overview, text: "Cada año, las nubes ocultan gran parte de la Amazonía a los satélites ópticos." }
+  - { title: Antes, layer: before_hvhv, camera: zone, text: "Así se veía la señal HV en la primera fecha." }
+  - { title: Después, layer: after_hvhv, camera: zone, text: "La misma zona en la segunda fecha." }
+  - { title: El cambio, layer: diff_hvhv, camera: oblique, text: "En rojo, dónde la señal cayó más de lo normal para esta imagen." }
+  - { title: Qué significa, layer: diff_hvhv, camera: oblique, text: "Hipótesis y límites: ver el panel de calidad." }

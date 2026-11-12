@@ -1,0 +1,9 @@
+id: landslide
+name: Deslizamientos y huaicos
+signals: [coherence_drop, backscatter_change, los_displacement]
+products: [nisar_gcov, nisar_gunw]
+method: threshold_rules_v1
+severity:
+  initial: true
+  levels: { low: 0.33, medium: 0.66, high: 1.0 }
+validation_sources: [landslide_inventories, optical_after_event]

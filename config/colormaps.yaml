@@ -1,0 +1,29 @@
+# Una paleta por tipo de variable. Las paletas científicas no usan la rampa de marca.
+backscatter_db:
+  name: grayscale
+  kind: sequential
+backscatter_composite:
+  name: false_color_rgb
+  channels: [HH, HV, HH_over_HV]
+backscatter_diff_db:
+  name: RdBu
+  kind: diverging
+  center: 0
+los_displacement_cm:
+  name: diverging_symmetric
+  kind: diverging
+  center: 0
+coherence:
+  name: viridis
+  kind: sequential
+  range: [0, 1]
+wrapped_phase:
+  name: fringes
+  kind: cyclic
+  colors: ["#F25F5C", "#FFE066", "#70C1B3", "#247BA0", "#8E6BBF"]
+classes:
+  name: okabe_ito
+  kind: categorical
+colorblind_safe_alternatives:
+  backscatter_diff_db: cividis_diverging
+  los_displacement_cm: cividis_diverging

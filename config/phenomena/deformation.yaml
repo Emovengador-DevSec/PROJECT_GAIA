@@ -1,0 +1,9 @@
+id: deformation
+name: Deformación tectónica y volcánica
+signals: [los_displacement]
+products: [nisar_gunw]
+method: displacement_timeseries_v1
+severity:
+  initial: true
+  levels: { low: 0.33, medium: 0.66, high: 1.0 }
+validation_sources: [usgs_catalog, igp, ingemmet]

@@ -1,0 +1,8 @@
+id: nisar_gunw
+label: NISAR GUNW (interferograma desenvuelto con coherencia)
+source: nisar
+level: L2
+format: hdf5
+layers: {}   # NO verificado aún. Ejecuta `sarlab inspect` sobre un GUNW real y registra rutas en docs/data-notes.md.
+unit_conversions:
+  phase: displacement_cm_from_unwrapped_phase   # fórmula y signo según la especificación del producto

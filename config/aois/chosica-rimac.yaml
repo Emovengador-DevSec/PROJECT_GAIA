@@ -1,0 +1,8 @@
+id: chosica-rimac
+name: Chosica y valle del Rímac (Lima)
+role: support
+status: approximate
+bbox: [-76.9, -12.1, -76.4, -11.8]
+phenomena: [landslide]
+notes: Huaicos de diciembre a abril. Verifica con `sarlab search` si hay pasadas NISAR de esa temporada.
+camera: { heading_deg: 110, pitch_deg: -30 }

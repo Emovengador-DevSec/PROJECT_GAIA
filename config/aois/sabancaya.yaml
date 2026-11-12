@@ -1,0 +1,8 @@
+id: sabancaya
+name: Volcán Sabancaya (Arequipa)
+role: support
+status: approximate
+bbox: [-72.1, -16.0, -71.6, -15.55]
+phenomena: [deformation]
+notes: Caso de apoyo para la vista 3D.
+camera: { heading_deg: 200, pitch_deg: -25 }

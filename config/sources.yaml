@@ -1,0 +1,19 @@
+sources:
+  nisar:
+    label: NISAR (NASA-ISRO)
+    kind: primary
+    provider: ASF DAAC
+    access: [asf_search, earthaccess, vertex, s3]
+    requires: [EARTHDATA_TOKEN]
+    asf_search: { dataset: NISAR, maturity: PROVISIONAL }   # BETA = precalibración
+    earthaccess_short_names:
+      GCOV: NISAR_L2_GCOV_PROVISIONAL_V1
+      GUNW: NISAR_L2_GUNW_PROVISIONAL_V1
+      GOFF: NISAR_L2_GOFF_PROVISIONAL_V1
+      SME2: NISAR_L3_SME2_PROVISIONAL_V1
+    s3_credentials_endpoint: https://nisar.asf.earthdatacloud.nasa.gov/s3credentials
+    status_note: Productos PROVISIONAL (calibrados) y BETA (precalibración). Confirma cobertura con `sarlab search`.
+  opera:     { label: OPERA (NASA/JPL), kind: complementary, provider: Earthdata, requires: [EARTHDATA_TOKEN] }
+  sentinel1: { label: Sentinel-1 (ESA), kind: complementary, provider: ASF DAAC, requires: [EARTHDATA_TOKEN] }
+  firms:     { label: NASA FIRMS, kind: complementary, provider: NASA, requires: [FIRMS_MAP_KEY] }
+  usgs:      { label: Catálogo sísmico USGS, kind: complementary, provider: USGS, requires: [] }

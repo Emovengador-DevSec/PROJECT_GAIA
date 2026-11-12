@@ -1,0 +1,18 @@
+tabs:
+  cases: true
+  explore: true
+  changes: true
+  quality: true
+  deformation: true
+  terrain_3d: true
+  timeseries: true
+  alerts: true
+  analyst: false   # P1: activar cuando exista el Analista
+  catalog: true
+  settings: true
+layers:
+  opera: true
+  firms: true
+  usgs: true
+export_pdf: true
+story_mode: true

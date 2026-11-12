@@ -1,0 +1,8 @@
+id: madre-de-dios-la-pampa
+name: Madre de Dios (La Pampa)
+role: flagship
+status: approximate
+bbox: [-70.9, -13.3, -69.9, -12.5]   # oeste, sur, este, norte
+phenomena: [deforestation]
+notes: Ajustar la caja con las huellas reales de NISAR.
+camera: { heading_deg: 20, pitch_deg: -38 }
