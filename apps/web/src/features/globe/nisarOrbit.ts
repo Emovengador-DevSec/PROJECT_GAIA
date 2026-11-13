@@ -45,7 +45,7 @@ export function addNisarOrbit(viewer: Cesium.Viewer, elements: OMMJsonObject, re
       silhouetteColor: Cesium.Color.fromCssColorString("#d5faff").withAlpha(.5), silhouetteSize: 1 },
     label: { text: "NISAR", font: "16px sans-serif", fillColor: Cesium.Color.WHITE,
       outlineColor: Cesium.Color.BLACK, outlineWidth: 3, style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-      pixelOffset: new Cesium.Cartesian2(0, -45), disableDepthTestDistance: Number.POSITIVE_INFINITY },
+      pixelOffset: new Cesium.Cartesian2(0, -45), disableDepthTestDistance: 0 },
   });
   let disposed = false;
   modelOrigin().then(transforms => {

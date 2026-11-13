@@ -97,6 +97,7 @@ try {
       await page.waitForFunction(() => document.querySelector(".empty-state h3")?.textContent === "Falta procesar NISAR");
       const health = await page.evaluate(async () => (await (await fetch("/api/health")).json()));
       if (health.layers !== 0 || health.credentials.earthdata) throw new Error("The pending-data scenario changed");
+      await new Promise(resolve => setTimeout(resolve, 3200));
       console.log(JSON.stringify({ moment, width, state: "Waiting for Earthdata and processed NISAR", layers: health.layers }));
     }
     const layoutSelector = width < 720 && moment === "W6" ? ".panel-reopen" : ".inspector";

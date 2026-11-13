@@ -83,6 +83,7 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
     v.scene.backgroundColor = Cesium.Color.fromCssColorString("#05070a");
     v.scene.globe.baseColor = Cesium.Color.fromCssColorString("#071622");
     v.scene.globe.enableLighting = true;
+    v.scene.globe.depthTestAgainstTerrain = true;
     v.scene.globe.dynamicAtmosphereLighting = true;
     v.scene.globe.maximumScreenSpaceError = 1.5;
     v.scene.highDynamicRange = true;
@@ -287,9 +288,14 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
     const [w, s, e, n] = aoi.bbox;
     const cam = aoi.camera ?? {};
     const pad = camera === "overview" ? 6 : 0;
-    v.camera.flyTo({ destination: Cesium.Rectangle.fromDegrees(w - pad, s - pad, e + pad, n + pad),
-      orientation: { heading: Cesium.Math.toRadians(cam.heading_deg ?? 20),
-        pitch: Cesium.Math.toRadians(camera === "zone" ? -90 : camera === "overview" ? -60 : cam.pitch_deg ?? -38), roll: 0 },
+    const target = Cesium.Cartesian3.fromDegrees((w + e) / 2, (s + n) / 2);
+    const radius = Cesium.BoundingSphere.fromPoints([
+      Cesium.Cartesian3.fromDegrees(w - pad, s - pad), Cesium.Cartesian3.fromDegrees(e + pad, n + pad),
+    ]).radius;
+    const range = Math.max(camera === "zone" ? 80_000 : 120_000, radius * 3.6);
+    v.camera.flyToBoundingSphere(new Cesium.BoundingSphere(target, radius), {
+      offset: new Cesium.HeadingPitchRange(Cesium.Math.toRadians(cam.heading_deg ?? 20),
+        Cesium.Math.toRadians(camera === "zone" ? -90 : camera === "overview" ? -60 : cam.pitch_deg ?? -38), range),
       duration: window.matchMedia(REDUCED).matches ? 0 : 2.4, easingFunction: Cesium.EasingFunction.QUINTIC_IN_OUT });
   }, [aoi, camera, offline, active, reduceMotion]);
 
@@ -411,7 +417,7 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
         const point = points.add({ id, position: Cesium.Cartesian3.fromDegrees(lon, lat),
           pixelSize: 7, color: Cesium.Color.fromCssColorString("#ff6c3d"),
           outlineColor: Cesium.Color.fromCssColorString("#ffd1ab"), outlineWidth: 1,
-          disableDepthTestDistance: Number.POSITIVE_INFINITY, show: false });
+          disableDepthTestDistance: 0, show: false });
         firePoints.push({ point, date: Date.parse(p.date), lon, lat });
         continue;
       }
@@ -419,7 +425,7 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
         position: Cesium.Cartesian3.fromDegrees(lon, lat), properties: { alert: feature },
         billboard: { image: marker(p.kind, COLORS[p.kind] ?? COLORS.surface_change), width: size, height: size,
           heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-          disableDepthTestDistance: Number.POSITIVE_INFINITY },
+          disableDepthTestDistance: 0 },
       });
       if (p.kind === "fire") {
         individualFires.push(entity);
@@ -515,6 +521,9 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
     });
     updateVisibility.current = visibility;
     const removeCamera = v.camera.changed.addEventListener(visibility);
+    const removeTerrain = v.scene.globe.tileLoadProgressEvent.addEventListener((pending: number) => {
+      if (!pending) visibility();
+    });
     let lastFlicker = 0;
     const removeFlicker = v.scene.preRender.addEventListener(() => {
       if (reduce || !points || v.camera.positionCartographic.height >= 220_000 || performance.now() - lastFlicker < 250) return;
@@ -544,6 +553,7 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
     return () => {
       cancelled = true;
       removeCamera();
+      removeTerrain();
       removeClock();
       removeFlicker();
       updateVisibility.current = () => undefined;
