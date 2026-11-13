@@ -1,4 +1,5 @@
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
+import { useReducedMotion } from "../../lib/useMotionPreference";
 import type { AOI, AlertFeature, AlertKind, Audience, Catalog, ContextLayer, FeedStatus, GlobeStatus, Health, LayerManifest, PolarizationSummary, Rainfall, Story, TimeSeries, Trend, Validation } from "../../lib/api";
 import { TABS, type TabId } from "../../config/tabs";
 import { formatDate } from "../../lib/formatDate";

@@ -30,7 +30,7 @@ def test_without_key_firms_uses_public_archive(monkeypatch):
     payload = response.json()
     assert payload["features"] == []
     assert payload["last_updated"]
-    assert "24 h" in payload["message"]
+    assert "7 días" in payload["message"]
     assert calls == [live.PUBLIC_FIRMS]
 
 

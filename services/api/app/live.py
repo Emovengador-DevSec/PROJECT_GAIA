@@ -118,7 +118,7 @@ def _quakes() -> list[dict]:
 
 PUBLIC_FIRMS = (
     "https://firms.modaps.eosdis.nasa.gov/data/active_fire/noaa-20-viirs-c2/csv/"
-    "J1_VIIRS_C2_South_America_24h.csv"
+    "J1_VIIRS_C2_South_America_7d.csv"
 )
 
 
@@ -222,6 +222,7 @@ def collection(provider: str) -> dict:
                     "latency": "Minutos" if provider == "quakes" else "Horas"}
         if (
             cached
+            and (provider != "fires" or cached.get("coverage_days") == 7)
             and (datetime.now(UTC) - datetime.fromisoformat(cached["last_updated"])).total_seconds()
             < TTL_SECONDS
         ):
@@ -244,10 +245,11 @@ def collection(provider: str) -> dict:
                     "last_updated": _now(),
                     "stale": False,
                     "message": (
-                        "Archivo público VIIRS NOAA-20 de las últimas 24 h."
+                        "Archivo público VIIRS NOAA-20 de los últimos 7 días."
                         if provider == "fires" and not key else None
                     ),
                     "latency": "Minutos" if provider == "quakes" else "Horas",
+                    "coverage_days": 30 if provider == "quakes" else 7,
                 }
                 _save(path, payload)
                 FAILURES.pop(provider, None)

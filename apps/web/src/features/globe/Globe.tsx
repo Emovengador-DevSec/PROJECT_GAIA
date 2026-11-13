@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useReducedMotion } from "framer-motion";
+import { useReducedMotion } from "../../lib/useMotionPreference";
 import * as Cesium from "cesium";
 import "cesium/Build/Cesium/Widgets/widgets.css";
 import type { AOI, AlertFeature, CameraMode, GlobeStatus } from "../../lib/api";
@@ -13,6 +13,7 @@ type Props = {
   exaggeration: number; camera?: CameraMode; alerts: AlertFeature[]; selected?: AlertFeature;
   fireCells: AlertFeature[];
   active: boolean;
+  cutoff?: number;
   offline?: boolean;
   onSelect: (alert: AlertFeature) => void; onStatus: (status: GlobeStatus) => void;
 };
@@ -30,7 +31,7 @@ function marker(kind: string, color: string): string {
 }
 
 export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split, exaggeration, camera = "oblique",
-  alerts, fireCells, active, selected, onSelect, onStatus, offline = false }: Props) {
+  alerts, fireCells, active, cutoff, selected, onSelect, onStatus, offline = false }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
   const viewer = useRef<Cesium.Viewer | null>(null);
@@ -38,6 +39,9 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
   const statusRef = useRef(onStatus);
   const lastInput = useRef(performance.now());
   const [hover, setHover] = useState<{ feature: AlertFeature; x: number; y: number }>();
+  const cutoffRef = useRef(cutoff);
+  const updateVisibility = useRef<() => void>(() => undefined);
+  cutoffRef.current = cutoff;
   selectRef.current = onSelect;
   statusRef.current = onStatus;
 
@@ -181,10 +185,14 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
     let oldScale: Cesium.Property | undefined;
     let oldSize: Cesium.Property | undefined;
     let oldOutline: Cesium.Property | undefined;
+    let highlightedPoint: Cesium.PointPrimitive | undefined;
+    let oldPointSize = 7;
     const clearHover = () => {
       if (highlighted?.billboard) highlighted.billboard.scale = oldScale;
       if (highlighted?.point) highlighted.point.pixelSize = oldSize;
       if (highlighted?.polygon) highlighted.polygon.outlineColor = oldOutline;
+      if (highlightedPoint) highlightedPoint.pixelSize = oldPointSize;
+      highlightedPoint = undefined;
       highlighted = undefined;
       v.scene.canvas.style.cursor = "";
       setHover(undefined);
@@ -209,6 +217,11 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
         if (entity?.billboard) entity.billboard.scale = new Cesium.ConstantProperty(1.35);
         if (entity?.point) entity.point.pixelSize = new Cesium.ConstantProperty(12);
         if (entity?.polygon) entity.polygon.outlineColor = new Cesium.ConstantProperty(Cesium.Color.WHITE);
+        if (picked?.primitive instanceof Cesium.PointPrimitive) {
+          highlightedPoint = picked.primitive;
+          oldPointSize = highlightedPoint!.pixelSize;
+          highlightedPoint!.pixelSize = 12;
+        }
       }
       v.scene.canvas.style.cursor = "pointer";
       setHover({ feature, x: Math.max(12, Math.min(event.endPosition.x + 20, v.scene.canvas.clientWidth - 332)),
@@ -332,7 +345,10 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
     const animated = new Set(latest.map(item => item.properties.id));
     const individualFires: Cesium.Entity[] = [];
     const columns: Cesium.Entity[] = [];
-    for (const feature of alerts.slice(0, 2500)) {
+    const points = alerts.filter(item => item.properties.kind === "fire").length > 1000
+      ? v.scene.primitives.add(new Cesium.PointPrimitiveCollection()) as Cesium.PointPrimitiveCollection : undefined;
+    const firePoints: { point: Cesium.PointPrimitive; date: number; lon: number; lat: number }[] = [];
+    for (const feature of alerts) {
       const geometry = feature.geometry;
       let coordinates: number[] | undefined;
       if (geometry.type === "Point") coordinates = geometry.coordinates as number[];
@@ -344,6 +360,15 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
       const p = feature.properties;
       const size = p.kind === "quake" ? 16 + (p.metrics.magnitude ?? 4) * 2 : 26;
       if (geometry.type !== "Point") continue;
+      if (points && p.kind === "fire") {
+        const id = new Cesium.Entity({ id: p.id, properties: { alert: feature } });
+        const point = points.add({ id, position: Cesium.Cartesian3.fromDegrees(lon, lat),
+          pixelSize: 7, color: Cesium.Color.fromCssColorString("#ff6c3d"),
+          outlineColor: Cesium.Color.fromCssColorString("#ffd1ab"), outlineWidth: 1,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY, show: false });
+        firePoints.push({ point, date: Date.parse(p.date), lon, lat });
+        continue;
+      }
       const entity = data.entities.add({ id: p.id, name: p.title,
         position: Cesium.Cartesian3.fromDegrees(lon, lat), properties: { alert: feature },
         billboard: { image: marker(p.kind, COLORS[p.kind] ?? COLORS.surface_change), width: size, height: size,
@@ -392,14 +417,55 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
     }
     const visibility = () => {
       const close = v.camera.positionCartographic.height < 220_000;
-      individualFires.forEach(entity => { entity.show = close; });
-      columns.forEach(entity => { entity.show = !close; });
+      const until = cutoffRef.current ?? Infinity;
+      for (const entity of data.entities.values) {
+        const feature = entity.properties?.alert?.getValue(v.clock.currentTime) as AlertFeature | undefined;
+        entity.show = !!feature && Date.parse(feature.properties.date) <= until;
+      }
+      individualFires.forEach(entity => { entity.show = entity.show && close; });
+      for (const { point, date, lon, lat } of firePoints) {
+        point.show = close && date <= until;
+        if (point.show) {
+          const terrainHeight = v.scene.globe.getHeight(Cesium.Cartographic.fromDegrees(lon, lat)) ?? 0;
+          point.position = Cesium.Cartesian3.fromDegrees(lon, lat, Math.max(0, terrainHeight) * v.scene.verticalExaggeration + 10);
+        }
+      }
+      for (const entity of columns) {
+        const original = fireCells.find(cell => cell.properties.id === entity.id)!;
+        const members = original.properties.members!.filter(member => Date.parse(member.date) <= until);
+        entity.show = !close && members.length > 0;
+        const current = entity.properties!.alert.getValue(v.clock.currentTime) as AlertFeature;
+        if (current.properties.metrics.count !== members.length && members.length) {
+          const height = 2500 + Math.sqrt(members.length) * 16_000;
+          const [lon, lat] = original.properties.center!;
+          entity.polygon!.extrudedHeight = new Cesium.ConstantProperty(height);
+          entity.position = new Cesium.ConstantPositionProperty(Cesium.Cartesian3.fromDegrees(lon, lat, height));
+          entity.properties!.alert = new Cesium.ConstantProperty({ ...original, properties: {
+            ...original.properties, title: `${members.length} focos térmicos en una celda de 10 km`,
+            date: members.reduce((last, member) => member.date > last ? member.date : last, ""),
+            metrics: { ...original.properties.metrics, count: members.length },
+          } });
+        }
+      }
+      if (polygons) for (const entity of polygons.entities.values) {
+        const feature = entity.properties?.alert?.getValue(v.clock.currentTime) as AlertFeature | undefined;
+        entity.show = !!feature && Date.parse(feature.properties.date) <= until;
+      }
     };
-    visibility();
-    const removeCamera = v.camera.changed.addEventListener(visibility);
-    v.dataSources.add(data);
     const primary = alerts.filter(item => item.geometry.type !== "Point");
     let polygons: Cesium.GeoJsonDataSource | undefined;
+    visibility();
+    updateVisibility.current = visibility;
+    const removeCamera = v.camera.changed.addEventListener(visibility);
+    let lastFlicker = 0;
+    const removeFlicker = v.scene.preRender.addEventListener(() => {
+      if (reduce || !points || v.camera.positionCartographic.height >= 220_000 || performance.now() - lastFlicker < 250) return;
+      lastFlicker = performance.now();
+      for (const { point, lat } of firePoints) if (point.show) {
+        point.color = Cesium.Color.fromCssColorString("#ff6c3d").withAlpha(.7 + .3 * Math.sin(phase(lat * 1000) * Math.PI) ** 2);
+      }
+    });
+    v.dataSources.add(data);
     let cancelled = false;
     if (primary.length) Cesium.GeoJsonDataSource.load({
       type: "FeatureCollection", features: primary.map(item => ({ ...item, id: item.properties.id })),
@@ -415,16 +481,22 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
         );
       }
       v.dataSources.add(source);
+      visibility();
     }).catch(() => { /* The observation stays available in its source record. */ });
     return () => {
       cancelled = true;
       removeCamera();
+      removeFlicker();
+      updateVisibility.current = () => undefined;
       if (!v.isDestroyed()) {
+        if (points) v.scene.primitives.remove(points);
         v.dataSources.remove(data, true);
         if (polygons) v.dataSources.remove(polygons, true);
       }
     };
   }, [alerts, fireCells, offline, reduceMotion]);
+
+  useEffect(() => { updateVisibility.current(); setHover(undefined); }, [cutoff]);
 
   useEffect(() => {
     const v = viewer.current;

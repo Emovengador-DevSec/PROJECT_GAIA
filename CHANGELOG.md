@@ -4,6 +4,8 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- W5: secuencia de 30 días con histograma y reproducción de un día por segundo; FIRMS público amplía su cobertura a siete días y los marcadores respetan cada hora observada sin reconstruir la escena.
+
 - W3: el cursor resalta observaciones y muestra lugar, hora, cifra y fuente, con consultas al mapa limitadas a una cada 50 ms.
 
 - W1: llegada a Sudamérica, giro orbital lento que se interrumpe con gestos y contadores calculados a partir de las fuentes disponibles.

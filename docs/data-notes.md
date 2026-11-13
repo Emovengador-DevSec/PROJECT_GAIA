@@ -4,6 +4,12 @@ Cada entrada con fecha, archivo de origen y comando usado. Solo rutas vistas en 
 
 ## Fuentes públicas verificadas el 13 de noviembre de 2026
 
+- Se amplió el archivo público de FIRMS a `J1_VIIRS_C2_South_America_7d.csv`.
+  La consulta devolvió 1 143 detecciones dentro de Perú. La secuencia muestra 30 días
+  de USGS y siete de FIRMS, indicando ambas coberturas. Un intervalo sin archivo FIRMS
+  no se interpreta como ausencia de incendios. La colección de puntos usa primitivas
+  de Cesium al superar 1 000 detecciones, conservando cada hora y procedencia.
+
 - El CSV público VIIRS NOAA-20 de 24 horas devolvió 309 detecciones dentro de la frontera
   de Perú en la consulta de las 20:46 UTC. Cada foco conserva fecha, confianza y potencia
   radiativa en MW. La clave FIRMS amplía la consulta a siete días. La copia se guarda en

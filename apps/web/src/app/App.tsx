@@ -4,6 +4,7 @@ import { FringeIntro } from "../features/intro/FringeIntro";
 import { Inspector } from "../features/panels/Inspector";
 import { SectionIcon } from "../features/workspace/SectionIcon";
 import { LiveSummary } from "../features/workspace/LiveSummary";
+import { EventTimeline } from "../features/workspace/EventTimeline";
 import { api, type AOI, type AlertFeature, type AlertKind, type Audience, type Catalog,
   type ContextLayer, type FeedStatus, type GlobeStatus, type Health, type LayerManifest, type PolarizationSummary, type Rainfall, type Story, type TimeSeries, type Trend, type Validation } from "../lib/api";
 import { TABS, type TabId } from "../config/tabs";
@@ -50,6 +51,7 @@ export function App() {
   const [search, setSearch] = useState("");
   const [searchMessage, setSearchMessage] = useState("");
   const [ready, setReady] = useState(false);
+  const [cutoff, setCutoff] = useState<number>();
   const [warm, setWarm] = useState(false);
   const [entered, setEntered] = useState(false);
   const requestId = useRef(0);
@@ -160,6 +162,10 @@ export function App() {
     const ids = new Set(filteredAlerts.map(item => item.properties.id));
     return fireCells.filter(cell => cell.properties.members?.some(member => ids.has(member.id)));
   }, [filteredAlerts, fireCells]);
+  const timelineAlerts = useMemo(() => cutoff == null ? filteredAlerts : filteredAlerts.filter(item =>
+    Date.parse(item.properties.date) <= cutoff), [filteredAlerts, cutoff]);
+  const showContext = !!activeContext && (cutoff == null || Date.parse(activeContext.date + "T00:00:00Z") <= cutoff);
+  const showRadar = !!layer && (cutoff == null || Date.parse(layer.dates.b) <= cutoff);
   const preview = activeContext?.before ? activeContext : undefined;
   const radarComparison = !!health?.tiles && !!layer?.comparison && !activeContext &&
     (compare || storyStep?.layer?.startsWith("diff_"));
@@ -202,17 +208,17 @@ export function App() {
   const chooseTab = (id: TabId) => { setTab(id); setPanelOpen(true); };
 
   return <div className="shell" data-workspace={ready || undefined}
-    data-panel-open={panelOpen || undefined} data-comparison={comparison || undefined}>
+    data-panel-open={panelOpen || undefined} data-comparison={comparison || undefined} data-sequence={!comparison || undefined}>
     {warm && <Suspense fallback={null}>
       <Globe aoi={current} active={ready} exaggeration={exaggeration} camera={activeContext ? "zone" : storyStep?.camera ?? "oblique"}
         offline={health?.offline}
-        tileUrl={health?.tiles && layer && !comparison && !activeContext ? api.tileUrl(layer) : undefined}
-        beforeUrl={layer && radarComparison ? api.tileUrl(layer, "before", rgb) : undefined}
-        afterUrl={layer && radarComparison ? api.tileUrl(layer, "after", rgb) : undefined}
-        contextOverlay={activeContext && current
+        tileUrl={health?.tiles && layer && showRadar && !comparison && !activeContext ? api.tileUrl(layer) : undefined}
+        beforeUrl={layer && showRadar && radarComparison ? api.tileUrl(layer, "before", rgb) : undefined}
+        afterUrl={layer && showRadar && radarComparison ? api.tileUrl(layer, "after", rgb) : undefined}
+        contextOverlay={activeContext && current && showContext
           ? { url: api.contextImage(current.id, activeContext), credit: activeContext.source,
             beforeUrl: preview ? api.contextImage(current.id, preview, preview.before) : undefined } : undefined}
-        split={split} alerts={filteredAlerts} fireCells={visibleFireCells}
+        split={split} alerts={filteredAlerts} fireCells={visibleFireCells} cutoff={cutoff}
         selected={selected} onSelect={pickAlert} onStatus={setMapStatus} />
     </Suspense>}
     {entered ? <FringeIntro onDone={onIntroDone} /> : <GaiaCover onEnter={onEnter} onReady={onCoverReady} />}
@@ -245,7 +251,7 @@ export function App() {
         {activeContext && <small className="map-context-source">{activeContext.product} · {activeContext.date} · {preview ? "Vista visual NISAR" : "Complementario"}</small>}
         {mapStatus.terrain === "unavailable" && <button type="button" onClick={() => chooseTab("terrain")}>Relieve sin activar</button>}
         {mapStatus.terrain === "regional" && <button type="button" onClick={() => chooseTab("terrain")}>Relieve local de Ayacucho</button>}
-        {!current && !alertsLoading && <LiveSummary alerts={alerts} onKind={kind => {
+        {!current && !alertsLoading && <LiveSummary alerts={cutoff == null ? alerts : timelineAlerts} onKind={kind => {
           setAlertKind(kind); setSelected(undefined); chooseTab("alerts");
         }} />}
       </div>
@@ -261,7 +267,7 @@ export function App() {
         context={context} activeContext={activeContext} validation={validation}
         onContext={id => { setCompare(false); setContextChoice(id); }} moistureCatalog={moistureCatalog} rainfall={rainfall}
         error={error} contextLoading={contextLoading} onPick={pick} exaggeration={exaggeration} setExaggeration={setExaggeration}
-        alerts={filteredAlerts} alertsLoading={alertsLoading} alertsError={alertsError} sources={sources} selected={selected}
+        alerts={timelineAlerts} alertsLoading={alertsLoading} alertsError={alertsError} sources={sources} selected={selected}
         onSelectAlert={pickAlert} onClearAlert={() => setSelected(undefined)} onRefresh={refreshAlerts} alertKind={alertKind}
         setAlertKind={value => { setAlertKind(value); setSelected(undefined); }} alertLevel={alertLevel}
         setAlertLevel={value => { setAlertLevel(value); setSelected(undefined); }} health={health} mapStatus={mapStatus}
@@ -277,6 +283,8 @@ export function App() {
           aria-valuetext={`${split} % antes, ${100 - split} % después`} onChange={event => setSplit(Number(event.target.value))} />
       </div>}
       {comparison && <div className="comparison-divider" style={{ left: `${split}%` }} aria-hidden="true" />}
+      {!comparison && <EventTimeline alerts={filteredAlerts} sources={sources} cutoff={cutoff}
+        onChange={value => { setCutoff(value); setSelected(undefined); }} />}
 
       <div className="map-legend" aria-label="Fuentes del mapa">
         <span data-kind="surface_change"><i />NISAR · cambios</span>

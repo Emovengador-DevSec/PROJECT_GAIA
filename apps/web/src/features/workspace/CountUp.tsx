@@ -1,4 +1,5 @@
-import { animate, useReducedMotion } from "framer-motion";
+import { animate } from "framer-motion";
+import { useReducedMotion } from "../../lib/useMotionPreference";
 import { useEffect, useRef } from "react";
 
 export function CountUp({ value, decimals = 0 }: { value: number; decimals?: number }) {

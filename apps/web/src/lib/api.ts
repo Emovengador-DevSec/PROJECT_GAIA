@@ -61,7 +61,7 @@ export type AlertFeature = {
       settlements?: number | null; sources?: string[]; note?: string } | null;
   };
 };
-export type FeedStatus = { source: string; status: string; last_updated: string | null; stale: boolean; message?: string; latency: string };
+export type FeedStatus = { source: string; status: string; last_updated: string | null; stale: boolean; message?: string; latency: string; coverage_days?: number };
 export type AlertCollection = { type: "FeatureCollection"; features: AlertFeature[]; sources: FeedStatus[]; fire_cells?: AlertFeature[] };
 export type Health = { status: string; tiles: boolean; layers: number; offline?: boolean; credentials: { earthdata: boolean; firms: boolean } };
 export type GlobeStatus = { terrain: "loading" | "ready" | "regional" | "unavailable"; imagery: string; regionalImagery?: string };

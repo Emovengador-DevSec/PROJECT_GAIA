@@ -41,6 +41,30 @@ try {
       if (found.size < 5) throw new Error(`Only ${found.size} geographic markers responded to the cursor`);
       console.log(JSON.stringify({ moment, hoverResponded: [...found] }));
     }
+    if (moment === "W5") {
+      const actual = await page.evaluate(async () => (await (await fetch("/api/alerts?include_live=true")).json()).features);
+      const cutoff = await page.$eval("#event-date", element => Number(element.max) - 5 * 86_400_000);
+      await page.$eval("#event-date", (element, value) => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(element, value);
+        element.dispatchEvent(new Event("input", { bubbles: true }));
+        element.dispatchEvent(new Event("change", { bubbles: true }));
+      }, cutoff);
+      await new Promise(resolve => setTimeout(resolve, 350));
+      const expected = actual.filter(item => Date.parse(item.properties.date) <= cutoff).length;
+      const count = await page.$eval(".result-count", element => Number(element.textContent.match(/\d+/)[0]));
+      if (count !== expected) throw new Error(JSON.stringify({ cutoff, count, expected }));
+      const playFrom = cutoff - 20 * 86_400_000;
+      await page.$eval("#event-date", (element, value) => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(element, value);
+        element.dispatchEvent(new Event("input", { bubbles: true }));
+      }, playFrom);
+      await page.locator('[aria-label="Reproducir 30 días"]').click();
+      await new Promise(resolve => setTimeout(resolve, 2100));
+      await page.locator('[aria-label="Pausar secuencia"]').click();
+      const later = await page.$eval("#event-date", element => Number(element.value));
+      if (later <= playFrom) throw new Error("The timeline did not advance");
+      console.log(JSON.stringify({ moment, width, expectedAtCutoff: expected, advancedHours: (later - playFrom) / 3_600_000 }));
+    }
     const layout = await page.$eval(".inspector", element => {
       const rect = element.getBoundingClientRect();
       return { left: rect.left, right: rect.right, scroll: element.scrollWidth, width: element.clientWidth };
