@@ -5,6 +5,7 @@ import { formatDate } from "../../lib/formatDate";
 import { AlertDetails } from "../workspace/AlertDetails";
 import { ApplicationReference, LearnMore, Resources, nisarGuide, training, uavsarPostcards } from "../workspace/Resources";
 import { RadarGlossary, vertexGranule } from "../workspace/RadarGlossary";
+import { AlertFeed } from "../workspace/AlertFeed";
 import { Sparkline } from "./Sparkline";
 
 type Props = {
@@ -97,8 +98,8 @@ export function Inspector(p: Props) {
   const complementary = p.context.filter(item => item.kind !== "nisar-preview");
   const polarizations = [...new Set(p.layers.map(item => String(item.provenance.layer)))];
   const title = tab === "resources" ? "Fuentes del reto" : TABS.find(item => item.id === tab)?.label;
-  return <motion.aside className="inspector" aria-label={title} initial={reduce ? false : { opacity: 0, y: 8 }}
-    animate={{ opacity: 1, y: 0 }} transition={{ duration: .2, ease: "easeOut" }}>
+  return <motion.aside className="inspector" aria-label={title} initial={reduce ? false : { opacity: .5, transform: "translateX(18px)" }}
+    animate={{ opacity: 1, transform: "translateX(0)" }} transition={{ duration: .25, ease: [.23, 1, .32, 1] }}>
     <div className="inspector-heading"><h2 id={tab === "resources" ? "challenge-resources-title" : undefined}>{title}</h2><button type="button" className="icon-button" onClick={p.onClose} aria-label="Cerrar panel y explorar el mapa">
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
     </button></div>
@@ -133,20 +134,7 @@ export function Inspector(p: Props) {
           {p.alertsError && <p className="status-message" role="alert">{p.alertsError}</p>}
           {p.alertsLoading && !p.alerts.length && <p className="loading-state" role="status">Consultando los catálogos oficiales de Sudamérica…</p>}
           {!p.alertsLoading && !p.alerts.length && <EmptyState title="Sin observaciones para este filtro">Prueba otra fuente o actualiza la consulta. Las capas NISAR aparecerán cuando se procesen las fechas de una zona.</EmptyState>}
-          {!!p.alerts.length && <p className="result-count">{p.alerts.length} observaciones · elige una para localizarla</p>}
-          <div className="alert-list">{p.alerts.slice(0, 200).map(feature => {
-            const a = feature.properties;
-            return <button key={a.id} type="button" className="alert-row" data-kind={a.kind} onClick={() => p.onSelectAlert(feature)}>
-              <span className="alert-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.5">
-                {a.kind === "quake" ? <><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="3" /></> : a.kind === "fire"
-                  ? <path d="M13 2c4 7-2 8 2 12l3-4c6 9 1 12-6 12S3 15 7 10c0 4 3 4 3 4-2-7 2-9 3-12Z" />
-                  : <path d="m12 3 8 5v8l-8 5-8-5V8Z" />}
-              </svg></span>
-              <span className="alert-row-content"><strong>{a.title}</strong><span>{a.place}</span><small>{a.source} · {a.source_kind === "primary" ? "NISAR" : "complementario"}</small><time dateTime={a.date}>{formatDate(a.date)}</time></span>
-              <span className="alert-level" data-level={a.level}>{a.level === "alto" ? "Alta" : a.level === "medio" ? "Media" : "Baja"}</span>
-            </button>;
-          })}</div>
-          {p.alerts.length > 200 && <p className="muted">La lista muestra las primeras 200 observaciones. Usa los filtros para concretar la consulta.</p>}
+          <AlertFeed alerts={p.alerts} onSelect={p.onSelectAlert} />
         </>}
         <details className="source-health"><summary>Estado de las fuentes</summary>
           <div className="feed-status"><strong>NISAR · principal</strong><span>{p.health?.layers ? `${p.health.layers} capas procesadas` : "Procesamiento pendiente"}</span><p>Observaciones separadas aproximadamente 12 días. La entrega del producto añade su propia demora.</p></div>

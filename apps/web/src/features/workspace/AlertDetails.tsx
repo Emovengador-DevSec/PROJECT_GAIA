@@ -1,6 +1,7 @@
 import type { AlertFeature } from "../../lib/api";
 import { formatDate } from "../../lib/formatDate";
 import { ApplicationReference, LearnMore } from "./Resources";
+import { CountUp } from "./CountUp";
 
 const number = (value?: number | null) => typeof value === "number" && Number.isFinite(value)
   ? new Intl.NumberFormat("es-PE", { maximumFractionDigits: 2 }).format(value) : "Sin dato";
@@ -23,10 +24,11 @@ export function AlertDetails({ feature, onBack, onResources }: { feature: AlertF
     <p className="alert-place">{p.place}</p>
     <p className="muted">{formatDate(p.date)}</p>
     <dl className="observation-metrics">
-      {p.metrics.magnitude !== undefined && <div><dt>Magnitud</dt><dd>{number(p.metrics.magnitude)}</dd></div>}
-      {p.metrics.depth_km !== undefined && <div><dt>Profundidad</dt><dd>{number(p.metrics.depth_km)} <small>km</small></dd></div>}
-      {p.metrics.frp_mw !== undefined && <div><dt>Potencia radiativa</dt><dd>{number(p.metrics.frp_mw)} <small>MW</small></dd></div>}
-      {p.metrics.area_ha != null && <div><dt>Área con cambio</dt><dd>{number(p.metrics.area_ha)} <small>ha</small></dd></div>}
+      {p.metrics.magnitude !== undefined && <div><dt>Magnitud</dt><dd><CountUp value={p.metrics.magnitude} decimals={1} /></dd></div>}
+      {p.metrics.depth_km !== undefined && <div><dt>Profundidad</dt><dd><CountUp value={p.metrics.depth_km} decimals={1} /> <small>km</small></dd></div>}
+      {p.metrics.frp_mw !== undefined && <div><dt>Potencia radiativa</dt><dd><CountUp value={p.metrics.frp_mw} decimals={1} /> <small>MW</small></dd></div>}
+      {p.metrics.count !== undefined && <div><dt>Detecciones en la celda</dt><dd><CountUp value={p.metrics.count} /> <small>focos</small></dd></div>}
+      {p.metrics.area_ha != null && <div><dt>Área con cambio</dt><dd><CountUp value={p.metrics.area_ha} decimals={1} /> <small>ha</small></dd></div>}
     </dl>
     <p className="observation-note">{p.note}</p>
     <p className="muted">Confianza o revisión · {p.confidence}</p>

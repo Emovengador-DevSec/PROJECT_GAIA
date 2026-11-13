@@ -4,6 +4,8 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- W8: paneles con texto legible adaptable, observaciones prioritarias por tipo, grupos por lugar y cifras animadas con movimiento reducido.
+
 - Integradas vistas públicas NISAR de Ayacucho, perturbación OPERA, precipitación IMERG y escenas históricas RADARSAT-1 con fecha, fuente y controles sobre el globo.
 - FIRMS admite el CSV público VIIRS NOAA-20 de las últimas 24 horas y conserva el acceso de siete días con clave.
 - Ampliados los 14 recursos del reto con su función y uso en GAIA, glosario, explicación temática en fichas y catálogo de humedad SME2.

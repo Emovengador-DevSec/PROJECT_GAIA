@@ -55,7 +55,7 @@ export type AlertFeature = {
     id: string; kind: AlertKind; source: string; source_kind: "primary" | "complementary";
     title: string; place: string; date: string; level: "alto" | "medio" | "bajo"; confidence: string;
     note: string; source_url: string; aoi_id?: string; granules?: string[]; provisional?: boolean;
-    metrics: { magnitude?: number; depth_km?: number; frp_mw?: number; area_ha?: number | null };
+    metrics: { magnitude?: number; depth_km?: number; frp_mw?: number; area_ha?: number | null; count?: number };
     exposure?: { people?: number | null; crop_ha?: number | null; forest_ha?: number | null;
       settlements?: number | null; sources?: string[]; note?: string } | null;
   };
