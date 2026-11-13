@@ -1,0 +1,12 @@
+{
+  "bbox": [
+    -74.7,
+    -13.65,
+    -73.6,
+    -12.55
+  ],
+  "product": "Landsat_WELD_CorrectedReflectance_TrueColor_Global_Annual",
+  "date": "2000-12-01",
+  "source": "NASA GIBS · Landsat WELD",
+  "capabilities": "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/1.0.0/WMTSCapabilities.xml"
+}

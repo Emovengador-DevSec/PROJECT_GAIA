@@ -1,0 +1,111 @@
+{
+  "type": "FeatureCollection",
+  "name": "Localidades de referencia",
+  "source": "OpenStreetMap",
+  "license": "ODbL 1.0",
+  "retrieved_at": "2026-11-13T17:18:33.130883+00:00",
+  "endpoint": "https://api.openstreetmap.org/api/0.6/",
+  "lookups": [
+    "https://api.openstreetmap.org/api/0.6/node/272029209.json",
+    "https://api.openstreetmap.org/api/0.6/node/346472191.json",
+    "https://nominatim.openstreetmap.org/search?q=San+Miguel%2C+La+Mar%2C+Ayacucho%2C+Peru&format=jsonv2&limit=1&countrycodes=pe&addressdetails=1",
+    "https://api.openstreetmap.org/api/0.6/relation/1930997.json",
+    "https://api.openstreetmap.org/api/0.6/node/2478936587.json",
+    "https://nominatim.openstreetmap.org/search?q=Lima%2C+Peru&format=jsonv2&limit=1&countrycodes=pe&addressdetails=1",
+    "https://api.openstreetmap.org/api/0.6/node/4289361265.json"
+  ],
+  "features": [
+    {
+      "type": "Feature",
+      "id": "osm-node-272029209",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.2256973,
+          -13.1604269
+        ]
+      },
+      "properties": {
+        "name": "Ayacucho",
+        "display_name": "Ayacucho",
+        "place": "city",
+        "source": "OpenStreetMap",
+        "source_id": "openstreetmap-places",
+        "license": "ODbL 1.0",
+        "osm_id": 272029209,
+        "osm_type": "node",
+        "url": "https://www.openstreetmap.org/node/272029209",
+        "data_timestamp": "2024-04-22T02:22:43Z"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-node-346472191",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.2479531,
+          -12.9398882
+        ]
+      },
+      "properties": {
+        "name": "Huanta",
+        "display_name": "Huanta",
+        "place": "town",
+        "source": "OpenStreetMap",
+        "source_id": "openstreetmap-places",
+        "license": "ODbL 1.0",
+        "osm_id": 346472191,
+        "osm_type": "node",
+        "url": "https://www.openstreetmap.org/node/346472191",
+        "data_timestamp": "2026-10-19T06:50:16Z"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-node-2478936587",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.9806662,
+          -13.0121467
+        ]
+      },
+      "properties": {
+        "name": "San Miguel",
+        "display_name": "San Miguel",
+        "place": "town",
+        "source": "OpenStreetMap",
+        "source_id": "openstreetmap-places",
+        "license": "ODbL 1.0",
+        "osm_id": 2478936587,
+        "osm_type": "node",
+        "url": "https://www.openstreetmap.org/node/2478936587",
+        "data_timestamp": "2026-10-19T22:07:36Z"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-node-4289361265",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -77.0305912,
+          -12.0459808
+        ]
+      },
+      "properties": {
+        "name": "Lima",
+        "display_name": "Lima",
+        "place": "city",
+        "source": "OpenStreetMap",
+        "source_id": "openstreetmap-places",
+        "license": "ODbL 1.0",
+        "osm_id": 4289361265,
+        "osm_type": "node",
+        "url": "https://www.openstreetmap.org/node/4289361265",
+        "data_timestamp": "2026-08-24T18:01:09Z"
+      }
+    }
+  ]
+}

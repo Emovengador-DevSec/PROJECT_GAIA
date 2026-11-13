@@ -1,172 +1,241 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useAmbientSound } from "./useAmbientSound";
 import "./gaia.css";
 
 /**
  * Portada "PROJECT GAIA": video renderizado en Blender (intro de 6 s + bucle de 10 s)
- * como fondo y la interfaz encima, coreografiada con el amanecer del video.
+ * a pantalla completa. La entrada se revela después de que asoma el Sol.
  *
- * - El póster se pinta primero (CSS); el video carga después.
+ * - El póster final se usa si falla el video o se solicita movimiento reducido.
  * - En pantallas verticales se usa la versión 1080x1920.
  * - Con prefers-reduced-motion solo se muestra el póster, sin animación.
  */
 
 const MEDIA = "/media";
-/** Segundos del video de intro en los que entra cada bloque (el sol asoma hacia 3,4 s). */
-const CUES = [3.3, 4.2, 4.9, 5.5] as const;
-const ALL = CUES.length;
-
+const FILM_VERSION = "?v=4";
+const PORTRAIT = "(orientation: portrait) and (max-width: 900px)";
+const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
+const ENTRY_CUE_SECONDS = 4.5;
+type EntryState = "waiting" | "reveal" | "ready";
 const FACTS = [
-  { value: "L", unit: "banda", label: "radar que atraviesa nubes y vegetación" },
-  { value: "24", unit: "cm", label: "longitud de onda" },
-  { value: "12", unit: "días", label: "entre dos pasadas sobre el mismo lugar" },
+  { label: "Radar NISAR", value: "L", description: "El proyecto usa datos del radar NISAR en banda L" },
+  { label: "Longitud de onda", value: "24", unit: "cm", description: "Longitud de onda de aproximadamente 24 cm del radar NISAR en banda L" },
+  { label: "Repetición", value: "12", unit: "días", description: "NISAR repite su trayectoria cada 12 días para observar cambios en la superficie" },
 ] as const;
 
 type Props = {
-  /** La persona pulsó «Entrar a la Tierra» y la portada terminó de salir. */
+  /** La persona pulsó el título «PROJECT GAIA». */
   onEnter: () => void;
-  /** La portada ya mostró todo: buen momento para precargar el globo. */
+  /** El amanecer de la intro permite empezar a precargar el globo. */
   onReady?: () => void;
 };
 
 export function GaiaCover({ onEnter, onReady }: Props) {
-  const [reduce] = useState(() => window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-  const [portrait] = useState(() => window.matchMedia("(orientation: portrait) and (max-width: 900px)").matches);
-  const [stage, setStage] = useState(reduce ? ALL : 0);
+  const [reduce, setReduce] = useState(() => window.matchMedia(REDUCED_MOTION).matches);
+  const [portrait, setPortrait] = useState(() => window.matchMedia(PORTRAIT).matches);
+  const [entry, setEntry] = useState<EntryState>(reduce ? "ready" : "waiting");
+  const [introDone, setIntroDone] = useState(reduce);
   const [looping, setLooping] = useState(false);
   const [leaving, setLeaving] = useState(false);
   /** El video no pudo reproducirse: se deja a la vista el póster (composición final). */
   const [failed, setFailed] = useState(false);
   const intro = useRef<HTMLVideoElement>(null);
   const loop = useRef<HTMLVideoElement>(null);
-  const root = useRef<HTMLDivElement>(null);
   const cta = useRef<HTMLButtonElement>(null);
+  const credits = useRef<HTMLDetailsElement>(null);
+  const loopUnavailable = useRef(false);
+  const titleStyle = new URLSearchParams(window.location.search).get("portada") === "editorial"
+    ? "editorial" : "orbital";
   const suffix = portrait ? "-v" : "";
+  const sound = useAmbientSound(`${MEDIA}/gaia-ambient`);
 
-  // Coreografía: los bloques entran según el tiempo real del video, no un reloj aparte.
+  const showPoster = useCallback(() => {
+    setEntry("ready");
+    setFailed(true);
+    setIntroDone(true);
+    setLooping(false);
+    onReady?.();
+  }, [onReady]);
+
   useEffect(() => {
-    if (reduce) return;
+    const media = window.matchMedia(PORTRAIT);
+    const motion = window.matchMedia(REDUCED_MOTION);
+    const reframe = () => {
+      setPortrait(media.matches);
+      setReduce(motion.matches);
+      setEntry(motion.matches ? "ready" : "waiting");
+      setIntroDone(motion.matches);
+      loopUnavailable.current = false;
+      setLooping(false);
+      setFailed(false);
+    };
+    media.addEventListener("change", reframe);
+    motion.addEventListener("change", reframe);
+    return () => {
+      media.removeEventListener("change", reframe);
+      motion.removeEventListener("change", reframe);
+    };
+  }, []);
+
+  // Ambas señales siguen el tiempo del video, también cuando tarda en cargar.
+  useEffect(() => {
+    if (reduce) { onReady?.(); return; }
     const v = intro.current;
     if (!v) return;
-    let raf = 0;
-    let rescue = 0;
+    let active = true;
+    let warmed = false;
     const sync = () => {
-      const t = v.currentTime;
-      setStage((s) => Math.max(s, CUES.filter((c) => t >= c).length));
+      if (!warmed && v.currentTime >= 3.3) {
+        warmed = true;
+        onReady?.();
+      }
+      if (v.currentTime >= ENTRY_CUE_SECONDS) {
+        setEntry(current => current === "waiting" ? "reveal" : current);
+        v.removeEventListener("timeupdate", sync);
+      }
     };
-    const tick = () => { sync(); if (!v.ended) raf = requestAnimationFrame(tick); };
-    // Si el navegador bloquea la reproducción o el video falla, no se esconde la interfaz.
-    const fail = () => { setFailed(true); setStage(ALL); };
+    const fail = () => {
+      if (active) showPoster();
+    };
     const start = () => {
+      if (document.hidden) return;
       document.removeEventListener("visibilitychange", start);
-      if (document.hidden) { document.addEventListener("visibilitychange", start); return; }
-      raf = requestAnimationFrame(tick);
-      rescue = window.setTimeout(() => { if (v.currentTime < 0.2) fail(); }, 2500);
       v.play().catch(fail);
     };
     v.addEventListener("error", fail);
-    v.addEventListener("timeupdate", sync);   // respaldo si el navegador frena requestAnimationFrame
-    start();   // en una pestaña en segundo plano espera a que se muestre
+    v.addEventListener("timeupdate", sync);
+    document.addEventListener("visibilitychange", start);
+    start();
     return () => {
-      cancelAnimationFrame(raf); clearTimeout(rescue);
-      v.removeEventListener("error", fail); v.removeEventListener("timeupdate", sync);
+      active = false;
+      v.removeEventListener("error", fail);
+      v.removeEventListener("timeupdate", sync);
       document.removeEventListener("visibilitychange", start);
     };
-  }, [reduce]);
+  }, [reduce, portrait, onReady, showPoster]);
 
   useEffect(() => {
-    if (stage < ALL) return;
-    onReady?.();
-    cta.current?.focus({ preventScroll: true });
-  }, [stage, onReady]);
-
-  const onIntroEnded = useCallback(() => {
-    setStage(ALL);
-    loop.current?.play().then(() => setLooping(true)).catch(() => undefined);
+    const dismiss = (event: PointerEvent) => {
+      if (credits.current?.open && !credits.current.contains(event.target as Node)) credits.current.open = false;
+    };
+    document.addEventListener("pointerdown", dismiss);
+    return () => document.removeEventListener("pointerdown", dismiss);
   }, []);
 
-  // Paralaje leve con el ratón (solo punteros finos y con movimiento permitido).
-  useEffect(() => {
-    if (reduce || !window.matchMedia("(pointer: fine)").matches) return;
-    const el = root.current;
-    if (!el) return;
-    let raf = 0;
-    const move = (e: PointerEvent) => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        el.style.setProperty("--px", ((e.clientX / window.innerWidth) * 2 - 1).toFixed(3));
-        el.style.setProperty("--py", ((e.clientY / window.innerHeight) * 2 - 1).toFixed(3));
-      });
-    };
-    window.addEventListener("pointermove", move);
-    return () => { window.removeEventListener("pointermove", move); cancelAnimationFrame(raf); };
-  }, [reduce]);
+  const onIntroEnded = useCallback(() => {
+    setEntry(current => current === "waiting" ? "ready" : current);
+    setIntroDone(true);
+    onReady?.();
+    const clip = loop.current;
+    if (loopUnavailable.current) { showPoster(); return; }
+    clip?.play().then(() => {
+      if (loop.current === clip) setLooping(true);
+    }).catch(() => { if (loop.current === clip) showPoster(); });
+  }, [onReady, showPoster]);
+
+  const skip = () => {
+    intro.current?.pause();
+    setEntry("ready");
+    onIntroEnded();
+    requestAnimationFrame(() => cta.current?.focus({ preventScroll: true }));
+  };
 
   const enter = () => {
     if (leaving) return;
+    sound.stop(0.7);
     if (reduce) { onEnter(); return; }
     setLeaving(true);
     window.setTimeout(onEnter, 750);
   };
 
   return (
-    <div ref={root} className="gaia" data-stage={stage} data-leaving={leaving || undefined}
+    <div className="gaia" data-title={titleStyle} data-leaving={leaving || undefined}
       data-portrait={portrait || undefined} role="region" aria-label="Portada de Project Gaia">
-      <div className="gaia-backdrop" aria-hidden>
+      <div className="gaia-backdrop" aria-hidden
+        style={reduce || (failed && !looping) ? { backgroundImage: `url("${MEDIA}/gaia-poster${suffix}.jpg${FILM_VERSION}")` } : undefined}>
         {!reduce && <>
-          <video ref={intro} className="gaia-video" muted playsInline preload="auto"
-            poster={`${MEDIA}/gaia-poster${suffix}.jpg`} onEnded={onIntroEnded}
+          <video key={`intro${suffix}`} ref={intro} className="gaia-video" muted playsInline preload="auto" onEnded={onIntroEnded}
             style={{ opacity: looping || failed ? 0 : 1 }}>
-            <source src={`${MEDIA}/gaia-intro${suffix}.webm`} type="video/webm" />
-            <source src={`${MEDIA}/gaia-intro${suffix}.mp4`} type="video/mp4" />
+            <source src={`${MEDIA}/gaia-intro${suffix}.webm${FILM_VERSION}`} type="video/webm" />
+            <source src={`${MEDIA}/gaia-intro${suffix}.mp4${FILM_VERSION}`} type="video/mp4" onError={showPoster} />
           </video>
-          <video ref={loop} className="gaia-video" muted playsInline loop preload="auto"
+          <video key={`loop${suffix}`} ref={loop} className="gaia-video" muted playsInline loop preload="auto" onError={looping ? showPoster : undefined}
             style={{ opacity: looping ? 1 : 0 }}>
-            <source src={`${MEDIA}/gaia-loop${suffix}.webm`} type="video/webm" />
-            <source src={`${MEDIA}/gaia-loop${suffix}.mp4`} type="video/mp4" />
+            <source src={`${MEDIA}/gaia-loop${suffix}.webm${FILM_VERSION}`} type="video/webm" />
+            <source src={`${MEDIA}/gaia-loop${suffix}.mp4${FILM_VERSION}`} type="video/mp4" onError={() => {
+              loopUnavailable.current = true;
+              if (introDone) showPoster();
+            }} />
           </video>
         </>}
       </div>
-      <div className="gaia-scrim" aria-hidden />
-
-      {stage < ALL && (
-        <button className="gaia-skip" onClick={() => setStage(ALL)}>Saltar intro</button>
-      )}
-
-      <div className="gaia-ui">
-        <header className="gaia-head">
-          <p className="gaia-kicker gaia-in" data-at="1">NASA Space Apps 2026<span className="gaia-kicker-extra"> · Dancing with the SARs</span></p>
-          <h1 className="gaia-title gaia-in" data-at="1" aria-label="Project Gaia">
-            <span className="gaia-title-top" aria-hidden>Project</span>
-            <span className="gaia-title-main" aria-hidden>Gaia</span>
-          </h1>
-          <p className="gaia-sub gaia-in" data-at="2">Bailando con los SARs</p>
-          <p className="gaia-lead gaia-in" data-at="2">
-            El radar de NISAR ve la Tierra de día, de noche y a través de las nubes.
-            Aquí sus datos reales se convierten en respuestas sobre cómo cambia la superficie.
-          </p>
-        </header>
-
-        <div className="gaia-foot">
-          <ul className="gaia-facts gaia-in" data-at="3" aria-label="Datos del radar NISAR">
-            {FACTS.map((f) => (
-              <li key={f.unit} className="gaia-fact">
-                <span className="gaia-fact-ring" aria-hidden />
-                <span className="gaia-fact-value">{f.value}</span>
-                <span className="gaia-fact-unit">{f.unit}</span>
-                <span className="gaia-fact-label">{f.label}</span>
-              </li>
-            ))}
-          </ul>
-          <button ref={cta} className="gaia-cta gaia-in" data-at="4" onClick={enter}>
-            Entrar a la Tierra
-            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
-              <path d="M4 12h15m-6-6 6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <section className="gaia-purpose" hidden={entry === "waiting"} data-entry={entry} aria-label="Sobre Project Gaia">
+        <h2>Sudamérica bajo observación.</h2>
+        <p className="gaia-purpose-lead">Desde Ayacucho, exploramos cómo los sismos, la erosión y los incendios forestales
+          transforman el territorio.</p>
+      </section>
+      <header className="gaia-head" hidden={entry === "waiting"} data-entry={entry}>
+        <h1 className="gaia-title">
+          <button ref={cta} type="button" className="gaia-cta" onClick={enter}>
+            <span className="gaia-cta-nebula" aria-hidden="true" />
+            <svg className="gaia-cta-progress" aria-hidden="true" fill="none">
+              <rect x="1" y="1" rx="999" pathLength="100" />
+            </svg>
+            <span className="gaia-title-main">PROJECT GAIA</span>
+            <svg className="gaia-arrow" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4 12h15m-6-6 6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
-        </div>
+        </h1>
+        <ul className="gaia-facts" aria-label="Radar NISAR">
+          {FACTS.map((fact) => (
+            <li key={fact.label} className="gaia-fact" title={fact.description}>
+              <svg className="gaia-fact-orbit" viewBox="0 0 100 100" fill="none" aria-hidden="true">
+                <circle cx="50" cy="50" r="48.5" pathLength="100" stroke="currentColor" strokeWidth="1.2" strokeDasharray="64 10 16 10" />
+              </svg>
+              <span className="gaia-sr">{fact.description}</span>
+              <span className="gaia-fact-value" aria-hidden="true">
+                {fact.value}{"unit" in fact && <small> {fact.unit}</small>}
+              </span>
+              <span className="gaia-fact-label" aria-hidden="true">{fact.label}</span>
+            </li>
+          ))}
+        </ul>
+      </header>
+      <div className="gaia-tools">
+        <button type="button" className="gaia-tool" aria-label={sound.playing ? "Silenciar" : "Activar sonido"}
+          title={sound.playing ? "Silenciar" : "Activar sonido"}
+          aria-pressed={sound.playing} onClick={sound.toggle}>
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+            <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" />
+            {sound.playing
+              ? <path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              : <path d="m16.5 9.5 5 5m0-5-5 5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />}
+          </svg>
+        </button>
+        {!introDone && (
+          <button type="button" className="gaia-tool gaia-skip" aria-label="Saltar intro" title="Saltar intro" onClick={skip}>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+              <path d="m6 5 9 7-9 7zM18 5v14" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        )}
       </div>
-
-      <p className="gaia-credit">Datos: misión NISAR (NASA-ISRO) · Imágenes de la Tierra: NASA Blue Marble y Black Marble</p>
+      <details className="gaia-credits" ref={credits} onKeyDown={(event) => {
+        if (event.key === "Escape" && event.currentTarget.open) {
+          event.currentTarget.open = false;
+          event.currentTarget.querySelector("summary")?.focus();
+        }
+      }}>
+        <summary className="gaia-tool" aria-label="Créditos de la escena" title="Créditos de la escena">
+          <svg viewBox="0 0 24 24" width="19" height="19" fill="none" aria-hidden="true">
+            <circle cx="12" cy="12" r="8.3" stroke="currentColor" strokeWidth="1.5" />
+            <path d="M12 11v5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            <circle cx="12" cy="8" r="1" fill="currentColor" />
+          </svg>
+        </summary>
+        <p><strong>Escena ilustrativa</strong>Imágenes de la Tierra de NASA Blue Marble y Black Marble. Datos de NISAR (NASA–ISRO).</p>
+      </details>
     </div>
   );
 }

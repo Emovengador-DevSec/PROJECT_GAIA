@@ -23,7 +23,7 @@ Aplicación web que convierte **datos radar NISAR reales** (NASA-ISRO) en respue
 | Ruta | Contenido |
 |---|---|
 | `services/pipeline/src/sarlab_pipeline/` | Python: `sources/` (ASF), `readers/` (HDF5), `processing/`, `detection/`, `publish/`, `ingest.py`, `workflows.py`, `cli.py` |
-| `services/api/app/main.py` | FastAPI: `/api/health`, `/api/config`, `/api/aois`, `/api/layers`, `/api/alerts`, `/api/stories/{zona}`, `/api/timeseries`, `/api/polarizations`, teselas en `/api/cog` |
+| `services/api/app/main.py` | FastAPI: salud, zonas, catálogos, capas, alertas, historias, series, polarizaciones y teselas locales en `/api/tiles` |
 | `apps/web/src/` | React + CesiumJS: `features/globe`, `features/intro`, `features/panels`, `styles/tokens.css` |
 | `config/` | Zonas, relatos con hipótesis (`stories/`), fenómenos, productos, umbrales, paletas, interruptores |
 | `data/` | Etapas 00_inbox → 01_raw → 03_processed → 04_published, 99_quarantine, catalog (fuera de Git) |
@@ -54,3 +54,9 @@ Aplicación web que convierte **datos radar NISAR reales** (NASA-ISRO) en respue
 
 ## Cuándo preguntar
 Falta una credencial, una descarga supera 5 GB, no hay datos para la zona, dos documentos se contradicen o una decisión cambia la arquitectura.
+
+## Relevo en curso
+La portada PROJECT GAIA tiene trabajo pendiente: lee `docs/09_Relevo_Portada_Gaia.md` antes de tocar `apps/web/src/features/gaia/`, `art/` o `tools/blender/`.
+
+## Plan principal para el hackathon
+Antes de cualquier fase, lee `docs/10_Plan_GAIA_Alerta_Codex.md` (manda sobre `docs/05_Plan_MVP_72h.md`).

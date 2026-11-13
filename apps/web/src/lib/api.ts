@@ -4,6 +4,7 @@ export type AOI = {
   id: string; name: string; role: "flagship" | "support" | "optional";
   status: "approximate" | "confirmed"; bbox: [number, number, number, number];
   phenomena: string[]; notes?: string;
+  camera?: { heading_deg?: number; pitch_deg?: number };
 };
 
 export type LayerManifest = {
@@ -12,6 +13,7 @@ export type LayerManifest = {
   dates: { a: string; b: string };
   provenance: { source: string; granules: string[] } & Record<string, unknown>;
   quality: { provisional: boolean; valid_area_pct: number };
+  comparison?: { before_cog_path: string; after_cog_path: string; range: { min: number; max: number } };
 };
 
 export type Audience = "publico" | "tecnico";
@@ -30,6 +32,34 @@ export type TimeSeries = {
   aoi_id: string; samples: { date: string; granule: string; HHHH: PolStats; HVHV: PolStats; HV_HH_ratio_db?: number }[];
 };
 
+export type AlertKind = "quake" | "fire" | "surface_change" | "deformation";
+export type AlertFeature = {
+  type: "Feature"; id?: string;
+  geometry: { type: string; coordinates: unknown };
+  properties: {
+    id: string; kind: AlertKind; source: string; source_kind: "primary" | "complementary";
+    title: string; place: string; date: string; level: "alto" | "medio" | "bajo"; confidence: string;
+    note: string; source_url: string; aoi_id?: string; granules?: string[]; provisional?: boolean;
+    metrics: { magnitude?: number; depth_km?: number; frp_mw?: number; area_ha?: number | null };
+    exposure?: { people?: number | null; crop_ha?: number | null; forest_ha?: number | null;
+      settlements?: number | null; sources?: string[]; note?: string } | null;
+  };
+};
+export type FeedStatus = { source: string; status: string; last_updated: string | null; stale: boolean; message?: string; latency: string };
+export type AlertCollection = { type: "FeatureCollection"; features: AlertFeature[]; sources: FeedStatus[] };
+export type Health = { status: string; tiles: boolean; layers: number; offline?: boolean; credentials: { earthdata: boolean; firms: boolean } };
+export type GlobeStatus = { terrain: "loading" | "ready" | "regional" | "unavailable"; imagery: string; regionalImagery?: string };
+export type Trend = { status: string; label: string; method: string; dates: number; message?: string;
+  uncertainty?: string; projection: { date: string; value: number; low: number; high: number }[] };
+export type Catalog = { aoi_id: string; product: string; source: string; queried_at?: string;
+  granules: { name: string; start: string; direction: string; track: number; frame: number;
+    size_mb: number | null; polarizations: string[] }[] };
+export type PolarizationSummary = {
+  strongest?: "HHHH" | "HVHV";
+  HHHH?: { loss_area_ha: number; alerts: number };
+  HVHV?: { loss_area_ha: number; alerts: number };
+};
+
 async function get<T>(path: string): Promise<T> {
   const r = await fetch(`${BASE}${path}`);
   if (!r.ok) throw new Error(`La API respondió ${r.status} en ${path}`);
@@ -38,13 +68,15 @@ async function get<T>(path: string): Promise<T> {
 
 export const api = {
   aois: () => get<AOI[]>("/aois"),
+  health: () => get<Health>("/health"),
+  catalog: (aoi: string) => get<Catalog>(`/catalog?aoi=${encodeURIComponent(aoi)}&product=${aoi === "sabancaya" ? "GUNW" : "GCOV"}`),
+  alerts: () => get<AlertCollection>("/alerts?include_live=true"),
+  trend: (aoi: string, pol: string) => get<Trend>(`/trend?aoi=${encodeURIComponent(aoi)}&pol=${encodeURIComponent(pol)}`),
   layers: (aoi: string) => get<LayerManifest[]>(`/layers?aoi=${encodeURIComponent(aoi)}`),
+  polarizations: (aoi: string) => get<PolarizationSummary[]>(`/polarizations?aoi=${encodeURIComponent(aoi)}`),
   story: (aoi: string) => get<Story>(`/stories/${encodeURIComponent(aoi)}`),
-  timeseries: (aoi: string) => get<TimeSeries>(`/timeseries?aoi=${encodeURIComponent(aoi)}`),
-  /** Plantilla de teselas de TiTiler para una capa COG (rango y paleta del manifiesto). */
-  tileUrl: (m: LayerManifest) => {
-    const p = new URLSearchParams({ url: m.cog_path, colormap_name: m.colormap.toLowerCase(),
-      rescale: `${m.range.min ?? -10},${m.range.max ?? 10}` });
-    return `${BASE}/cog/tiles/WebMercatorQuad/{z}/{x}/{y}.png?${p}`;
-  },
+  timeseries: (aoi: string) => get<TimeSeries>(`/timeseries?aoi=${encodeURIComponent(aoi)}&allow_empty=true`),
+  /** Teselas por identificador de capa publicada. */
+  tileUrl: (m: LayerManifest, stage: "change" | "before" | "after" = "change") =>
+    `${BASE}/tiles/${encodeURIComponent(m.id)}/${stage}/{z}/{x}/{y}.png`,
 };

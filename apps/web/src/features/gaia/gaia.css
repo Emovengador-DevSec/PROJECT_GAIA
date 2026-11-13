@@ -1,163 +1,343 @@
-/* Portada PROJECT GAIA · video de Blender al fondo, interfaz encima. */
+/* El video ocupa el encuadre de Blender. La entrada se superpone en la esquina inferior izquierda. */
+@font-face {
+  font-family: "Instrument Serif";
+  src: url("@fontsource/instrument-serif/files/instrument-serif-latin-400-normal.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
 .gaia {
-  --px: 0; --py: 0;
-  --gaia-amber: #ffb866;
-  --gaia-ink: #f5f1ea;
-  --gaia-dim: #c3cad2;
-  --gaia-display: "Big Shoulders Display", "Bricolage Grotesque", system-ui, sans-serif;
-  --gaia-mono: "IBM Plex Mono", ui-monospace, monospace;
-  position: fixed; inset: 0; z-index: 20; overflow: hidden;
-  background: #000; color: var(--gaia-ink);
-  transition: opacity .75s ease, transform .75s cubic-bezier(.6, 0, .9, .4), filter .75s ease;
+  --gaia-paper: #faf9f4;
+  --gaia-ice: #b3e6ed;
+  --gaia-ease: cubic-bezier(.23, 1, .32, 1);
+  --gaia-gutter: clamp(22px, 4.5vw, 100px);
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  isolation: isolate;
+  overflow: hidden;
+  color: var(--gaia-paper);
+  background: #030609;
+  transition: opacity .7s ease;
 }
-.gaia[data-leaving] { opacity: 0; transform: scale(1.12); filter: blur(6px); pointer-events: none; }
-
-/* --- fondo: póster primero, video después --- */
+.gaia[data-leaving] { opacity: 0; pointer-events: none; }
 .gaia-backdrop {
-  position: absolute; inset: -1.5%;
-  background: #000 url("/media/gaia-poster.jpg") center / cover no-repeat;
-  transform: translate3d(calc(var(--px) * -10px), calc(var(--py) * -7px), 0);
-  transition: transform .9s cubic-bezier(.2, .7, .2, 1);
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: #030609 center / cover no-repeat;
 }
-.gaia[data-portrait] .gaia-backdrop { background-image: url("/media/gaia-poster-v.jpg"); }
 .gaia-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.gaia[data-portrait] .gaia-backdrop {
+  background-position: 22% center;
+}
+.gaia[data-portrait] .gaia-video { object-position: 22% center; }
 
-/* velo para que el texto se lea sobre cualquier cuadro del video */
-.gaia-scrim {
-  position: absolute; inset: 0; pointer-events: none;
-  background:
-    linear-gradient(90deg, rgba(0, 0, 0, .74) 0%, rgba(0, 0, 0, .4) 34%, transparent 58%),
-    linear-gradient(0deg, rgba(0, 0, 0, .9) 0%, rgba(0, 0, 0, .62) 16%, transparent 46%);
-  opacity: 0; transition: opacity 1.4s ease;
+.gaia-purpose {
+  position: absolute;
+  isolation: isolate;
+  top: max(clamp(28px, 4vh, 60px), env(safe-area-inset-top));
+  left: max(clamp(22px, 7.2vw, 190px), env(safe-area-inset-left));
+  width: clamp(280px, 25vw, 420px);
+  max-width: calc(100% - 2 * var(--gaia-gutter));
+  margin: 0;
+  color: var(--gaia-paper);
+  text-shadow: 0 2px 12px rgb(0 0 0 / 75%);
+  text-wrap: pretty;
 }
-.gaia:not([data-stage="0"]) .gaia-scrim { opacity: 1; }
-
-/* --- interfaz --- */
-.gaia-ui {
-  /* escritorio: todo en la franja inferior para dejar libres el satélite y el sol */
-  position: absolute; inset: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto;
-  align-content: end; align-items: end; column-gap: clamp(24px, 4vw, 72px);
-  padding: clamp(24px, 6vh, 72px) clamp(20px, 5.5vw, 96px) clamp(56px, 8.5vh, 84px);
-  transform: translate3d(calc(var(--px) * 5px), calc(var(--py) * 4px), 0);
-  transition: transform .9s cubic-bezier(.2, .7, .2, 1);
+.gaia-purpose::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -20px -28px -28px;
+  background: rgb(3 6 9 / 94%);
+  mask-image: radial-gradient(ellipse closest-side, #000 45%, transparent 100%);
+  pointer-events: none;
 }
-.gaia-head { min-width: 0; }
-
-.gaia-kicker {
-  margin: 0 0 clamp(6px, 1.2vh, 14px); font: 500 clamp(11px, .85vw, 13px)/1.4 var(--gaia-mono);
-  letter-spacing: .22em; text-transform: uppercase; color: var(--gaia-amber);
+.gaia-purpose h2 {
+  margin: 0;
+  font: 400 clamp(2.3rem, 3.4vw, 4.5rem)/1.06 "Instrument Serif", Georgia, serif;
+  letter-spacing: -.015em;
+  text-wrap: balance;
 }
-.gaia-title {
-  margin: 0; font-family: var(--gaia-display); font-weight: 900; text-transform: uppercase;
-  line-height: .82; letter-spacing: 0; white-space: nowrap;
-  font-size: clamp(60px, 9.2vw, 150px);
+.gaia-purpose p {
+  max-width: 64ch;
+  margin: 1.2em 0 0;
+  color: #d5e1e7;
+  font: 400 clamp(1rem, 1.25vw, 1.25rem)/1.55 var(--font-body);
 }
-.gaia-title-top {
-  letter-spacing: .02em; margin-right: .16em;
-  color: transparent; -webkit-text-stroke: 1.5px rgba(245, 241, 234, .9);
+.gaia-purpose .gaia-purpose-lead {
+  margin-top: 1.1em;
+  color: var(--gaia-paper);
+  font-size: clamp(1.0625rem, 1.5vw, 1.5rem);
+  line-height: 1.45;
 }
-.gaia-title-main {
-  color: #fff6e8;
-  text-shadow: 0 0 60px rgba(255, 184, 102, .35);
+.gaia-head {
+  position: absolute;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: clamp(24px, 2.4vw, 56px);
+  bottom: max(clamp(22px, 4.3vh, 70px), env(safe-area-inset-bottom));
+  left: max(clamp(22px, 7.2vw, 190px), env(safe-area-inset-left));
+  max-width: calc(100% - 2 * var(--gaia-gutter));
 }
-.gaia-sub {
-  margin: clamp(10px, 2vh, 22px) 0 0; font: 600 clamp(20px, 2.1vw, 34px)/1.15 var(--font-display);
-  letter-spacing: -.01em;
-}
-.gaia-lead { margin: 10px 0 0; max-width: 34rem; font-size: clamp(15px, 1.1vw, 18px); line-height: 1.55; color: var(--gaia-dim); }
-
-.gaia-foot { display: flex; flex-direction: column; align-items: flex-end; gap: 62px; }
-
-/* insignias circulares */
-.gaia-facts { display: flex; gap: clamp(22px, 3vw, 44px); margin: 0; padding: 0; list-style: none; }
-.gaia-fact {
-  position: relative; display: grid; place-content: center; justify-items: center;
-  width: clamp(92px, 9.5vw, 132px); aspect-ratio: 1; border-radius: 50%; text-align: center;
-  background: radial-gradient(circle at 50% 35%, rgba(255, 255, 255, .09), rgba(0, 0, 0, .4));
-  backdrop-filter: blur(6px);
-}
-.gaia-fact-ring {
-  position: absolute; inset: 0; border-radius: 50%;
-  background: conic-gradient(from 0deg, var(--gaia-amber) 0 9%, rgba(245, 241, 234, .34) 9% 100%);
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1.5px));
-          mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1.5px));
-  animation: gaia-orbit 12s linear infinite;
-}
-.gaia-fact:nth-child(2) .gaia-fact-ring { animation-duration: 9s; animation-direction: reverse; }
-.gaia-fact:nth-child(3) .gaia-fact-ring { animation-duration: 15s; }
-@keyframes gaia-orbit { to { transform: rotate(1turn); } }
-.gaia-fact-value { font: 900 clamp(34px, 3.6vw, 54px)/.9 var(--gaia-display); }
-.gaia-fact-unit { margin-top: 2px; font: 500 clamp(10px, .8vw, 12px)/1 var(--gaia-mono); letter-spacing: .18em; text-transform: uppercase; color: var(--gaia-amber); }
-.gaia-fact-label {
-  position: absolute; top: calc(100% + 8px); left: 50%; width: 140%; transform: translateX(-50%);
-  font-size: 12px; line-height: 1.3; color: #e3e7ec;
-}
-
-/* botón principal */
+.gaia-head[hidden] { display: none; }
+.gaia-title { order: 1; margin: 0; font: inherit; }
 .gaia-cta {
-  display: inline-flex; align-items: center; gap: 12px;
-  padding: 18px 30px; border: 0; border-radius: 999px;
-  font: 700 clamp(16px, 1.25vw, 19px)/1 var(--font-display); letter-spacing: .01em;
-  color: #1a1206; background: linear-gradient(180deg, #ffd9a3, var(--gaia-amber));
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, .25) inset, 0 10px 40px rgba(255, 170, 80, .35);
+  --gaia-button-height: clamp(62px, 5vw, 82px);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1em;
+  inline-size: clamp(286px, 24vw, 420px);
+  max-inline-size: 100%;
+  min-block-size: var(--gaia-button-height);
+  padding: .9em 1.5em;
+  color: #fff;
+  background: transparent;
+  border: 1.5px solid currentColor;
+  border-radius: 999px;
+  cursor: pointer;
+  font: 700 clamp(1.2rem, 1.45vw, 1.65rem)/1 var(--font-display);
+  letter-spacing: .035em;
+  white-space: nowrap;
 }
-.gaia-cta svg { transition: transform .25s ease; }
-.gaia-cta:hover { box-shadow: 0 0 0 1px rgba(255, 255, 255, .45) inset, 0 16px 56px rgba(255, 170, 80, .55); }
-.gaia-cta:hover svg { transform: translateX(4px); }
-.gaia-cta:focus-visible, .gaia-skip:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
-
-.gaia-skip {
-  position: absolute; top: clamp(14px, 3vh, 28px); right: clamp(14px, 3vw, 36px); z-index: 2;
-  padding: 10px 16px; border: 1px solid rgba(245, 241, 234, .35); border-radius: 999px;
-  background: rgba(0, 0, 0, .45); font: 500 12px/1 var(--gaia-mono); letter-spacing: .12em; text-transform: uppercase;
+.gaia-cta-nebula {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  background: #020204;
+  clip-path: inset(0 100% 0 0);
+  opacity: 0;
+  pointer-events: none;
+  transition: clip-path 700ms var(--gaia-ease), opacity 180ms ease;
 }
-.gaia-credit {
-  position: absolute; left: clamp(20px, 5.5vw, 96px); right: 20px; bottom: clamp(12px, 2.4vh, 24px); margin: 0;
-  font: 400 11px/1.4 var(--gaia-mono); letter-spacing: .06em; color: rgba(245, 241, 234, .7);
+.gaia-cta-nebula::before, .gaia-cta-nebula::after {
+  content: "";
+  position: absolute;
+  inset: -100% -25%;
+  background:
+    radial-gradient(ellipse at 24% 32%, #41434b 0%, #191a21 15%, transparent 42%),
+    radial-gradient(ellipse at 70% 62%, #353740 0%, #111219 22%, transparent 50%),
+    radial-gradient(ellipse at 48% 85%, #282a32 0%, transparent 44%);
+  opacity: .75;
 }
-
-/* --- coreografía: cada bloque entra cuando la etapa alcanza su data-at --- */
-.gaia-in {
-  opacity: 0; transform: translate3d(0, 26px, 0); filter: blur(10px); visibility: hidden;
-  transition: opacity 1.1s ease, transform 1.3s cubic-bezier(.16, 1, .3, 1), filter 1.1s ease;
+.gaia-cta-nebula::after {
+  background:
+    radial-gradient(ellipse at 35% 60%, #000 8%, transparent 43%),
+    radial-gradient(ellipse at 76% 35%, #000 12%, transparent 47%);
+  opacity: .9;
 }
-.gaia-title.gaia-in {
-  transform: translate3d(0, 40px, 0) scale(1.05); transform-origin: left bottom;
-  transition: opacity 1.6s ease, transform 2s cubic-bezier(.16, 1, .3, 1), filter 1.6s ease;
+.gaia-title-main, .gaia-arrow { position: relative; z-index: 1; }
+.gaia-cta:focus-visible .gaia-cta-nebula { clip-path: inset(0); opacity: 1; }
+.gaia-cta-progress {
+  position: absolute;
+  z-index: 2;
+  inset: -1.5px;
+  width: calc(100% + 3px);
+  height: calc(100% + 3px);
+  overflow: visible;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 160ms ease;
 }
-.gaia[data-stage="1"] [data-at="1"],
-.gaia[data-stage="2"] :is([data-at="1"], [data-at="2"]),
-.gaia[data-stage="3"] :is([data-at="1"], [data-at="2"], [data-at="3"]),
-.gaia[data-stage="4"] .gaia-in {
-  opacity: 1; transform: none; filter: none; visibility: visible;
+.gaia-cta-progress rect {
+  rx: calc((var(--gaia-button-height) + 1px) / 2);
+  width: calc(100% - 2px);
+  height: calc(100% - 2px);
+  stroke: currentColor;
+  stroke-width: 2.5px;
+  stroke-linecap: round;
+  stroke-dasharray: 24 76;
 }
-
-/* --- vertical / móvil: título arriba (cielo), datos y botón abajo --- */
-@media (orientation: portrait), (max-width: 760px) {
-  /* el bloque del título termina antes del sol del video vertical (≈37 % de la altura) */
-  .gaia-ui { display: flex; flex-direction: column; justify-content: space-between; align-items: stretch;
-             padding-top: clamp(52px, 6.6vh, 96px); padding-bottom: 56px; }
-  .gaia-kicker-extra { display: none; }
-  .gaia-title { white-space: normal; line-height: .8; }
-  .gaia-title-top { display: block; margin: 0; font-size: clamp(40px, 13vw, 96px); letter-spacing: .06em; }
-  .gaia-title-main { display: block; margin-left: -.03em; font-size: clamp(100px, 33vw, 260px); }
-  .gaia-scrim {
-    background:
-      linear-gradient(180deg, rgba(0, 0, 0, .8) 0%, rgba(0, 0, 0, .55) 30%, transparent 46%),
-      linear-gradient(0deg, rgba(0, 0, 0, .85) 0%, rgba(0, 0, 0, .4) 30%, transparent 46%);
+.gaia-cta:focus-visible .gaia-cta-progress { opacity: 1; }
+.gaia-arrow {
+  flex: none;
+  width: 1em;
+  height: 1em;
+  transition: transform 180ms var(--gaia-ease);
+}
+.gaia[data-title="editorial"] .gaia-cta { font-family: "Instrument Serif", Georgia, serif; font-weight: 400; }
+.gaia-cta:focus-visible, .gaia-tool:focus-visible { outline: 2px solid var(--gaia-paper); outline-offset: 6px; }
+@media (hover: hover) and (pointer: fine) {
+  .gaia-cta:hover .gaia-arrow { transform: translateX(3px); }
+  .gaia-cta:hover .gaia-cta-progress { opacity: 1; }
+  .gaia-cta:hover .gaia-cta-nebula { clip-path: inset(0); opacity: 1; }
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .gaia-cta:hover .gaia-cta-progress rect {
+    animation: gaia-button-charge 1.6s linear infinite;
   }
-  .gaia-foot { align-items: stretch; }
-  .gaia-lead { display: none; }   /* en vertical el texto taparía el sol y la Tierra */
-  .gaia-facts { justify-content: space-around; gap: 8px; }
-  .gaia-fact { width: clamp(80px, 24vw, 120px); }
-  .gaia-fact-label { width: 125%; font-size: 11px; }
-  .gaia-cta { justify-content: center; }
-  .gaia-credit { font-size: 10px; }
+  .gaia-cta:hover .gaia-cta-nebula::before,
+  .gaia-cta:hover .gaia-cta-nebula::after { animation-play-state: running; }
 }
+.gaia-facts {
+  display: flex;
+  gap: clamp(18px, 1.8vw, 38px);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.gaia-fact {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .4em;
+  width: clamp(86px, 7vw, 120px);
+  flex: none;
+  aspect-ratio: 1;
+  color: var(--gaia-paper);
+  background: rgb(5 17 24 / 74%);
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 50%;
+}
+.gaia-fact-orbit {
+  position: absolute;
+  inset: -2px;
+  width: calc(100% + 4px);
+  height: calc(100% + 4px);
+  color: #fff;
+  pointer-events: none;
+}
+.gaia-fact-label {
+  max-width: 11ch;
+  color: #e0ebef;
+  font: 560 clamp(.625rem, .7vw, .75rem)/1.25 var(--font-body);
+  letter-spacing: .035em;
+  text-align: center;
+  text-transform: uppercase;
+}
+.gaia-fact-value { font: 560 clamp(1.5rem, 1.8vw, 2.25rem)/1 var(--font-display); letter-spacing: -.02em; }
+.gaia-fact-value small { color: var(--gaia-ice); font: 520 .55em/1 var(--font-body); letter-spacing: 0; }
+.gaia-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
-/* --- sin animación: póster fijo y todo visible desde el primer cuadro --- */
+@media (prefers-reduced-motion: no-preference) {
+  .gaia-purpose[data-entry="reveal"] {
+    animation: gaia-label-in 420ms ease-out 140ms backwards;
+  }
+  .gaia-cta-nebula::before {
+    animation: gaia-nebula-drift 7s ease-in-out infinite alternate paused;
+  }
+  .gaia-cta-nebula::after {
+    animation: gaia-nebula-drift 5s ease-in-out -2s infinite alternate-reverse paused;
+  }
+  .gaia-cta:focus-visible .gaia-cta-nebula::before,
+  .gaia-cta:focus-visible .gaia-cta-nebula::after { animation-play-state: running; }
+  .gaia-cta:focus-visible .gaia-cta-progress rect {
+    animation: gaia-button-charge 1.6s linear infinite;
+  }
+  .gaia-fact-orbit { animation: gaia-orbit 14s linear infinite; }
+  .gaia-head[data-entry="reveal"] .gaia-cta {
+    animation: gaia-settle 520ms var(--gaia-ease) backwards;
+  }
+  .gaia-head[data-entry="reveal"] .gaia-title-main {
+    animation: gaia-label-in 360ms ease-out 80ms backwards;
+  }
+  .gaia-head[data-entry="reveal"] .gaia-fact {
+    animation: gaia-settle 420ms var(--gaia-ease) 300ms backwards;
+  }
+  .gaia-head[data-entry="reveal"] .gaia-fact:nth-child(2) { animation-delay: 370ms; }
+  .gaia-head[data-entry="reveal"] .gaia-fact:nth-child(3) { animation-delay: 440ms; }
+}
+@keyframes gaia-button-charge { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
+@keyframes gaia-nebula-drift {
+  from { transform: translate(-6%, -5%) rotate(-9deg) scale(1.05); }
+  to { transform: translate(7%, 7%) rotate(11deg) scale(1.15); }
+}
+@keyframes gaia-orbit { to { transform: rotate(360deg); } }
+@keyframes gaia-label-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes gaia-settle {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.gaia-tools, .gaia-credits { position: absolute; right: max(var(--gaia-gutter), env(safe-area-inset-right)); }
+.gaia-tools { top: max(18px, 3vh, env(safe-area-inset-top)); display: flex; gap: 4px; }
+.gaia-tool {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(3 9 15 / 70%);
+  color: var(--gaia-paper);
+  cursor: pointer;
+}
+.gaia-tool:hover, .gaia-credits[open] .gaia-tool { background: #182936; }
+.gaia-credits { bottom: max(16px, 3vh, env(safe-area-inset-bottom)); }
+.gaia-credits summary { list-style: none; }
+.gaia-credits summary::-webkit-details-marker { display: none; }
+.gaia-credits p {
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  width: min(27ch, calc(100vw - 2 * var(--gaia-gutter)));
+  margin: 0 0 .55em;
+  padding: .9em 1em;
+  color: var(--gaia-paper);
+  background: #0d1b26;
+  font: 400 .94rem/1.38 var(--font-body);
+}
+.gaia-credits strong { display: block; margin-bottom: .22em; }
+@media (min-width: 1024px) and (min-height: 561px) {
+  .gaia-purpose { width: clamp(560px, 48vw, 880px); }
+}
+@media (orientation: portrait) {
+  .gaia-fact { width: clamp(78px, 21vw, 110px); }
+}
+@media (max-width: 600px) and (orientation: portrait) {
+  .gaia {
+    --gaia-mobile-fact-size: clamp(64px, 18vw, 78px);
+    --gaia-mobile-bottom: max(22px, calc(env(safe-area-inset-bottom) + 12px));
+  }
+  .gaia-head {
+    left: max(22px, env(safe-area-inset-left));
+    right: max(22px, env(safe-area-inset-right));
+    bottom: var(--gaia-mobile-bottom);
+    max-width: none;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 20px;
+  }
+  .gaia-title { order: 0; }
+  .gaia-cta {
+    --gaia-button-height: 60px;
+    inline-size: 100%;
+    font-size: 1.15rem;
+  }
+  .gaia-facts { order: 1; justify-content: space-evenly; gap: 12px; }
+  .gaia-fact { width: var(--gaia-mobile-fact-size); gap: 4px; }
+  .gaia-fact-value { font-size: 1.4rem; }
+  .gaia-fact-label { font-size: .625rem; }
+  .gaia-credits {
+    bottom: calc(var(--gaia-mobile-bottom) + var(--gaia-mobile-fact-size) + 60px + 20px + 12px);
+  }
+}
+@media (max-width: 510px) {
+  .gaia-purpose { max-width: calc(100% - 2 * var(--gaia-gutter) - 35px); }
+  .gaia-purpose h2 { font-size: 2.3rem; }
+  .gaia-purpose p { margin-top: .8em; line-height: 1.45; }
+  .gaia-tools { top: max(10px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); }
+  .gaia-credits { right: max(12px, env(safe-area-inset-right)); }
+}
+@media (max-height: 560px) and (orientation: landscape) {
+  .gaia-purpose { width: min(44vw, 400px); top: max(18px, env(safe-area-inset-top)); }
+  .gaia-purpose h2 { font-size: 2rem; }
+  .gaia-purpose p { margin-top: .6em; font-size: .875rem; line-height: 1.4; }
+  .gaia-head { bottom: max(14px, env(safe-area-inset-bottom)); }
+  .gaia-fact { width: 78px; }
+}
 @media (prefers-reduced-motion: reduce) {
-  .gaia, .gaia-backdrop, .gaia-ui, .gaia-in, .gaia-scrim { transition: none !important; transform: none !important; }
-  .gaia-in { filter: none; }
-  .gaia-fact-ring { animation: none; }
+  .gaia, .gaia-arrow, .gaia-cta-progress, .gaia-cta-nebula { transition: none; }
+  .gaia-cta:hover .gaia-arrow { transform: none; }
 }

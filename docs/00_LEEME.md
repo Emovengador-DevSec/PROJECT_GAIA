@@ -9,6 +9,7 @@
 | `05_Plan_MVP_72h.md` | Fases M0 a M6 con criterios de aceptación y prompts para Claude |
 | `06_Requisitos_del_Reto.md` | Cada punto del enunciado oficial y dónde lo cumple el software |
 | `07_Dia_del_Evento_Datos.md` | Qué hacer con los recursos que se publiquen el sábado |
+| `10_Plan_GAIA_Alerta_Codex.md` | **Plan vigente**: GAIA Alerta, fases F0 a F7 para Codex |
 | `data-notes.md` | Lo descubierto en archivos reales |
 | `v2-referencia/` | Especificación ampliada anterior (pestañas, filtros, Analista IA, seguridad) |
 

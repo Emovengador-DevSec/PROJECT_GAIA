@@ -1,3 +1,15 @@
+@font-face {
+  font-family: "Bricolage Grotesque";
+  src: url("@fontsource-variable/bricolage-grotesque/files/bricolage-grotesque-latin-standard-normal.woff2") format("woff2");
+  font-weight: 200 800;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Source Sans 3";
+  src: url("@fontsource-variable/source-sans-3/files/source-sans-3-latin-wght-normal.woff2") format("woff2");
+  font-weight: 200 900;
+  font-display: swap;
+}
 :root {
   --abismo: #0b1724; --quebrada: #14293b; --cordillera: #2b4a63;
   --neblina: #e6edf3; --escarcha: #93a9ba; --eco: #5bc0eb;

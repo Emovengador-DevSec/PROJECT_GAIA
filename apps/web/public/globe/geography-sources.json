@@ -1,0 +1,56 @@
+{
+  "retrieved_at": "2026-11-13T17:12:44.978171+00:00",
+  "sources": [
+    {
+      "id": "geoboundaries-adm1",
+      "name": "geoBoundaries gbOpen Peru ADM1",
+      "endpoint": "https://www.geoboundaries.org/api/current/gbOpen/PER/ADM1/",
+      "url": "https://github.com/wmgeolab/geoBoundaries/raw/90a1d52/releaseData/gbOpen/PER/ADM1/geoBoundaries-PER-ADM1_simplified.geojson",
+      "retrieved_at": "2026-11-13T17:12:44.978171+00:00",
+      "reference_year": "2008",
+      "license": "CC BY 4.0",
+      "license_url": "https://www.geoboundaries.org/api.html",
+      "upstream_license": "Public Domain",
+      "upstream_source": "Wikimedia Commons",
+      "upstream_url": "en.wikipedia.org/wiki/Administrative_divisions_of_Peru",
+      "boundary_id": "PER-ADM1-1875124",
+      "attribution": "geoBoundaries / William & Mary geoLab; Wikimedia Commons",
+      "simplified": true
+    },
+    {
+      "id": "geoboundaries-adm2",
+      "name": "geoBoundaries gbOpen Peru ADM2",
+      "endpoint": "https://www.geoboundaries.org/api/current/gbOpen/PER/ADM2/",
+      "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/PER/ADM2/geoBoundaries-PER-ADM2_simplified.geojson",
+      "retrieved_at": "2026-11-13T17:12:44.978171+00:00",
+      "reference_year": "2020",
+      "license": "CC BY 4.0",
+      "license_url": "https://www.geoboundaries.org/api.html",
+      "upstream_license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)",
+      "upstream_source": "Instituto Geográfico Nacional - IGN, OCHA ROLAC",
+      "upstream_url": "data.humdata.org/dataset/limites-de-peru",
+      "boundary_id": "PER-ADM2-86281439",
+      "attribution": "geoBoundaries / William & Mary geoLab; Instituto Geográfico Nacional - IGN, OCHA ROLAC",
+      "simplified": true
+    },
+    {
+      "id": "openstreetmap-places",
+      "name": "OpenStreetMap · localidades de referencia",
+      "endpoint": "https://api.openstreetmap.org/api/0.6/",
+      "retrieved_at": "2026-11-13T17:18:33.130883+00:00",
+      "license": "ODbL 1.0",
+      "license_url": "https://www.openstreetmap.org/copyright",
+      "attribution": "© OpenStreetMap contributors"
+    }
+  ],
+  "files": {
+    "peru-boundaries.geojson": {
+      "bytes": 493268,
+      "sha256": "4ec35f7c22b04ff014547a8c33479727fcdb18798d32c3faeaba90c9a42924b4",
+      "features": 37
+    },
+    "places.geojson": {
+      "features": 4
+    }
+  }
+}
