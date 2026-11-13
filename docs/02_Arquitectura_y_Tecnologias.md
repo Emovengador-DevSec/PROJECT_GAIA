@@ -10,7 +10,7 @@
                                                                          │
                                                        data/03_processed/<zona>/gcov/<A>__<B>/
                                                                          │
-                         FastAPI /api/* + TiTiler /api/cog/tiles ──▶ React + CesiumJS (globo 3D)
+                         FastAPI /api/* + rio-tiler /api/tiles ──▶ React + CesiumJS (globo 3D)
 ```
 
 ## Módulos
@@ -27,7 +27,7 @@
 | Ingesta | `ingest.py` | Valida, mueve a 01_raw, catálogo, sumas, cuarentena | Probado |
 | Flujo | `workflows.py` | Cambio entre dos fechas de una zona | Probado de extremo a extremo |
 | CLI | `cli.py` | `sarlab search|inspect|ingest|change` | Escrito |
-| API | `services/api/app/main.py` | Rutas de lectura + teselas TiTiler | Probado |
+| API | `services/api/app/main.py` | Rutas de lectura y teselas por identificador de capa | Probado |
 | Web | `apps/web/src` | Globo Cesium, vuelo, shader, paneles | Compila |
 
 ## Pila tecnológica
@@ -40,7 +40,7 @@
 | Ráster | **rasterio**, **rioxarray**, **numpy**, **scipy** | Proyección, COG, etiquetado de manchas |
 | Validación | **Pydantic** | Configuración tipada que falla con mensajes claros |
 | API | **FastAPI** | Rápida, documentación automática en `/docs` |
-| Teselas | **TiTiler** | Teselas al vuelo desde COG sin preprocesar |
+| Teselas | **rio-tiler** | Teselas al vuelo desde los COG locales registrados en el manifiesto |
 | Interfaz | **React 19 + TypeScript + Vite** | Rápido de construir y verificar |
 | 3D | **CesiumJS** | Globo real, relieve mundial, atmósfera, iluminación solar, vuelos de cámara |
 | Animación UI | **Framer Motion** | Transiciones de paneles |

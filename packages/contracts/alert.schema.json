@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Observación de GAIA Alerta",
+  "type": "object",
+  "required": ["type", "geometry", "properties"],
+  "properties": {
+    "type": { "const": "Feature" },
+    "geometry": {
+      "type": "object",
+      "required": ["type", "coordinates"],
+      "properties": {
+        "type": { "enum": ["Point", "Polygon", "MultiPolygon"] },
+        "coordinates": { "type": "array" }
+      }
+    },
+    "properties": {
+      "type": "object",
+      "required": ["id", "kind", "source", "source_kind", "title", "place", "date", "level", "confidence", "metrics"],
+      "properties": {
+        "id": { "type": "string" },
+        "kind": { "enum": ["quake", "fire", "surface_change", "deformation"] },
+        "source": { "enum": ["USGS", "NASA FIRMS", "NISAR"] },
+        "source_kind": { "enum": ["primary", "complementary"] },
+        "title": { "type": "string" },
+        "place": { "type": "string" },
+        "date": { "type": ["string", "null"] },
+        "level": { "enum": ["alto", "medio", "bajo"] },
+        "confidence": { "type": "string" },
+        "metrics": {
+          "type": "object",
+          "properties": {
+            "magnitude": { "type": "number" },
+            "depth_km": { "type": "number" },
+            "frp_mw": { "type": "number" },
+            "area_ha": { "type": ["number", "null"] }
+          }
+        },
+        "granules": { "type": "array", "items": { "type": "string" } },
+        "provisional": { "type": "boolean" },
+        "exposure": { "type": ["object", "null"] }
+      }
+    }
+  }
+}

@@ -13,8 +13,8 @@ Objetivo: que el jurado sienta que mira la Tierra desde un satélite, sin sacrif
 | **Globo vivo** | Siempre | Cesium con iluminación solar real, atmósfera y niebla | Hecho |
 | **Picada orbital** | Elegir una zona | `camera.flyTo` con curva QUINTIC_IN_OUT y ángulo oblicuo por zona (`config/aois/*.yaml → camera`) | Hecho (ángulo aún no leído de config) |
 | **Relieve real** | Con token de Cesium ion | Cesium World Terrain + exageración vertical 1–10× | Hecho |
-| **Capa radar sobre el relieve** | Capa procesada disponible | Teselas COG de TiTiler como capa de imágenes | Hecho |
-| **Cortina antes/después** | Arrastrar | Dos capas con `splitDirection` de Cesium | M5 |
+| **Capa radar sobre el relieve** | Capa procesada disponible | Teselas COG locales desde `/api/tiles` | Integrada |
+| **Cortina antes/después** | Arrastrar o usar el teclado | Dos capas con `splitDirection` de Cesium | Integrada. Ayacucho requiere las observaciones procesadas. |
 | **Pulso de alerta** | Seleccionar alerta | Anillo animado como entidad Cesium | M5 |
 | **Órbita del satélite** | Modo historia | Trayectoria NISAR dibujada como polilínea brillante | Plus |
 | **Cámara guiada** | Modo historia | Secuencia de `flyTo` encadenados con textos | Plus |
