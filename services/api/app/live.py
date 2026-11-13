@@ -60,7 +60,7 @@ def _number(value, low: float, high: float) -> float:
 
 
 def _quakes() -> list[dict]:
-    start = (datetime.now(UTC) - timedelta(days=30)).date().isoformat()
+    start = (datetime.now(UTC) - timedelta(days=30)).isoformat(timespec="seconds")
     payload = json.loads(
         _download(
             USGS,
@@ -102,7 +102,9 @@ def _quakes() -> list[dict]:
                         "date": occurred,
                         "level": "alto" if magnitude >= 6 else "medio" if magnitude >= 5 else "bajo",
                         "confidence": "revisado" if p.get("status") == "reviewed" else "automático",
-                        "metrics": {"magnitude": magnitude, "depth_km": _number(depth, -10, 1000)},
+                        "metrics": {"magnitude": magnitude,
+                                    "magnitude_type": str(p.get("magType") or "M")[:12],
+                                    "depth_km": _number(depth, -10, 1000)},
                         "source_url": "https://earthquake.usgs.gov/earthquakes/eventpage/" + event_id,
                         "note": ("Evento observado. La magnitud no equivale al daño local "
                                  "ni predice nuevos sismos."),

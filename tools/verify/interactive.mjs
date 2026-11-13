@@ -32,7 +32,7 @@ try {
     await new Promise(resolve => setTimeout(resolve, ["W1", "W3"].includes(moment) ? 4400 : 900));
     if (moment === "W3" && width === 1440) {
       // Stop the idle rotation while checking five actual geographic markers.
-      await page.mouse.click(350, 400);
+      await page.mouse.click(450, 400);
       const found = new Set();
       for (let y = 165; y < 670 && found.size < 5; y += 15) {
         for (let x = 520; x < 760 && found.size < 5; x += 15) {
@@ -90,7 +90,23 @@ try {
       await new Promise(resolve => setTimeout(resolve, 3400));
       console.log(JSON.stringify({ moment, width, orbitSource: await page.$eval(".orbit-card a", element => element.textContent) }));
     }
-    const layout = await page.$eval(width < 720 && moment === "W6" ? ".panel-reopen" : ".inspector", element => {
+    if (moment === "W7") {
+      await page.locator(".rail button:nth-child(2)").click();
+      await page.locator(".case:first-child").click();
+      await page.locator(".rail button:nth-child(3)").click();
+      await page.waitForFunction(() => document.querySelector(".empty-state h3")?.textContent === "Falta procesar NISAR");
+      const health = await page.evaluate(async () => (await (await fetch("/api/health")).json()));
+      if (health.layers !== 0 || health.credentials.earthdata) throw new Error("The pending-data scenario changed");
+      console.log(JSON.stringify({ moment, width, state: "Waiting for Earthdata and processed NISAR", layers: health.layers }));
+    }
+    const layoutSelector = width < 720 && moment === "W6" ? ".panel-reopen" : ".inspector";
+    await page.waitForFunction(selector => {
+      const element = document.querySelector(selector);
+      if (!element) return false;
+      const transform = getComputedStyle(element).transform;
+      return transform === "none" || Math.abs(new DOMMatrixReadOnly(transform).m41) < .05;
+    }, {}, layoutSelector);
+    const layout = await page.$eval(layoutSelector, element => {
       const rect = element.getBoundingClientRect();
       return { left: rect.left, right: rect.right, scroll: element.scrollWidth, width: element.clientWidth };
     });

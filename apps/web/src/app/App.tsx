@@ -217,9 +217,10 @@ export function App() {
   const linkedAlert = useRef(new URLSearchParams(window.location.search).get("alert"));
   useEffect(() => {
     if (!linkedAlert.current || !alerts.length) return;
-    const match = alerts.find(feature => feature.properties.id === linkedAlert.current);
+    const match = alerts.find(feature => feature.properties.id === linkedAlert.current)
+      ?? fireCells.find(feature => feature.properties.id === linkedAlert.current);
     if (match) { linkedAlert.current = null; pickAlert(match); }
-  }, [alerts, pickAlert]);
+  }, [alerts, fireCells, pickAlert]);
   const chooseTab = (id: TabId) => { setTab(id); setPanelOpen(true); };
 
   return <div className="shell" data-workspace={ready || undefined}
@@ -267,7 +268,7 @@ export function App() {
         {activeContext && <small className="map-context-source">{activeContext.product} · {activeContext.date} · {preview ? "Vista visual NISAR" : "Complementario"}</small>}
         {mapStatus.terrain === "unavailable" && <button type="button" onClick={() => chooseTab("terrain")}>Relieve sin activar</button>}
         {mapStatus.terrain === "regional" && <button type="button" onClick={() => chooseTab("terrain")}>Relieve local de Ayacucho</button>}
-        {!current && !alertsLoading && <LiveSummary alerts={cutoff == null ? alerts : timelineAlerts} onKind={kind => {
+        {!current && !alertsLoading && !alertsError && <LiveSummary alerts={cutoff == null ? alerts : timelineAlerts} sources={sources} onKind={kind => {
           setAlertKind(kind); setSelected(undefined); chooseTab("alerts");
         }} />}
         {!selected && <OrbitCard data={orbitData} visible={orbitVisible} historical={cutoff != null}

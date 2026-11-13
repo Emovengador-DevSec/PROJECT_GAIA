@@ -4,6 +4,8 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- Verificación interactiva: aparición escalonada de marcadores al llegar, enlaces compartidos de celdas FIRMS y estado de W7 con el requisito real de Earthdata y procesamiento.
+
 - W6: órbita NISAR propagada con satellite.js autorizado, elementos públicos de CelesTrak fechados, modelo 3D, traza y franja lateral aproximada; la pasada de Ayacucho indica acceso geométrico, sin prometer adquisición.
 
 - W4: el clic vuela al lugar con vista oblicua y recorrido orbital interrumpible con Esc o arrastre; en teléfono el mapa abre con el panel cerrado para conservar espacio.

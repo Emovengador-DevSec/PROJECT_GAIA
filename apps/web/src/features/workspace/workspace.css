@@ -86,7 +86,7 @@
 }
 .map-context small { font-size: var(--workspace-text); color: #c5d2dc; }
 .map-context button { justify-self: start; margin-top: 6px; padding: 5px 9px; border: 1px solid #766337; border-radius: 5px; background: rgb(36 29 15 / 86%); color: #f9dfa5; font-size: var(--workspace-text); }
-.orbit-card { width: min(340px, 100%); margin-top: 20px; padding-top: 14px; border-top: 1px solid #42545e; color: #d9eaf3; text-shadow: 0 2px 8px #000; font-size: 16px; }
+.orbit-card { width: min(340px, 100%); margin-top: 20px; padding-top: 14px; border-top: 1px solid #42545e; color: #d9eaf3; text-shadow: 0 2px 8px #000; font-size: var(--workspace-text); }
 .orbit-card > summary { display: flex; align-items: center; gap: 9px; cursor: pointer; color: #edf8fb; font-weight: 600; min-height: 32px; list-style: none; }
 .orbit-card > summary::after { content: "+"; margin-left: auto; font-size: 22px; font-weight: 400; }
 .orbit-card[open] > summary::after { content: "−"; }
@@ -94,7 +94,7 @@
 .orbit-dot { width: 7px; height: 7px; border-radius: 50%; background: #61727e; }
 .orbit-dot[data-active] { background: #b7f1f5; box-shadow: 0 0 10px #92ddeb80; }
 .orbit-card > div { padding-top: 8px; }
-.orbit-card strong { display: block; margin-top: 3px; color: #f1f9fb; font-size: 18px; font-weight: 550; line-height: 1.3; }
+.orbit-card strong { display: block; margin-top: 3px; color: #f1f9fb; font-size: clamp(18px, 1vw, 24px); font-weight: 550; line-height: 1.3; }
 .orbit-card p { margin: 7px 0; line-height: 1.35; color: #bdcfda; }
 .orbit-actions { display: flex; gap: 14px; margin-top: 10px; }
 .map-context .orbit-card button { border: 0; border-bottom: 1px solid #8cabb8; border-radius: 0; background: transparent; color: #c8f1f6; padding: 5px 0; margin: 0; }

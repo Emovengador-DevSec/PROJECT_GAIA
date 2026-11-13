@@ -1,7 +1,7 @@
-import type { AlertFeature, AlertKind } from "../../lib/api";
+import type { AlertFeature, AlertKind, FeedStatus } from "../../lib/api";
 import { CountUp } from "./CountUp";
 
-export function LiveSummary({ alerts, onKind }: { alerts: AlertFeature[]; onKind: (kind: AlertKind) => void }) {
+export function LiveSummary({ alerts, sources, onKind }: { alerts: AlertFeature[]; sources: FeedStatus[]; onKind: (kind: AlertKind) => void }) {
   const items = [
     { kind: "quake" as const, label: "Sismos USGS", count: alerts.filter(item => item.properties.kind === "quake").length },
     { kind: "fire" as const, label: "Focos FIRMS", count: alerts.filter(item => item.properties.kind === "fire").length },
@@ -9,7 +9,8 @@ export function LiveSummary({ alerts, onKind }: { alerts: AlertFeature[]; onKind
   ];
   return <div className="live-totals" aria-label="Observaciones disponibles">
     {items.map(item => <button key={item.kind} type="button" data-kind={item.kind} onClick={() => onKind(item.kind)}>
-      <strong><CountUp value={item.count} /></strong><span>{item.label}</span>
+      <strong>{sources.find(source => source.source === (item.kind === "quake" ? "USGS" : "NASA FIRMS"))?.status === "unavailable"
+        && item.kind !== "surface_change" ? "—" : <CountUp value={item.count} />}</strong><span>{item.label}</span>
     </button>)}
   </div>;
 }

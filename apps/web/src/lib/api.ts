@@ -60,7 +60,7 @@ export type AlertFeature = {
     title: string; place: string; date: string; level: "alto" | "medio" | "bajo"; confidence: string;
     note: string; source_url: string; aoi_id?: string; granules?: string[]; provisional?: boolean;
     center?: [number, number]; members?: { id: string; date: string }[]; first_date?: string;
-    metrics: { magnitude?: number; depth_km?: number; frp_mw?: number; area_ha?: number | null; count?: number };
+    metrics: { magnitude?: number; magnitude_type?: string; depth_km?: number; frp_mw?: number; area_ha?: number | null; count?: number };
     exposure?: { people?: number | null; crop_ha?: number | null; forest_ha?: number | null;
       settlements?: number | null; sources?: string[]; note?: string } | null;
   };

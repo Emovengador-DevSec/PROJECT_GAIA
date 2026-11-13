@@ -182,7 +182,15 @@ export function Inspector(p: Props) {
       {tab === "changes" && <>
         {!p.current ? <EmptyState title="Selecciona un lugar">Elige un territorio en Lugares para consultar su comparación NISAR.</EmptyState> : <>
           <p className="current-place">{p.current.name}</p>
-          {!p.layers.length && !p.contextLoading && <EmptyState title="Comparación pendiente de procesar">Se necesitan dos observaciones reales de la misma trayectoria y dirección para mostrar el cambio.</EmptyState>}
+          {!p.layers.length && !p.contextLoading && <>
+            <EmptyState title="Falta procesar NISAR">Se necesitan dos observaciones reales de la misma trayectoria y dirección para mostrar el cambio.
+              {p.health && !p.health.credentials.earthdata && " El acceso Earthdata aún no está configurado en el servidor."}
+            </EmptyState>
+            <details className="technical-details"><summary>Preparar la comparación real</summary>
+              <p>Configura EARTHDATA_TOKEN en el servidor. Para Ayacucho están autorizadas dos fechas, unos 3,9 GB en total. Después hay que ingerir los archivos y procesar HH y HV.</p>
+              <p>El revelado del radar se habilitará cuando estén publicadas las capas procesadas.</p>
+            </details>
+          </>}
           <CatalogSummary catalog={p.catalog} />
           <ContextLayers items={previews} active={p.activeContext} onSelect={p.onContext} title="Vista visual NISAR" />
           {!!p.layers.length && <>

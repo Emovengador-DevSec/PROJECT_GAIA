@@ -18,10 +18,11 @@ export function AlertSymbol({ kind }: { kind: AlertKind }) {
 
 export function observationMetric(feature: AlertFeature) {
   const m = feature.properties.metrics;
-  if (m.magnitude != null) return { value: m.magnitude, unit: "Mw", label: "Magnitud", decimals: 1 };
+  if (m.magnitude != null) return { value: m.magnitude, unit: m.magnitude_type ?? "M", label: "Magnitud", decimals: 1 };
   if (m.count != null) return { value: m.count, unit: "focos", label: "Detecciones en la celda", decimals: 0 };
   if (m.area_ha != null) return { value: m.area_ha, unit: "ha", label: "Área con cambio", decimals: 1 };
-  return { value: m.frp_mw ?? 0, unit: "MW", label: "Potencia radiativa", decimals: 1 };
+  if (m.frp_mw != null) return { value: m.frp_mw, unit: "MW", label: "Potencia radiativa", decimals: 1 };
+  return { value: null, unit: "", label: "Cifra sin publicar", decimals: 0 };
 }
 
 function AlertRow({ feature, onSelect }: { feature: AlertFeature; onSelect: (item: AlertFeature) => void }) {
@@ -49,7 +50,7 @@ export function AlertFeed({ alerts, onSelect }: { alerts: AlertFeature[]; onSele
     const kinds: AlertKind[] = ["surface_change", "deformation", "quake", "fire"];
     const featured = kinds.map(kind => {
       const candidates = alerts.filter(item => item.properties.kind === kind);
-      return candidates.sort((a, b) => observationMetric(b).value - observationMetric(a).value)[0];
+      return candidates.sort((a, b) => (observationMetric(b).value ?? -Infinity) - (observationMetric(a).value ?? -Infinity))[0];
     }).filter((item): item is AlertFeature => !!item).slice(0, 3);
     const recent = alerts.find(item => !featured.includes(item) &&
       !featured.some(chosen => chosen.properties.place === item.properties.place));
@@ -70,7 +71,7 @@ export function AlertFeed({ alerts, onSelect }: { alerts: AlertFeature[]; onSele
         const metric = observationMetric(feature);
         return <button key={a.id} type="button" className="featured-observation" data-kind={a.kind} onClick={() => onSelect(feature)}>
           <span className="featured-source"><span className="alert-symbol"><AlertSymbol kind={a.kind} /></span>{a.source}</span>
-          <span className="featured-metric"><CountUp value={metric.value} decimals={metric.decimals} /><small>{metric.unit}</small></span>
+          <span className="featured-metric">{metric.value == null ? "—" : <CountUp value={metric.value} decimals={metric.decimals} />}<small>{metric.unit}</small></span>
           <strong>{a.place}</strong><time dateTime={a.date}>{formatDate(a.date)}</time>
         </button>;
       })}

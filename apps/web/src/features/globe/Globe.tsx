@@ -42,6 +42,9 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
   const lastInput = useRef(performance.now());
   const [hover, setHover] = useState<{ feature: AlertFeature; x: number; y: number }>();
   const cutoffRef = useRef(cutoff);
+  const arrival = useRef(Infinity);
+  const workspaceActive = useRef(active);
+  workspaceActive.current = active;
   const updateVisibility = useRef<() => void>(() => undefined);
   const orbit = useRef<{ target: Cesium.Cartesian3; heading: number; pitch: number; range: number } | undefined>(undefined);
   const [orbiting, setOrbiting] = useState(false);
@@ -184,7 +187,7 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
         v.entities.add({
           position: Cesium.Cartesian3.fromDegrees(lon, lat),
           point: { pixelSize: 4, color: Cesium.Color.WHITE, heightReference: Cesium.HeightReference.CLAMP_TO_GROUND },
-          label: { text, font: "14px sans-serif", fillColor: Cesium.Color.WHITE,
+          label: { text, font: "16px sans-serif", fillColor: Cesium.Color.WHITE,
             outlineColor: Cesium.Color.BLACK, outlineWidth: 3, style: Cesium.LabelStyle.FILL_AND_OUTLINE,
             pixelOffset: new Cesium.Cartesian2(8, -10), horizontalOrigin: Cesium.HorizontalOrigin.LEFT,
             heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
@@ -275,6 +278,7 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
     const v = viewer.current;
     if (!v || !active) return;
     if (!aoi) {
+      arrival.current = performance.now();
       lastInput.current = performance.now() - 16_400;
       v.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(-66, -17, 11_500_000),
         duration: reduceMotion ? 0 : 3.6, easingFunction: Cesium.EasingFunction.QUINTIC_IN_OUT });
@@ -301,7 +305,9 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
       setOrbiting(false);
     };
     const canvas = v.scene.canvas;
+    const moved = () => { lastInput.current = performance.now(); };
     canvas.addEventListener("pointerdown", interacted);
+    canvas.addEventListener("pointermove", moved);
     canvas.addEventListener("wheel", interacted, { passive: true });
     window.addEventListener("keydown", interacted);
     const removeFrame = v.scene.preRender.addEventListener(() => {
@@ -319,6 +325,7 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
     return () => {
       removeFrame();
       canvas.removeEventListener("pointerdown", interacted);
+      canvas.removeEventListener("pointermove", moved);
       canvas.removeEventListener("wheel", interacted);
       window.removeEventListener("keydown", interacted);
     };
@@ -378,7 +385,6 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
     const started = performance.now();
     let frameTime = started;
     // Both ellipse axes must use exactly the same radius in a frame.
-    const removeClock = v.clock.onTick.addEventListener(() => { frameTime = performance.now(); });
     const phase = (offset = 0, period = 2600) => (((frameTime - started + offset) % period) + period) % period / period;
     const latest = [...alerts].filter(item => item.properties.kind === "quake")
       .sort((a, b) => b.properties.date.localeCompare(a.properties.date)).slice(0, 14);
@@ -455,16 +461,19 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
       });
       columns.push(cell);
     }
+    const rank = new Map(data.entities.values.map((entity, index) => [entity.id, index]));
     const visibility = () => {
       const close = v.camera.positionCartographic.height < 220_000;
       const until = cutoffRef.current ?? Infinity;
+      const progress = reduce ? 1 : Math.max(0, Math.min(1, (frameTime - arrival.current) / 1600));
+      const revealCount = Math.ceil(progress * data.entities.values.length);
       for (const entity of data.entities.values) {
         const feature = entity.properties?.alert?.getValue(v.clock.currentTime) as AlertFeature | undefined;
-        entity.show = !!feature && Date.parse(feature.properties.date) <= until;
+        entity.show = !!feature && Date.parse(feature.properties.date) <= until && rank.get(entity.id)! < revealCount;
       }
       individualFires.forEach(entity => { entity.show = entity.show && close; });
-      for (const { point, date, lon, lat } of firePoints) {
-        point.show = close && date <= until;
+      for (const [index, { point, date, lon, lat }] of firePoints.entries()) {
+        point.show = close && date <= until && index < Math.ceil(progress * firePoints.length);
         if (point.show) {
           const terrainHeight = v.scene.globe.getHeight(Cesium.Cartographic.fromDegrees(lon, lat)) ?? 0;
           point.position = Cesium.Cartesian3.fromDegrees(lon, lat, Math.max(0, terrainHeight) * v.scene.verticalExaggeration + 10);
@@ -473,7 +482,7 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
       for (const entity of columns) {
         const original = fireCells.find(cell => cell.properties.id === entity.id)!;
         const members = original.properties.members!.filter(member => Date.parse(member.date) <= until);
-        entity.show = !close && members.length > 0;
+        entity.show = !close && members.length > 0 && rank.get(entity.id)! < revealCount;
         const current = entity.properties!.alert.getValue(v.clock.currentTime) as AlertFeature;
         if (current.properties.metrics.count !== members.length && members.length) {
           const height = 2500 + Math.sqrt(members.length) * 16_000;
@@ -489,12 +498,21 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
       }
       if (polygons) for (const entity of polygons.entities.values) {
         const feature = entity.properties?.alert?.getValue(v.clock.currentTime) as AlertFeature | undefined;
-        entity.show = !!feature && Date.parse(feature.properties.date) <= until;
+        entity.show = !!feature && Date.parse(feature.properties.date) <= until && progress >= .8;
       }
     };
     const primary = alerts.filter(item => item.geometry.type !== "Point");
     let polygons: Cesium.GeoJsonDataSource | undefined;
     visibility();
+    let lastProgress = -1;
+    const removeClock = v.clock.onTick.addEventListener(() => {
+      frameTime = performance.now();
+      const progress = (frameTime - arrival.current) / 1600;
+      if (!reduce && workspaceActive.current && (progress < 1 || lastProgress < 1)) {
+        visibility();
+        lastProgress = progress;
+      }
+    });
     updateVisibility.current = visibility;
     const removeCamera = v.camera.changed.addEventListener(visibility);
     let lastFlicker = 0;
@@ -588,7 +606,7 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
       <small>{hover.feature.properties.source} · {hover.feature.properties.source_kind === "primary" ? "NISAR" : "complementario"}</small>
       <strong>{hover.feature.properties.title}</strong>
       <span>{hover.feature.properties.place}</span>
-      <b>{new Intl.NumberFormat("es-PE", { maximumFractionDigits: metric.decimals }).format(metric.value)} <small>{metric.unit}</small></b>
+      <b>{metric.value == null ? "Cifra sin publicar" : new Intl.NumberFormat("es-PE", { maximumFractionDigits: metric.decimals }).format(metric.value)} <small>{metric.unit}</small></b>
       <time dateTime={hover.feature.properties.date}>{formatDate(hover.feature.properties.date)}</time>
     </div>}
   </>;
