@@ -253,6 +253,12 @@ def alerts(aoi: str | None = Query(None, pattern=r"^[a-z0-9-]+$"), include_live:
             feed = live.collection(provider)
             sources.append({k: v for k, v in feed.items() if k != "features"})
             feats.extend(feed["features"])
+    from .fire_cells import aggregate, region_name
+
+    for feature in feats:
+        if feature.get("properties", {}).get("kind") == "fire":
+            lon, lat = feature["geometry"]["coordinates"][:2]
+            feature["properties"]["place"] = region_name(lon, lat)
     priority = {"alto": 0, "medio": 1, "bajo": 2}
     feats.sort(key=lambda feature: str(feature.get("properties", {}).get("date") or ""), reverse=True)
     feats.sort(
@@ -260,7 +266,8 @@ def alerts(aoi: str | None = Query(None, pattern=r"^[a-z0-9-]+$"), include_live:
             priority.get(f.get("properties", {}).get("level"), 3),
         ),
     )
-    return {"type": "FeatureCollection", "features": feats, "sources": sources}
+    return {"type": "FeatureCollection", "features": feats, "sources": sources,
+            "fire_cells": aggregate(feats)}
 
 
 @app.get("/api/live/quakes")

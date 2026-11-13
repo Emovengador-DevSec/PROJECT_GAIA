@@ -33,6 +33,7 @@ export function App() {
   const [contextLoading, setContextLoading] = useState(false);
   const [exaggeration, setExaggeration] = useState(2);
   const [alerts, setAlerts] = useState<AlertFeature[]>([]);
+  const [fireCells, setFireCells] = useState<AlertFeature[]>([]);
   const [sources, setSources] = useState<FeedStatus[]>([]);
   const [selected, setSelected] = useState<AlertFeature>();
   const [alertKind, setAlertKind] = useState<AlertKind | "all">("all");
@@ -72,6 +73,7 @@ export function App() {
       const result = await api.alerts();
       if (id !== requestId.current) return;
       setAlerts(result.features.filter(feature => feature.geometry && feature.properties?.id));
+      setFireCells(result.fire_cells ?? []);
       setSources(result.sources ?? []);
     } catch {
       if (id === requestId.current) setAlertsError("No se pudo actualizar la actividad. Comprueba la conexión y vuelve a intentarlo.");
@@ -153,6 +155,10 @@ export function App() {
   const filteredAlerts = useMemo(() => alerts.filter(feature =>
     (alertKind === "all" || feature.properties.kind === alertKind) &&
     (alertLevel === "all" || feature.properties.level === alertLevel)), [alerts, alertKind, alertLevel]);
+  const visibleFireCells = useMemo(() => {
+    const ids = new Set(filteredAlerts.map(item => item.properties.id));
+    return fireCells.filter(cell => cell.properties.members?.some(member => ids.has(member.id)));
+  }, [filteredAlerts, fireCells]);
   const preview = activeContext?.before ? activeContext : undefined;
   const radarComparison = !!health?.tiles && !!layer?.comparison && !activeContext &&
     (compare || storyStep?.layer?.startsWith("diff_"));
@@ -205,7 +211,8 @@ export function App() {
         contextOverlay={activeContext && current
           ? { url: api.contextImage(current.id, activeContext), credit: activeContext.source,
             beforeUrl: preview ? api.contextImage(current.id, preview, preview.before) : undefined } : undefined}
-        split={split} alerts={filteredAlerts} selected={selected} onSelect={pickAlert} onStatus={setMapStatus} />
+        split={split} alerts={filteredAlerts} fireCells={visibleFireCells}
+        selected={selected} onSelect={pickAlert} onStatus={setMapStatus} />
     </Suspense>}
     {entered ? <FringeIntro onDone={onIntroDone} /> : <GaiaCover onEnter={onEnter} onReady={onCoverReady} />}
     {ready && <>

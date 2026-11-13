@@ -4,6 +4,8 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- W2: ondas sísmicas, polígonos NISAR sobre el relieve y columnas FIRMS agregadas en hexágonos de unos 10 km, con focos individuales al acercarse.
+
 - W8: paneles con texto legible adaptable, observaciones prioritarias por tipo, grupos por lugar y cifras animadas con movimiento reducido.
 
 - Integradas vistas públicas NISAR de Ayacucho, perturbación OPERA, precipitación IMERG y escenas históricas RADARSAT-1 con fecha, fuente y controles sobre el globo.

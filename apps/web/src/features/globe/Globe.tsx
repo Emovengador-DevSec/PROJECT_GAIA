@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useReducedMotion } from "framer-motion";
 import * as Cesium from "cesium";
 import "cesium/Build/Cesium/Widgets/widgets.css";
 import type { AOI, AlertFeature, CameraMode, GlobeStatus } from "../../lib/api";
@@ -8,6 +9,7 @@ type Props = {
   aoi?: AOI; tileUrl?: string; beforeUrl?: string; afterUrl?: string; split: number;
   contextOverlay?: { url: string; credit: string; beforeUrl?: string };
   exaggeration: number; camera?: CameraMode; alerts: AlertFeature[]; selected?: AlertFeature;
+  fireCells: AlertFeature[];
   offline?: boolean;
   onSelect: (alert: AlertFeature) => void; onStatus: (status: GlobeStatus) => void;
 };
@@ -25,8 +27,9 @@ function marker(kind: string, color: string): string {
 }
 
 export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split, exaggeration, camera = "oblique",
-  alerts, selected, onSelect, onStatus, offline = false }: Props) {
+  alerts, fireCells, selected, onSelect, onStatus, offline = false }: Props) {
   const host = useRef<HTMLDivElement>(null);
+  const reduceMotion = useReducedMotion();
   const viewer = useRef<Cesium.Viewer | null>(null);
   const selectRef = useRef(onSelect);
   const statusRef = useRef(onStatus);
@@ -245,17 +248,14 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
     const v = viewer.current;
     if (!v) return;
     const data = new Cesium.CustomDataSource("Alertas con fuente");
-    data.clustering.enabled = true;
-    data.clustering.pixelRange = 38;
-    data.clustering.minimumClusterSize = 4;
-    data.clustering.clusterEvent.addEventListener((_entities, cluster) => {
-      cluster.label.fillColor = Cesium.Color.fromCssColorString("#fbbf24");
-      cluster.label.font = "600 15px sans-serif";
-      cluster.label.showBackground = true;
-      cluster.label.backgroundColor = Cesium.Color.fromCssColorString("#0c1219").withAlpha(.9);
-      cluster.label.backgroundPadding = new Cesium.Cartesian2(8, 5);
-      cluster.label.disableDepthTestDistance = Number.POSITIVE_INFINITY;
-    });
+    const reduce = !!reduceMotion;
+    const started = performance.now();
+    const phase = (offset = 0, period = 2600) => ((performance.now() - started + offset) % period) / period;
+    const latest = [...alerts].filter(item => item.properties.kind === "quake")
+      .sort((a, b) => b.properties.date.localeCompare(a.properties.date)).slice(0, 14);
+    const animated = new Set(latest.map(item => item.properties.id));
+    const individualFires: Cesium.Entity[] = [];
+    const columns: Cesium.Entity[] = [];
     for (const feature of alerts.slice(0, 2500)) {
       const geometry = feature.geometry;
       let coordinates: number[] | undefined;
@@ -267,16 +267,88 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
       if (!Number.isFinite(lon) || !Number.isFinite(lat)) continue;
       const p = feature.properties;
       const size = p.kind === "quake" ? 16 + (p.metrics.magnitude ?? 4) * 2 : 26;
-      data.entities.add({ id: p.id, name: p.title,
+      if (geometry.type !== "Point") continue;
+      const entity = data.entities.add({ id: p.id, name: p.title,
         position: Cesium.Cartesian3.fromDegrees(lon, lat), properties: { alert: feature },
         billboard: { image: marker(p.kind, COLORS[p.kind] ?? COLORS.surface_change), width: size, height: size,
           heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
           disableDepthTestDistance: Number.POSITIVE_INFINITY },
       });
+      if (p.kind === "fire") {
+        individualFires.push(entity);
+        if (!reduce && entity.billboard) entity.billboard.color = new Cesium.CallbackProperty(
+          (_time, result) => Cesium.Color.WHITE.withAlpha(.65 + .35 * Math.sin(phase(lat * 1000) * Math.PI) ** 2, result), false,
+        );
+      }
+      if (p.kind === "quake") {
+        const radius = 14_000 + (p.metrics.magnitude ?? 4) * 9000;
+        const period = Date.now() - Date.parse(p.date) < 86_400_000 ? 2000 : 3400;
+        const wave = () => phase(lat * 170, period);
+        entity.ellipse = new Cesium.EllipseGraphics({
+          semiMajorAxis: reduce || !animated.has(p.id) ? radius : new Cesium.CallbackProperty(() => radius * (.25 + wave()), false),
+          semiMinorAxis: reduce || !animated.has(p.id) ? radius : new Cesium.CallbackProperty(() => radius * (.25 + wave()), false),
+          height: 0,
+          material: new Cesium.ColorMaterialProperty(reduce || !animated.has(p.id)
+            ? Cesium.Color.fromCssColorString(COLORS.quake).withAlpha(.12)
+            : new Cesium.CallbackProperty((_time, result) => Cesium.Color.fromCssColorString(COLORS.quake).withAlpha(.24 * (1 - wave()), result), false)),
+        });
+      }
     }
+    for (const feature of fireCells) {
+      const p = feature.properties;
+      const ring = (feature.geometry.coordinates as number[][][])[0];
+      const height = 2500 + Math.sqrt(p.metrics.count ?? 1) * 16_000;
+      const recent = Date.now() - Date.parse(p.date) < 43_200_000;
+      const color = Cesium.Color.fromCssColorString(recent ? "#ff5537" : "#ff9c43");
+      const [lon, lat] = p.center!;
+      const cell = data.entities.add({
+        id: p.id, name: p.title, properties: { alert: feature },
+        position: Cesium.Cartesian3.fromDegrees(lon, lat, height),
+        polygon: {
+          hierarchy: Cesium.Cartesian3.fromDegreesArray(ring.flat()), height: 0,
+          extrudedHeight: height, material: color.withAlpha(.72), outline: true,
+          outlineColor: color.withAlpha(.95),
+        },
+        point: { pixelSize: 5 + Math.min(6, Math.log2((p.metrics.count ?? 1) + 1)),
+          color, outlineColor: Cesium.Color.fromCssColorString("#fff0d8"), outlineWidth: 1 },
+      });
+      columns.push(cell);
+    }
+    const visibility = () => {
+      const close = v.camera.positionCartographic.height < 220_000;
+      individualFires.forEach(entity => { entity.show = close; });
+      columns.forEach(entity => { entity.show = !close; });
+    };
+    visibility();
+    const removeCamera = v.camera.changed.addEventListener(visibility);
     v.dataSources.add(data);
-    return () => { if (!v.isDestroyed()) v.dataSources.remove(data, true); };
-  }, [alerts, offline]);
+    const primary = alerts.filter(item => item.geometry.type !== "Point");
+    let polygons: Cesium.GeoJsonDataSource | undefined;
+    let cancelled = false;
+    if (primary.length) Cesium.GeoJsonDataSource.load({
+      type: "FeatureCollection", features: primary.map(item => ({ ...item, id: item.properties.id })),
+    }, { clampToGround: true, fill: Cesium.Color.fromCssColorString("#ff8a00").withAlpha(.22),
+      stroke: Cesium.Color.fromCssColorString("#ffad4f"), strokeWidth: 3 }).then(source => {
+      if (cancelled || v.isDestroyed()) return;
+      polygons = source;
+      for (const entity of source.entities.values) {
+        const feature = primary.find(item => item.properties.id === entity.id);
+        entity.properties = new Cesium.PropertyBag({ alert: feature });
+        if (entity.polygon && !reduce) entity.polygon.material = new Cesium.ColorMaterialProperty(
+          new Cesium.CallbackProperty((_time, result) => Cesium.Color.fromCssColorString("#ff8a00").withAlpha(.18 + .08 * Math.sin(phase() * Math.PI), result), false),
+        );
+      }
+      v.dataSources.add(source);
+    }).catch(() => { /* The observation stays available in its source record. */ });
+    return () => {
+      cancelled = true;
+      removeCamera();
+      if (!v.isDestroyed()) {
+        v.dataSources.remove(data, true);
+        if (polygons) v.dataSources.remove(polygons, true);
+      }
+    };
+  }, [alerts, fireCells, offline, reduceMotion]);
 
   useEffect(() => {
     const v = viewer.current;

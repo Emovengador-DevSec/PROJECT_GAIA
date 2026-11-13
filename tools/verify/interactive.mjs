@@ -22,6 +22,9 @@ try {
     await page.locator(".gaia-cta").click();
     await page.waitForSelector(".featured-observation");
     await page.waitForFunction(() => !document.querySelector(".loading-state"));
+    if (moment !== "W8") {
+      await page.emulateMediaFeatures([{ name: "prefers-reduced-motion", value: "no-preference" }]);
+    }
     await new Promise(resolve => setTimeout(resolve, 900));
     const layout = await page.$eval(".inspector", element => {
       const rect = element.getBoundingClientRect();
