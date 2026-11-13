@@ -3,10 +3,14 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import shutil
+from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
+from tempfile import NamedTemporaryFile
+from uuid import uuid4
 
 import h5py
 
@@ -40,8 +44,10 @@ def identify(path: Path) -> dict:
 def _quarantine(path: Path, reason: str) -> None:
     S.QUARANTINE.mkdir(parents=True, exist_ok=True)
     dest = S.QUARANTINE / path.name
+    if dest.exists():
+        dest = S.QUARANTINE / f"{uuid4().hex}_{path.name}"
     shutil.move(str(path), dest)
-    (S.QUARANTINE / f"{path.name}.motivo.json").write_text(
+    dest.with_name(f"{dest.name}.motivo.json").write_text(
         json.dumps({"motivo": reason, "fecha": datetime.now(UTC).isoformat()},
                    ensure_ascii=False, indent=2), encoding="utf-8")
 
@@ -55,30 +61,117 @@ def load_catalog() -> dict:
     return json.loads(p.read_text(encoding="utf-8")) if p.exists() else {"items": {}}
 
 
+@contextmanager
+def _ingest_lock():
+    """Serialize catalogue updates without leaving a stale lock after a process crash."""
+    with (S.CATALOG / ".ingest.lock").open("a+b") as lock:
+        if lock.tell() == 0:
+            lock.write(b"\0")
+            lock.flush()
+        lock.seek(0)
+        if os.name == "nt":
+            import msvcrt
+            try:
+                msvcrt.locking(lock.fileno(), msvcrt.LK_NBLCK, 1)
+            except OSError as exc:
+                raise RuntimeError("Ya hay una ingesta en ejecución. Reintenta cuando termine.") from exc
+        else:
+            import fcntl
+            try:
+                fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError as exc:
+                raise RuntimeError("Ya hay una ingesta en ejecución. Reintenta cuando termine.") from exc
+        try:
+            yield
+        finally:
+            lock.seek(0)
+            if os.name == "nt":
+                msvcrt.locking(lock.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+
+
+def _write_json(path: Path, value: dict) -> None:
+    with NamedTemporaryFile(mode="w", encoding="utf-8", dir=path.parent,
+                            prefix=f".{path.stem}-", suffix=".tmp", delete=False) as handle:
+        temporary = Path(handle.name)
+        json.dump(value, handle, ensure_ascii=False, indent=2)
+    try:
+        temporary.replace(path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def _publish_raw(source: Path, target: Path, digest: str) -> None:
+    """Publish a complete, verified file atomically; an existing target is never replaced."""
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with NamedTemporaryFile(dir=target.parent, prefix=".ingest-", suffix=".partial", delete=False) as handle:
+        temporary = Path(handle.name)
+    try:
+        shutil.copyfile(source, temporary)
+        if sha256(temporary) != digest:
+            raise ValueError("El archivo de entrada cambió durante la copia. Vuelve a ingresarlo.")
+        if os.name == "nt":
+            # Windows rename raises FileExistsError instead of replacing an existing path.
+            os.rename(temporary, target)
+        else:
+            os.link(temporary, target)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
 def ingest_inbox() -> dict:
     S.CATALOG.mkdir(parents=True, exist_ok=True)
+    with _ingest_lock():
+        return _ingest_locked()
+
+
+def _ingest_locked() -> dict:
     cat = load_catalog()
     checksums_p = S.CATALOG / "raw_checksums.json"
     checksums = json.loads(checksums_p.read_text()) if checksums_p.exists() else {}
-    report = {"ingeridos": [], "omitidos": [], "cuarentena": []}
+    report = {"ingeridos": [], "omitidos": [], "cuarentena": [], "recuperados": []}
+    accepted = []
     for path in sorted(S.INBOX.glob("*.h5")):
+        if not path.is_file():
+            continue
         try:
+            if path.is_symlink():
+                raise ValueError("La entrada debe ser un archivo independiente, no un enlace simbólico.")
             info = identify(path)
+            digest = sha256(path)
+            existing = cat["items"].get(path.name)
+            expected = existing.get("sha256") if existing else None
+            if expected is not None and digest != expected:
+                raise ValueError("El nombre ya está registrado con otra suma SHA-256.")
+            y, m = info["acquired"][:4], info["acquired"][5:7]
+            rel = Path(existing["path"]) if existing else (
+                Path("nisar") / info["product"].lower() / y / m / path.name)
+            dest = (S.RAW / rel).resolve()
+            if not dest.is_relative_to(S.RAW.resolve()):
+                raise ValueError("La ruta registrada sale de data/01_raw.")
+            present = dest.exists()
+            if present and sha256(dest) != digest:
+                raise ValueError("Existe otro contenido en 01_raw. Se conserva para revisión manual.")
+            if not present:
+                _publish_raw(path, dest, digest)
         except Exception as exc:  # noqa: BLE001
             _quarantine(path, str(exc)); report["cuarentena"].append(path.name); continue
-        digest = sha256(path)
-        if path.name in cat["items"]:
-            path.unlink(); report["omitidos"].append(path.name); continue
-        y, m = info["acquired"][:4], info["acquired"][5:7]
-        rel = Path("nisar") / info["product"].lower() / y / m / path.name
-        dest = S.RAW / rel
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.move(str(path), dest)
-        cat["items"][path.name] = {**info, "path": str(rel), "sha256": digest,
-                                   "ingested_at": datetime.now(UTC).isoformat(timespec="seconds"),
-                                   "quality_flags": ["provisional"] if info["cfg"] == "PR" else []}
+        cat["items"][path.name] = {**info, **(existing or {}), "path": str(rel), "sha256": digest,
+                                   "ingested_at": (existing or {}).get("ingested_at")
+                                   or datetime.now(UTC).isoformat(timespec="seconds"),
+                                   "quality_flags": (existing or {}).get("quality_flags",
+                                       ["provisional"] if info["cfg"] == "PR" else [])}
         checksums[str(rel)] = digest
-        report["ingeridos"].append(path.name)
-    _catalog_path().write_text(json.dumps(cat, ensure_ascii=False, indent=2), encoding="utf-8")
-    checksums_p.write_text(json.dumps(checksums, indent=2), encoding="utf-8")
+        if existing and present:
+            report["omitidos"].append(path.name)
+        elif existing or present:
+            report["recuperados"].append(path.name)
+        else:
+            report["ingeridos"].append(path.name)
+        accepted.append(path)
+    _write_json(_catalog_path(), cat)
+    _write_json(checksums_p, checksums)
+    for path in accepted:
+        path.unlink()
     return report

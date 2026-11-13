@@ -38,7 +38,8 @@ def polygons(mask: np.ndarray, transform, min_pixels: int = 25, epsg: int | None
     if n == 0:
         return feats
     sizes = np.bincount(labeled.ravel())
-    keep = np.isin(labeled, np.where(sizes >= min_pixels)[0][1:])
+    component_ids = np.flatnonzero((sizes >= min_pixels) & (np.arange(sizes.size) != 0))
+    keep = np.isin(labeled, component_ids)
     for geom, val in shapes(keep.astype("uint8"), mask=keep, transform=transform):
         if val:
             feats.append({"type": "Feature", "geometry": geom, "properties": {}})

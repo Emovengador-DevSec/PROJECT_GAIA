@@ -1,6 +1,6 @@
 id: madre-de-dios-la-pampa
 name: Madre de Dios (La Pampa)
-role: flagship
+role: support
 status: approximate
 bbox: [-70.9, -13.3, -69.9, -12.5]   # oeste, sur, este, norte
 phenomena: [deforestation]

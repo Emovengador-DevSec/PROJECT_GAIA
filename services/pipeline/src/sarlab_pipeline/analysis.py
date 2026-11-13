@@ -53,6 +53,7 @@ def zone_stats(path: Path, bbox_wgs84, layers=("HHHH", "HVHV"), freq="frequencyA
 
 
 def timeseries(aoi_id: str, files: list[Path], freq: str = "frequencyA") -> dict:
+    gcov.validate_sequence(files)
     aoi = load_aois()[aoi_id]
     rows = sorted((zone_stats(f, aoi.bbox, freq=freq) for f in files), key=lambda r: r["date"])
     result = {"aoi_id": aoi_id, "product": "GCOV", "freq": freq, "samples": rows,

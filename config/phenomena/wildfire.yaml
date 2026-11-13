@@ -1,0 +1,10 @@
+id: wildfire
+name: Cambios de vegetación tras incendios
+signals: [hv_backscatter_drop, hv_backscatter_recovery]
+products: [nisar_gcov]
+method: threshold_rules_v1
+severity:
+  initial: true
+  levels: { low: 0.33, medium: 0.66, high: 1.0 }
+validation_sources: [firms, imagen_optica, observacion_local]
+limitations: Una caída de retrodispersión también puede deberse a humedad, geometría o cambios agrícolas. La atribución a incendio necesita validación independiente.

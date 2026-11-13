@@ -35,7 +35,10 @@ def change_multi(aoi_id: str, before: Path, after: Path,
     """Cambio en varias polarizaciones + resumen comparativo (lo pide el reto)."""
     from .analysis import polarization_summary
     from .readers.gcov import list_layers
+    gcov.validate_sequence([before, after])
     available = set(list_layers(before, freq)) & set(list_layers(after, freq))
+    if not available.intersection(layers):
+        raise ValueError("Las fechas no comparten ninguna polarización solicitada. Revisa sarlab inspect.")
     results = {lay: change_between(aoi_id, before, after, lay, freq=freq)
                for lay in layers if lay in available}
     summary = polarization_summary(results)
@@ -48,6 +51,11 @@ def change_multi(aoi_id: str, before: Path, after: Path,
 
 def change_between(aoi_id: str, before: Path, after: Path, layer: str = "HVHV",
                    speckle: int = 3, freq: str = "frequencyA") -> dict:
+    from rasterio.warp import transform_geom
+
+    gcov.validate_sequence([before, after])
+    if _date(before.name) >= _date(after.name):
+        raise ValueError("La observación anterior debe preceder a la posterior.")
     aoi = load_aois()[aoi_id]
     thr = load_thresholds()
     epsg = gcov.product_epsg(before, freq)
@@ -63,24 +71,44 @@ def change_between(aoi_id: str, before: Path, after: Path, layer: str = "HVHV",
     out = S.PROCESSED / aoi_id / "gcov" / tag
     lid = f"lyr_{aoi_id}_gcov_diff-{layer.lower()}_{tag}"
     cog = write_cog(out / f"diff_{layer.lower()}_db.tif", d, ref.transform, epsg)
-    write_cog(out / f"before_{layer.lower()}_db.tif", a_db, ref.transform, epsg)
-    write_cog(out / f"after_{layer.lower()}_db.tif", b_db, ref.transform, epsg)
+    before_cog = write_cog(out / f"before_{layer.lower()}_db.tif", a_db, ref.transform, epsg)
+    after_cog = write_cog(out / f"after_{layer.lower()}_db.tif", b_db, ref.transform, epsg)
     man = M.build(lid, "backscatter_diff_db", f"Cambio de retrodispersión {layer[:2]}", "dB", "RdBu",
                   d, cog, aoi_id, {"a": _date(wa.source), "b": _date(wb.source)},
                   [wa.source, wb.source],
                   extra={"product": "GCOV", "layer": layer, "frequency": freq, "epsg": epsg,
                          "threshold_db": res.threshold_db, "method": "robust_mad_k_sigma"})
+    observations = np.concatenate((a_db[np.isfinite(a_db)], b_db[np.isfinite(b_db)]))
+    low, high = np.percentile(observations, (2, 98))
+    if high <= low:
+        low, high = float(low) - .5, float(high) + .5
+    man["comparison"] = {"before_cog_path": str(before_cog), "after_cog_path": str(after_cog),
+                         "range": {"min": float(low), "max": float(high)}}
     M.write(man, out / f"manifest_{layer.lower()}.json")
 
     alerts = polygons(res.loss, ref.transform, thr.min_alert_pixels)
     px_area_ha = abs(ref.transform.a * ref.transform.e) / 1e4
     for i, f in enumerate(alerts):
+        rings = f["geometry"]["coordinates"]
+        # Raster-derived polygon rings preserve the exact projected pixel area, including holes.
+        ring_areas = [abs(sum(x1 * y2 - x2 * y1
+                              for (x1, y1), (x2, y2) in zip(ring, ring[1:], strict=False))) / 2
+                      for ring in rings]
+        area_ha = (ring_areas[0] - sum(ring_areas[1:])) / 1e4
+        f["geometry"] = transform_geom(f"EPSG:{epsg}", "EPSG:4326", f["geometry"])
         f["properties"] = {"id": f"alr_{aoi_id}_{tag}_{layer.lower()}_{i:03d}",
                            "phenomenon": "backscatter_loss",
-                           "epsg": epsg, "layer_id": lid, "method": "robust_mad_k_sigma",
+                           "source": "NISAR", "provisional": man["quality"]["provisional"],
+                           "confidence": "por_validar", "source_epsg": epsg, "epsg": 4326,
+                           "aoi_id": aoi_id, "place": aoi.name,
+                           "area_ha": round(area_ha, 3),
+                           "loss_pixels": round(area_ha / px_area_ha),
+                           "granules": man["provenance"]["granules"],
+                           "threshold_db": res.threshold_db,
+                           "layer_id": lid, "method": "robust_mad_k_sigma",
                            "date_range": [man["dates"]["a"], man["dates"]["b"]]}
     (out / f"alerts_{layer.lower()}.geojson").write_text(json.dumps(
-        {"type": "FeatureCollection", "crs_epsg": epsg, "features": alerts}), encoding="utf-8")
+        {"type": "FeatureCollection", "crs_epsg": 4326, "features": alerts}), encoding="utf-8")
     return {"manifest": man, "alerts": len(alerts),
             "loss_area_ha": round(float(res.loss.sum()) * px_area_ha, 2), "out_dir": str(out)}
 

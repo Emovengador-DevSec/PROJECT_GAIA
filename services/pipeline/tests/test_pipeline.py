@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -76,6 +77,17 @@ def test_change_workflow_end_to_end(data_dirs, tmp_path, monkeypatch):
     import rasterio
     with rasterio.open(man["cog_path"]) as src:
         assert src.crs.to_epsg() == 32719 and src.count == 1
+    assert man["comparison"]["range"]["min"] < man["comparison"]["range"]["max"]
+    assert Path(man["comparison"]["before_cog_path"]).exists()
+    collection = json.loads((Path(r["out_dir"]) / "alerts_hvhv.geojson").read_text())
+    assert collection["crs_epsg"] == 4326
+    for feature in collection["features"]:
+        assert feature["properties"]["area_ha"] > 0
+        assert feature["properties"]["loss_pixels"] >= 20
+        assert feature["properties"]["source"] == "NISAR"
+        assert feature["properties"]["provisional"] is True
+        for ring in feature["geometry"]["coordinates"]:
+            assert all(-180 <= x <= 180 and -90 <= y <= 90 for x, y in ring)
 
 
 def _aoi_patch(monkeypatch, *modules):

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import shutil
 import sys
 from pathlib import Path
@@ -58,35 +59,16 @@ def require_keys(path: Path, data, keys: list[str]) -> bool:
 
 
 def check_tools() -> None:
-    if sys.version_info < (3, 10):
-        error(f"Python {sys.version_info.major}.{sys.version_info.minor} es demasiado antiguo (mínimo 3.10)")
     for tool in ("git", "uv", "pnpm"):
         if shutil.which(tool) is None:
             warn(f"Herramienta no encontrada: {tool}")
 
 
 def check_env() -> None:
-    example = ROOT / ".env.example"
-    env = ROOT / ".env"
-    if not env.exists():
-        warn(".env no existe. Copia .env.example como .env y complétalo.")
-        return
-    wanted = []
-    for line in example.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if line and not line.startswith("#") and "=" in line:
-            wanted.append(line.split("=", 1)[0])
-    have = {}
-    for line in env.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if line and not line.startswith("#") and "=" in line:
-            k, v = line.split("=", 1)
-            have[k] = v.split("#", 1)[0].strip()
-    for key in wanted:
-        if key not in have:
-            warn(f".env: falta la variable {key}")
-        elif not have[key] and key in ("EARTHDATA_TOKEN",):
-            warn(f".env: {key} está vacía")
+    # Inspect process capabilities only. Never open the user's credentials file.
+    for key in ("EARTHDATA_TOKEN", "FIRMS_MAP_KEY"):
+        if not os.environ.get(key):
+            warn(f"Entorno: {key} no está configurada. El diagnóstico no abre .env.")
 
 
 def check_config() -> None:

@@ -9,6 +9,8 @@ Revisa https://nisar-docs.asf.alaska.edu/asf-search si cambia la API.
 """
 from __future__ import annotations
 
+import json
+import re
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -16,6 +18,25 @@ from pathlib import Path
 from ..settings import INBOX, earthdata_token
 
 PRODUCTS = {"GCOV", "GUNW", "GOFF", "GSLC", "SME2"}
+
+
+def load_cached_catalog(aoi_id: str, product: str = "GCOV", catalog_dir: Path | None = None) -> dict | None:
+    """Read public ASF metadata previously saved by `sarlab search --save-catalog`."""
+    from ..settings import CATALOG
+
+    if not re.fullmatch(r"[a-z0-9-]+", aoi_id) or product not in PRODUCTS:
+        raise ValueError("Zona o producto de catálogo inválido.")
+    path = (catalog_dir or CATALOG) / f"nisar_{aoi_id}_{product.lower()}.json"
+    if not path.is_file():
+        return None
+    if path.stat().st_size > 4 * 1024 * 1024:
+        raise ValueError("El catálogo supera el tamaño máximo de 4 MB.")
+    catalog = json.loads(path.read_text(encoding="utf-8"))
+    if (not isinstance(catalog, dict)
+            or catalog.get("aoi_id") != aoi_id or catalog.get("product") != product
+            or not isinstance(catalog.get("granules"), list)):
+        raise ValueError("Los metadatos del catálogo no coinciden con la zona y el producto.")
+    return catalog
 
 
 @dataclass
@@ -26,16 +47,36 @@ class Granule:
     direction: str | None
     track: int | None
     size_mb: float | None
+    frame: int | None = None
+    polarizations: tuple[str, ...] = ()
+
+
+def _size_mb(props: dict, filename: str) -> float | None:
+    """ASF NISAR supplies a per-file bytes mapping; older products use a number."""
+    raw = props.get("bytes")
+    if isinstance(raw, dict):
+        entry = raw.get(filename, {})
+        raw = entry.get("bytes") if isinstance(entry, dict) else entry
+    try:
+        size = float(raw)
+    except (TypeError, ValueError):
+        return None
+    return size / 1e6 if size > 0 else None
 
 
 def search(wkt: str, start: date, end: date, product: str = "GCOV",
            maturity: str = "PROVISIONAL", direction: str | None = None,
-           max_results: int = 100) -> list[Granule]:
+           max_results: int = 1000, track: int | None = None,
+           frame: int | None = None) -> list[Granule]:
     """Busca gránulos NISAR que intersectan la zona. Requiere `asf_search` instalado."""
     import asf_search as asf  # import tardío: solo se necesita al buscar
 
     if product not in PRODUCTS:
         raise ValueError(f"Producto no soportado: {product}")
+    if start > end:
+        raise ValueError("La fecha inicial debe ser anterior o igual a la final.")
+    if not 1 <= max_results <= 1000:
+        raise ValueError("max_results debe estar entre 1 y 1000.")
     opts = dict(dataset="NISAR", processingLevel=product, intersectsWith=wkt,
                 start=start.isoformat(), end=end.isoformat(),
                 dataMaturity=maturity, maxResults=max_results)
@@ -47,15 +88,22 @@ def search(wkt: str, start: date, end: date, product: str = "GCOV",
     for r in results:
         props = r.properties
         url = props.get("url") or ""
-        if not url.endswith(".h5"):
+        filename = Path(url).name
+        if not url.endswith(".h5") or filename.endswith("_QA_STATS.h5"):
             continue  # descarta QA_STATS y auxiliares
+        if track is not None and props.get("pathNumber") != track:
+            continue
+        if frame is not None and props.get("frameNumber") != frame:
+            continue
         granules.append(Granule(
             name=props.get("fileID") or props.get("sceneName") or Path(url).stem,
             url=url,
             start=props.get("startTime", ""),
             direction=props.get("flightDirection"),
             track=props.get("pathNumber"),
-            size_mb=(props.get("bytes") or 0) / 1e6 or None,
+            size_mb=_size_mb(props, filename),
+            frame=props.get("frameNumber"),
+            polarizations=tuple(props.get("mainBandPolarization") or []),
         ))
     return sorted(granules, key=lambda g: g.start)
 

@@ -1,0 +1,8 @@
+id: ayacucho-huanta
+name: Ayacucho · Huanta y La Mar
+role: flagship
+status: approximate
+bbox: [-74.4, -13.4, -73.9, -12.8]
+phenomena: [wildfire, landslide]
+notes: Caja de estudio en Huanta y La Mar. El catálogo NISAR debe confirmar cobertura, trayectoria, dirección y fechas antes del análisis.
+camera: { heading_deg: 25, pitch_deg: -35 }

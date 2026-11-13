@@ -8,6 +8,7 @@ Las capas completas pesan GB: se lee SOLO la ventana de la zona (recorte por ín
 """
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -15,6 +16,24 @@ import h5py
 import numpy as np
 
 GRID = "/science/LSAR/GCOV/grids/{freq}"
+
+
+def validate_sequence(paths: list[Path]) -> None:
+    """Compare one GCOV geometry and one processing configuration across distinct dates."""
+    geometries = set()
+    dates = set()
+    for path in paths:
+        parts = Path(path).name.split("_")
+        acquired = re.search(r"_(\d{8})T\d{6}_", Path(path).name)
+        if (len(parts) < 12 or parts[:2] != ["NISAR", "L2"]
+                or parts[3] != "GCOV" or not acquired):
+            raise ValueError("Se requiere el nombre original de un producto NISAR L2 GCOV.")
+        geometries.add(tuple(parts[5:11]))
+        dates.add(acquired.group(1))
+    if len(geometries) != 1:
+        raise ValueError("Usa gránulos con la misma trayectoria, dirección, marco y polarizaciones.")
+    if len(dates) != len(paths):
+        raise ValueError("Cada observación debe corresponder a una fecha de adquisición distinta.")
 
 
 @dataclass
