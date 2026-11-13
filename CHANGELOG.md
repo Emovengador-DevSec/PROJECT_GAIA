@@ -4,6 +4,8 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- W6: órbita NISAR propagada con satellite.js autorizado, elementos públicos de CelesTrak fechados, modelo 3D, traza y franja lateral aproximada; la pasada de Ayacucho indica acceso geométrico, sin prometer adquisición.
+
 - W4: el clic vuela al lugar con vista oblicua y recorrido orbital interrumpible con Esc o arrastre; en teléfono el mapa abre con el panel cerrado para conservar espacio.
 
 - W5: secuencia de 30 días con histograma y reproducción de un día por segundo; FIRMS público amplía su cobertura a siete días y los marcadores respetan cada hora observada sin reconstruir la escena.

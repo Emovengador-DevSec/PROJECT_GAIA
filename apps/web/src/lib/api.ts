@@ -1,4 +1,8 @@
 const BASE = import.meta.env.VITE_API_BASE ?? "/api";
+import type { OMMJsonObject } from "satellite.js";
+
+export type OrbitData = { status: string; source_url: string; message: string;
+  fetched_at?: string; elements?: OMMJsonObject };
 
 export type AOI = {
   id: string; name: string; role: "flagship" | "support" | "optional";
@@ -83,6 +87,7 @@ async function get<T>(path: string): Promise<T> {
 }
 
 export const api = {
+  orbit: () => get<OrbitData>("/orbit"),
   aois: () => get<AOI[]>("/aois"),
   health: () => get<Health>("/health"),
   catalog: (aoi: string, product = aoi === "sabancaya" ? "GUNW" : "GCOV") =>

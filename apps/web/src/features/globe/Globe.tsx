@@ -2,10 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { useReducedMotion } from "../../lib/useMotionPreference";
 import * as Cesium from "cesium";
 import "cesium/Build/Cesium/Widgets/widgets.css";
-import type { AOI, AlertFeature, CameraMode, GlobeStatus } from "../../lib/api";
+import type { AOI, AlertFeature, CameraMode, GlobeStatus, OrbitData } from "../../lib/api";
 import { loadAyacuchoTerrain } from "./localTerrain";
 import { observationMetric } from "../workspace/AlertFeed";
 import { formatDate } from "../../lib/formatDate";
+import { addNisarOrbit } from "./nisarOrbit";
 
 type Props = {
   aoi?: AOI; tileUrl?: string; beforeUrl?: string; afterUrl?: string; split: number;
@@ -14,6 +15,7 @@ type Props = {
   fireCells: AlertFeature[];
   active: boolean;
   cutoff?: number;
+  orbitData?: OrbitData; orbitVisible: boolean; satelliteFocus: number;
   offline?: boolean;
   onSelect: (alert: AlertFeature) => void; onStatus: (status: GlobeStatus) => void;
 };
@@ -31,7 +33,7 @@ function marker(kind: string, color: string): string {
 }
 
 export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split, exaggeration, camera = "oblique",
-  alerts, fireCells, active, cutoff, selected, onSelect, onStatus, offline = false }: Props) {
+  alerts, fireCells, active, cutoff, orbitData, orbitVisible, satelliteFocus, selected, onSelect, onStatus, offline = false }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
   const viewer = useRef<Cesium.Viewer | null>(null);
@@ -43,6 +45,7 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
   const updateVisibility = useRef<() => void>(() => undefined);
   const orbit = useRef<{ target: Cesium.Cartesian3; heading: number; pitch: number; range: number } | undefined>(undefined);
   const [orbiting, setOrbiting] = useState(false);
+  const satellite = useRef<ReturnType<typeof addNisarOrbit> | undefined>(undefined);
   const stopOrbit = () => {
     const v = viewer.current;
     if (!v) return;
@@ -251,6 +254,22 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
   }, [offline]);
 
   useEffect(() => { if (viewer.current) viewer.current.scene.verticalExaggeration = exaggeration; }, [exaggeration, offline]);
+  useEffect(() => {
+    const v = viewer.current;
+    if (!v || !active) return;
+    v.clock.clockStep = Cesium.ClockStep.SYSTEM_CLOCK;
+    v.clock.shouldAnimate = !reduceMotion;
+  }, [active, reduceMotion, offline]);
+  useEffect(() => {
+    const v = viewer.current;
+    if (!v || !active || !orbitVisible || !orbitData?.elements) return;
+    const control = addNisarOrbit(v, orbitData.elements, reduceMotion);
+    satellite.current = control;
+    return () => { control.dispose(); satellite.current = undefined; };
+  }, [active, orbitData, orbitVisible, reduceMotion, offline]);
+  useEffect(() => {
+    if (satelliteFocus) { stopOrbit(); satellite.current?.focus(); }
+  }, [satelliteFocus]);
 
   useEffect(() => {
     const v = viewer.current;

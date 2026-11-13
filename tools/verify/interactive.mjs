@@ -16,6 +16,9 @@ try {
     const page = await browser.newPage();
     const errors = [];
     page.on("pageerror", error => { errors.push(error.message); console.log(error.stack); });
+    page.on("console", message => {
+      if (message.type() === "error" && /model|nisar|draco/i.test(message.text())) console.log(message.text());
+    });
     await page.setViewport({ width, height });
     await page.emulateMediaFeatures([{ name: "prefers-reduced-motion", value: "reduce" }]);
     await page.goto("http://127.0.0.1:5173/", { waitUntil: "domcontentloaded" });
@@ -68,8 +71,6 @@ try {
     }
     if (moment === "W4") {
       await page.locator('.featured-observation[data-kind="quake"]').click();
-      await new Promise(resolve => setTimeout(resolve, 3500));
-      await page.screenshot({ path: path.join(output, `debug-${width}.jpg`), type: "jpeg", quality: 80 });
       await page.waitForSelector(".camera-tour");
       await page.keyboard.press("Escape");
       await page.waitForFunction(() => !document.querySelector(".camera-tour"));
@@ -78,7 +79,18 @@ try {
       await page.waitForSelector(".camera-tour");
       console.log(JSON.stringify({ moment, width, immersion: "quake and fire", escapeStopsOrbit: true }));
     }
-    const layout = await page.$eval(".inspector", element => {
+    if (moment === "W6") {
+      await page.waitForSelector(".orbit-dot[data-active]");
+      if (width < 720) {
+        await page.locator('[aria-label="Cerrar panel y explorar el mapa"]').click();
+        await page.locator(".orbit-card > summary").click();
+      }
+      await page.locator(".orbit-actions button:last-child").click();
+      if (width < 720) await page.locator(".orbit-card > summary").click();
+      await new Promise(resolve => setTimeout(resolve, 3400));
+      console.log(JSON.stringify({ moment, width, orbitSource: await page.$eval(".orbit-card a", element => element.textContent) }));
+    }
+    const layout = await page.$eval(width < 720 && moment === "W6" ? ".panel-reopen" : ".inspector", element => {
       const rect = element.getBoundingClientRect();
       return { left: rect.left, right: rect.right, scroll: element.scrollWidth, width: element.clientWidth };
     });

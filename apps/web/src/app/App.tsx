@@ -5,8 +5,9 @@ import { Inspector } from "../features/panels/Inspector";
 import { SectionIcon } from "../features/workspace/SectionIcon";
 import { LiveSummary } from "../features/workspace/LiveSummary";
 import { EventTimeline } from "../features/workspace/EventTimeline";
+import { OrbitCard } from "../features/workspace/OrbitCard";
 import { api, type AOI, type AlertFeature, type AlertKind, type Audience, type Catalog,
-  type ContextLayer, type FeedStatus, type GlobeStatus, type Health, type LayerManifest, type PolarizationSummary, type Rainfall, type Story, type TimeSeries, type Trend, type Validation } from "../lib/api";
+  type ContextLayer, type FeedStatus, type GlobeStatus, type Health, type LayerManifest, type OrbitData, type PolarizationSummary, type Rainfall, type Story, type TimeSeries, type Trend, type Validation } from "../lib/api";
 import { TABS, type TabId } from "../config/tabs";
 import "../features/workspace/workspace.css";
 
@@ -52,12 +53,26 @@ export function App() {
   const [searchMessage, setSearchMessage] = useState("");
   const [ready, setReady] = useState(false);
   const [cutoff, setCutoff] = useState<number>();
+  const [orbitData, setOrbitData] = useState<OrbitData>();
+  const [orbitVisible, setOrbitVisible] = useState(true);
+  const [satelliteFocus, setSatelliteFocus] = useState(0);
   const [warm, setWarm] = useState(false);
   const [entered, setEntered] = useState(false);
   const requestId = useRef(0);
   const onIntroDone = useCallback(() => setReady(true), []);
   const onCoverReady = useCallback(() => setWarm(true), []);
   const onEnter = useCallback(() => { setWarm(true); setEntered(true); }, []);
+  const refreshOrbit = useCallback(() => {
+    api.orbit().then(setOrbitData).catch(() => setOrbitData({ status: "unavailable", source_url: "https://celestrak.org/",
+      message: "No se pudieron consultar los elementos orbitales. Reintenta con conexión." }));
+  }, []);
+
+  useEffect(() => {
+    if (!entered) return;
+    refreshOrbit();
+    const interval = window.setInterval(refreshOrbit, 3_600_000);
+    return () => clearInterval(interval);
+  }, [entered, refreshOrbit]);
 
   useEffect(() => {
     let active = true;
@@ -219,6 +234,7 @@ export function App() {
           ? { url: api.contextImage(current.id, activeContext), credit: activeContext.source,
             beforeUrl: preview ? api.contextImage(current.id, preview, preview.before) : undefined } : undefined}
         split={split} alerts={filteredAlerts} fireCells={visibleFireCells} cutoff={cutoff}
+        orbitData={orbitData} orbitVisible={orbitVisible && cutoff == null} satelliteFocus={satelliteFocus}
         selected={selected} onSelect={pickAlert} onStatus={setMapStatus} />
     </Suspense>}
     {entered ? <FringeIntro onDone={onIntroDone} /> : <GaiaCover onEnter={onEnter} onReady={onCoverReady} />}
@@ -254,6 +270,8 @@ export function App() {
         {!current && !alertsLoading && <LiveSummary alerts={cutoff == null ? alerts : timelineAlerts} onKind={kind => {
           setAlertKind(kind); setSelected(undefined); chooseTab("alerts");
         }} />}
+        {!selected && <OrbitCard data={orbitData} visible={orbitVisible} historical={cutoff != null}
+          onToggle={() => setOrbitVisible(value => !value)} onFocus={() => { setCurrent(undefined); setSatelliteFocus(value => value + 1); }} onRefresh={refreshOrbit} />}
       </div>
 
       <nav className="rail" aria-label="Secciones">

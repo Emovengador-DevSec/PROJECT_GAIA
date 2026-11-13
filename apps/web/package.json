@@ -17,7 +17,8 @@
     "cesium": "^1.135.0",
     "framer-motion": "^12.0.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "satellite.js": "^6.0.2"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",

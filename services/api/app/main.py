@@ -280,6 +280,13 @@ def live_fires():
     return live.collection("fires")
 
 
+@app.get("/api/orbit")
+def nisar_orbit():
+    from .orbit import elements
+
+    return elements()
+
+
 AOI_PATTERN = r"^[a-z0-9-]+$"
 
 

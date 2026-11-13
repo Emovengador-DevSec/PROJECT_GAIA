@@ -4,6 +4,19 @@ Cada entrada con fecha, archivo de origen y comando usado. Solo rutas vistas en 
 
 ## Fuentes públicas verificadas el 13 de noviembre de 2026
 
+- CelesTrak devolvió NISAR, NORAD 65053, con época `2026-11-13T17:08:21.411744` UTC.
+  La propagación SGP4 con satellite.js 6.0.2 produjo alturas de 754–758 km en las
+  comprobaciones y un desplazamiento superficial de unos 405–407 km en 60 segundos.
+  El primer acceso geométrico calculado al centro de Ayacucho cae el 15 de noviembre
+  de 2026 a las 10:42 UTC. No confirma una adquisición programada.
+  La franja de 240 km usa una aproximación esférica y apuntamiento a la izquierda.
+  El contraste con las trayectorias ASF 54, 75 y 147 usa el ciclo nominal de 12 días
+  y no asigna una trayectoria oficial a los elementos GP. El ensayo repetido sitúa
+  sus centros a unos 46, 134 y 94 km del centro del área de estudio. Son aproximaciones,
+  no efemérides precisas. La órbita se oculta al reproducir fechas históricas.
+  [Elementos públicos CelesTrak](https://celestrak.org/NORAD/elements/gp.php?NAME=NISAR&FORMAT=json)
+  · [Geometría oficial NISAR](https://science.nasa.gov/mission/nisar/mission-overview/)
+
 - Se amplió el archivo público de FIRMS a `J1_VIIRS_C2_South_America_7d.csv`.
   La consulta devolvió 1 143 detecciones dentro de Perú. La secuencia muestra 30 días
   de USGS y siete de FIRMS, indicando ambas coberturas. Un intervalo sin archivo FIRMS
