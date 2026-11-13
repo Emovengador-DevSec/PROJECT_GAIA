@@ -8,6 +8,7 @@ const paths: Record<TabId, string> = {
   series: "M4 4v16h16M7 15l4-5 4 3 5-8",
   quality: "m12 3 8 4v5c0 5-8 9-8 9s-8-4-8-9V7l8-4Zm-4 9 3 3 5-6",
   terrain: "m2 20 7-15 5 9 3-5 5 11H2Zm5-11 2 3 2-3",
+  resources: "M7 3h8l4 4v14H5V3h2Zm7 0v5h5M8 12h8m-8 4h6",
 };
 
 export function SectionIcon({ id }: { id: TabId }) {

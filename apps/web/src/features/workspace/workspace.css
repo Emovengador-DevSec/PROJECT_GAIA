@@ -156,15 +156,32 @@
 .series-table table { width: 100%; border-collapse: collapse; color: #bdcbd8; font-size: 12px; }
 .series-table th, .series-table td { text-align: right; padding: 10px 6px; border-bottom: 1px solid #2c3945; font-weight: 400; }
 .series-table th:first-child { text-align: left; }
-.challenge-resources { margin-top: 28px; padding-top: 24px; border-top: 1px solid #33414c; }
-.resource-group { padding-block: 14px; border-bottom: 1px solid #2a3945; }
-.resource-group > summary { cursor: pointer; color: #e5f1f8; font-size: 15px; }
+.resource-links { list-style: none; padding: 0; margin: 0 0 12px; }
+.learn-more .resource-links { display: grid; gap: 10px; margin-top: 12px; }
+.radar-glossary { display: grid; gap: 2px; margin-block: 14px; }
+.radar-glossary details { border-bottom: 1px solid #2a3945; padding-block: 5px; }
+.radar-glossary summary { min-height: 34px; padding-block: 6px; color: #d6e7f1; font-size: 14px; cursor: pointer; }
+.radar-glossary summary > span { display: inline-grid; place-items: center; width: 19px; height: 19px; border: 1px solid #688794; border-radius: 50%; margin-inline: 2px 4px; color: #a4e6ef; }
+.radar-glossary details > p { color: #bdcfdb; font-size: 14px; margin: 5px 0; }
+.radar-glossary .source-link { margin: 0 0 8px; }
+.context-layers, .alert-application { border-block-start: 1px solid #30414d; padding-block: 18px 6px; margin-block: 16px; }
+.context-layers small { display: block; color: #a6bdcc; margin-block-start: 3px; }
+.context-layers .source-link { display: block; width: fit-content; }
+.map-context .map-context-source { color: #c5f1f2; }
+.badge-provisional a { color: inherit; text-underline-offset: 3px; }
+.resource-group { border-bottom: 1px solid #2a3945; }
+.resource-group > summary { min-height: 44px; padding-block: 12px; cursor: pointer; color: #e5f1f8; font-size: 15px; font-weight: 650; }
 .resource-group > summary > span { float: right; margin-left: 8px; color: #94aabb; font-size: 13px; }
-.resource-group ul { list-style: none; padding: 0; margin: 20px 0 0; }
-.resource-group li { margin-top: 20px; }
-.resource-group li > a { color: #a4e6ef; font-size: 14px; text-underline-offset: 3px; }
-.resource-group li > small { display: block; margin-top: 5px; color: #99b0c2; font-size: 11px; }
-.resource-group li > p { margin-top: 7px; color: #acbfce; font-size: 13px; }
+.resource-group ul { list-style: none; padding: 0; margin: 0; }
+.resource-group li { padding-block: 12px; border-top: 1px solid #27333e; }
+.resource-group li > a, .resource-links a { color: #a4e6ef; font-size: 14px; text-underline-offset: 3px; }
+.resource-group li > small { display: block; margin-top: 4px; color: #99b0c2; font-size: 12px; }
+.resource-group li > p { margin: 5px 0 0; color: #cfdae3; font-size: 13px; }
+.resource-notes { margin-top: 6px; font-size: 13px; }
+.resource-notes > summary { min-height: 36px; padding-block: 8px; color: #bfdae4; cursor: pointer; }
+.resource-notes dl { margin: 4px 0 2px; }
+.resource-notes dt { color: #e3eef5; font-weight: 600; }
+.resource-notes dd { margin: 2px 0 10px; color: #bdd0df; line-height: 1.45; }
 .panel-reopen { position: absolute; right: 24px; top: 96px; z-index: 2; display: flex; align-items: center; gap: 10px; padding: 12px 18px; min-height: 46px; border: 1px solid #445460; border-radius: 8px; background: rgb(8 16 23 / 94%); color: #e5f4f9; font-size: 14px; }
 .map-legend { position: absolute; bottom: 115px; left: 26px; display: grid; gap: 8px; font-size: 11px; text-shadow: 0 2px 6px #000; color: #d2e1ec; }
 .map-legend > span { display: flex; align-items: center; gap: 8px; }
@@ -211,6 +228,8 @@
   .map-legend { display: none; }
   .comparison-control { left: 18px; right: 18px; bottom: calc(151px + 48svh); padding: 10px 13px; }
   .comparison-control > div { font-size: 11px; gap: 12px; }
+  .shell[data-comparison]:not([data-panel-open]) .comparison-control { bottom: calc(94px + env(safe-area-inset-bottom)); }
+  .shell[data-comparison] .panel-reopen { display: none; }
   .detail-actions { flex-wrap: wrap; }
   .detail-actions > * { flex: 1; }
   .shell[data-workspace] .cesium-viewer-bottom { bottom: calc(79px + env(safe-area-inset-bottom)) !important; }

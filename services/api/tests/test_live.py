@@ -16,13 +16,22 @@ def isolated_cache(tmp_path, monkeypatch):
     monkeypatch.delenv("FIRMS_MAP_KEY", raising=False)
 
 
-def test_missing_firms_key_is_explicit():
+def test_without_key_firms_uses_public_archive(monkeypatch):
+    calls = []
+
+    def no_detections(url):
+        calls.append(url)
+        return b"latitude,longitude,acq_date,acq_time,confidence,frp\n"
+
+    monkeypatch.delenv("SARLAB_OFFLINE", raising=False)
+    monkeypatch.setattr(live, "_download", no_detections)
     response = TestClient(app).get("/api/live/fires")
     assert response.status_code == 200
     payload = response.json()
     assert payload["features"] == []
-    assert payload["last_updated"] is None
-    assert "FIRMS_MAP_KEY" in payload["message"]
+    assert payload["last_updated"]
+    assert "24 h" in payload["message"]
+    assert calls == [live.PUBLIC_FIRMS]
 
 
 def test_cache_rejects_naive_and_future_dates(tmp_path):

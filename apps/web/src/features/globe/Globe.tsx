@@ -6,6 +6,7 @@ import { loadAyacuchoTerrain } from "./localTerrain";
 
 type Props = {
   aoi?: AOI; tileUrl?: string; beforeUrl?: string; afterUrl?: string; split: number;
+  contextOverlay?: { url: string; credit: string; beforeUrl?: string };
   exaggeration: number; camera?: CameraMode; alerts: AlertFeature[]; selected?: AlertFeature;
   offline?: boolean;
   onSelect: (alert: AlertFeature) => void; onStatus: (status: GlobeStatus) => void;
@@ -23,7 +24,7 @@ function marker(kind: string, color: string): string {
   return "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><g fill="${color}" stroke="${color}" stroke-width="1">${shapes[kind] ?? shapes.surface_change}</g></svg>`);
 }
 
-export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, split, exaggeration, camera = "oblique",
+export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split, exaggeration, camera = "oblique",
   alerts, selected, onSelect, onStatus, offline = false }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const viewer = useRef<Cesium.Viewer | null>(null);
@@ -211,6 +212,34 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, split, exaggeration, 
     return () => { if (!v.isDestroyed()) for (const layer of overlays) v.imageryLayers.remove(layer); };
   }, [tileUrl, beforeUrl, afterUrl, aoi, offline]);
   useEffect(() => { if (viewer.current) viewer.current.scene.splitPosition = split / 100; }, [split, offline]);
+
+  const contextUrl = contextOverlay?.url;
+  const contextBefore = contextOverlay?.beforeUrl;
+  const contextCredit = contextOverlay?.credit;
+  useEffect(() => {
+    const v = viewer.current;
+    if (!v || !contextUrl || !aoi) return;
+    let cancelled = false;
+    const overlays: Cesium.ImageryLayer[] = [];
+    const rectangle = Cesium.Rectangle.fromDegrees(...aoi.bbox);
+    const urls = contextBefore ? [contextBefore, contextUrl] : [contextUrl];
+    Promise.all(urls.map(url => Cesium.SingleTileImageryProvider.fromUrl(url, {
+      credit: contextCredit,
+      rectangle,
+    }))).then(providers => {
+      if (cancelled || v.isDestroyed()) return;
+      for (const [index, provider] of providers.entries()) {
+        const overlay = v.imageryLayers.addImageryProvider(provider);
+        overlay.alpha = contextBefore ? .95 : .8;
+        if (contextBefore) overlay.splitDirection = index ? Cesium.SplitDirection.RIGHT : Cesium.SplitDirection.LEFT;
+        overlays.push(overlay);
+      }
+    }).catch(() => { /* The case panel retains the original source link. */ });
+    return () => {
+      cancelled = true;
+      if (!v.isDestroyed()) overlays.forEach(overlay => v.imageryLayers.remove(overlay));
+    };
+  }, [aoi, contextUrl, contextBefore, contextCredit, offline]);
 
   useEffect(() => {
     const v = viewer.current;

@@ -41,14 +41,15 @@ Lista leída de la pestaña «Resources» del reto el 13-nov-2026. Usar todos su
 | **NASA ARSET** (cursos en inglés y **español**) | Enlace «Aprende más» en español para docentes y autoridades; método citado en el modo técnico | F5 |
 | **NISAR StoryMaps** (inundaciones, incendios, subsidencia, derrames, glaciares) | Modelo de narrativa para el modo historia; enlace por tipo de alerta | F5 |
 | **NISAR Applications White Papers** | Cada tipo de alerta cita su hoja de beneficio social (incendios, deslizamientos, volcanes, agricultura): responde «¿qué aplicaciones futuras tiene NISAR?» | F3, F5 |
-| **UAVSAR Postcards** (compuestos en falso color) | **Estilo visual del radar en la app**: compuesto RGB con R = HH, G = HV, B = HH/HV. Da colores vivos con significado (vegetación verde, suelo desnudo y quemado magenta, agua negra) | F1, F4 |
+| **UAVSAR Postcards** (compuestos en falso color) | Compuesto RGB con R = HH, G = HV y B = HH/HV. La cortina conserva la misma escala entre fechas. Para identificar cobertura o atribuir cambios se requiere evidencia complementaria. | F1, F4 |
 
 ### Agencias socias
 
 | Recurso | Para qué lo usa GAIA | Fase |
 |---|---|---|
 | **CONAE · SAOCOM** (Argentina, catálogo y registro ONE CLICK) | **El plus sudamericano más fuerte:** SAOCOM también es **banda L**, como NISAR. Comparar NISAR con SAOCOM sobre la misma zona es una validación cruzada con un satélite de la región. Requiere registro previo y aprobación; empezar hoy | F3 (plus) |
-| **CSA · RADARSAT Constellation Mission** (banda C) | Comparar banda L (NISAR, atraviesa vegetación) con banda C (RCM, se queda en la copa): muestra por qué la longitud de onda importa | F5 (plus) |
+| **CONAE · [registro del catálogo SAOCOM](https://www.argentina.gob.ar/noticias/la-informacion-saocom-cada-vez-mas-accesible)** | Protocolo oficial para habilitar una cuenta ONE CLICK y consultar las condiciones de acceso | F3 (plus) |
+| **CSA · RADARSAT Constellation Mission** (banda C) | Comparar cómo responden la banda L de NISAR y la banda C de RCM a la vegetación y a la superficie en observaciones compatibles. | F5 (plus) |
 | **CSA · RADARSAT-1** (1995–2013) | Archivo histórico: «cómo era esta zona hace 20 años», si hay cobertura de Ayacucho o Sabancaya | F5 (plus, solo si hay cobertura) |
 | **CSA · tutorial de SAR en Python** | Referencia para el lector de RCM/RADARSAT y para la calibración | F3, F5 |
 
@@ -56,6 +57,15 @@ Reglas al usarlos: NISAR siempre etiquetado aparte; cada capa externa con su age
 
 ### Pantalla «Fuentes del reto»
 Agregar al panel lateral una sección **Fuentes** con los 14 recursos agrupados (Datos NISAR · Datos complementarios · Otras agencias · Aprende), cada uno con una frase de para qué lo usa GAIA y su estado: *en uso*, *validación* o *para aprender*. Demuestra al jurado que se usó el material oficial completo.
+
+Estado de implementación del 13 de noviembre. La pestaña Fuentes muestra los 14 enlaces
+oficiales y el detalle de su función, uso y fases. Historia integra el glosario, ARSET en
+español, documentos temáticos y capas reales de contexto. Ayacucho tiene cortina visual de
+mosaicos NISAR de junio y octubre. FIRMS usa el CSV público de 24 horas. Madre de Dios y
+Sabancaya tienen recortes históricos RADARSAT-1. OPERA e IMERG cuantitativos requieren sus
+archivos originales autenticados. SAOCOM requiere registro y cobertura compatible. Las
+pruebas de los análisis numéricos usan únicamente datos sintéticos en el directorio de
+pruebas. El cierre científico de F1 sigue pendiente de procesar los HDF5 autorizados.
 
 ## 3. La idea plus: «GAIA Alerta — el radar que avisa»
 

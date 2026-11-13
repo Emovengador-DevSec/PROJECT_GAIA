@@ -1,8 +1,10 @@
 import { motion, useReducedMotion } from "framer-motion";
-import type { AOI, AlertFeature, AlertKind, Audience, Catalog, FeedStatus, GlobeStatus, Health, LayerManifest, PolarizationSummary, Story, TimeSeries, Trend } from "../../lib/api";
+import type { AOI, AlertFeature, AlertKind, Audience, Catalog, ContextLayer, FeedStatus, GlobeStatus, Health, LayerManifest, PolarizationSummary, Rainfall, Story, TimeSeries, Trend, Validation } from "../../lib/api";
 import { TABS, type TabId } from "../../config/tabs";
-import { AlertDetails, formatDate } from "../workspace/AlertDetails";
-import { Resources } from "../workspace/Resources";
+import { formatDate } from "../../lib/formatDate";
+import { AlertDetails } from "../workspace/AlertDetails";
+import { ApplicationReference, LearnMore, Resources, nisarGuide, training, uavsarPostcards } from "../workspace/Resources";
+import { RadarGlossary, vertexGranule } from "../workspace/RadarGlossary";
 import { Sparkline } from "./Sparkline";
 
 type Props = {
@@ -16,7 +18,12 @@ type Props = {
   selected?: AlertFeature; onSelectAlert: (alert: AlertFeature) => void; onClearAlert: () => void; onRefresh: () => void;
   alertKind: AlertKind | "all"; setAlertKind: (value: AlertKind | "all") => void;
   alertLevel: string; setAlertLevel: (value: string) => void;
-  health?: Health; mapStatus: GlobeStatus; compare: boolean; setCompare: (value: boolean) => void; onClose: () => void;
+  health?: Health; mapStatus: GlobeStatus; compare: boolean; setCompare: (value: boolean) => void;
+  canUseFalseColor: boolean; falseColor: boolean; setFalseColor: (value: boolean) => void;
+  context: ContextLayer[]; activeContext?: ContextLayer; onContext: (id: string | null) => void; moistureCatalog?: Catalog;
+  validation?: Validation;
+  rainfall?: Rainfall;
+  onClose: () => void; onResources: () => void;
 };
 
 const PHENOMENA: Record<string, string> = {
@@ -28,29 +35,78 @@ function EmptyState({ title, children }: { title: string; children: React.ReactN
 }
 function CatalogSummary({ catalog }: { catalog?: Catalog }) {
   if (!catalog?.granules.length) return null;
-  return <div className="catalog-summary"><p><strong>{catalog.granules.length} observaciones en el catálogo de ASF</strong></p>
+  return <div className="catalog-summary"><p><strong>{catalog.granules.length} observaciones {catalog.product} en ASF</strong></p>
     <p>Disponibles para seleccionar y procesar. Una observación catalogada aún no equivale a una capa analizada.</p>
     <details><summary>Consultar fechas y trayectorias</summary><ul className="catalog-list">{catalog.granules.map(granule =>
       <li key={granule.name}><span>{granule.start?.slice(0, 10)}</span><small>Trayectoria {granule.track} · {granule.direction} · {granule.polarizations?.join(" / ")}</small>
-        <details><summary>Identificador y tamaño</summary><p className="granule-id">{granule.name}</p><p>{granule.size_mb === null ? "Tamaño sin informar" : `${(granule.size_mb / 1000).toFixed(2)} GB`}</p></details></li>)}</ul></details>
+        <details><summary>Identificador y tamaño</summary><p className="granule-id">{granule.name}</p><p>{granule.size_mb === null ? "Tamaño sin informar" : `${(granule.size_mb / 1000).toFixed(2)} GB`}</p>
+          <a className="source-link" href={vertexGranule(granule.name)} target="_blank" rel="noopener noreferrer">Consultar en Vertex ↗</a>
+        </details></li>)}</ul></details>
     {catalog.queried_at && <small>Consulta · {formatDate(catalog.queried_at)}</small>}
   </div>;
+}
+
+function ContextLayers({ items, active, onSelect, title = "Observaciones complementarias" }: {
+  items: ContextLayer[]; active?: ContextLayer; onSelect: (id: string | null) => void; title?: string;
+}) {
+  if (!items.length) return null;
+  return <section className="context-layers">
+    <h4>{title}</h4>
+    {items.map(item => <div key={item.id}>
+      <p><strong>{item.name}</strong><small>{item.product} · {item.source} · {item.before && `${item.before} → `}<time dateTime={item.date}>{item.date}</time></small></p>
+      <p className="muted">{item.note}</p>
+      {item.scene && <p className="muted">Escena · <span className="granule-id">{item.scene}</span></p>}
+      {item.scenes && <details className="technical-details"><summary>Gránulos ASF de estas fechas</summary>
+        <ul className="granule-list">{item.scenes.map(scene => <li key={scene}><a className="source-link granule-id"
+          href={vertexGranule(scene)} target="_blank" rel="noopener noreferrer">{scene} ↗</a></li>)}</ul>
+      </details>}
+      {item.license && <p className="muted">{item.license}</p>}
+      {item.available ? <button type="button" className="secondary-action" aria-pressed={active?.id === item.id}
+        onClick={() => onSelect(active?.id === item.id ? null : item.id)}>{active?.id === item.id ? "Quitar del globo" : item.before ? "Activar cortina visual" : "Mostrar en el globo"}</button>
+        : <p className="empty-inline">Imagen sin publicar para la fecha seleccionada. Consulta la fuente original.</p>}
+      <a className="source-link" href={item.href} target="_blank" rel="noopener noreferrer">Datos y metodología ↗</a>
+      {item.legend && <a className="source-link" href={item.legend} target="_blank" rel="noopener noreferrer">Leyenda de la capa ↗</a>}
+      {item.report && <a className="source-link" href={item.report} target="_blank" rel="noopener noreferrer">Informe de INDECI ↗</a>}
+    </div>)}
+  </section>;
+}
+
+function OperaValidation({ result }: { result?: Validation }) {
+  const number = (value: number) => new Intl.NumberFormat("es-PE", { maximumFractionDigits: 2 }).format(value);
+  return <details className="technical-details"><summary>Contraste cuantitativo con OPERA</summary>
+    {result ? <>
+      <p>{result.source} · <time dateTime={result.date}>{result.date}</time></p>
+      <dl className="quality-facts">
+        <div><dt>Cobertura común</dt><dd>{number(result.common_ha)} ha</dd></div>
+        <div><dt>Caída NISAR HV</dt><dd>{number(result.nisar_loss_ha)} ha</dd></div>
+        <div><dt>Perturbación OPERA</dt><dd>{number(result.opera_disturbance_ha)} ha</dd></div>
+        <div><dt>Intersección</dt><dd>{number(result.overlap_ha)} ha</dd></div>
+        <div><dt>Concordancia</dt><dd>{result.agreement_pct === null ? "Muestra insuficiente" : `${number(result.agreement_pct)} %`}</dd></div>
+      </dl>
+      <p className="muted">{result.note}</p><p className="granule-id">{result.granule}</p>
+      <a className="source-link" href={result.source_url} target="_blank" rel="noopener noreferrer">Consultar producto OPERA ↗</a>
+    </> : <p className="empty-inline">El porcentaje requiere la capa NISAR HV procesada y los rásteres originales de estado y fecha OPERA para el mismo intervalo.</p>}
+  </details>;
 }
 
 export function Inspector(p: Props) {
   const reduce = useReducedMotion();
   const { tab, layer, story } = p;
   const storyStep = story?.steps[p.step];
+  const previews = p.context.filter(item => item.kind === "nisar-preview");
+  const complementary = p.context.filter(item => item.kind !== "nisar-preview");
   const polarizations = [...new Set(p.layers.map(item => String(item.provenance.layer)))];
-  const title = TABS.find(item => item.id === tab)?.label;
+  const title = tab === "resources" ? "Fuentes del reto" : TABS.find(item => item.id === tab)?.label;
   return <motion.aside className="inspector" aria-label={title} initial={reduce ? false : { opacity: 0, y: 8 }}
     animate={{ opacity: 1, y: 0 }} transition={{ duration: .2, ease: "easeOut" }}>
-    <div className="inspector-heading"><h2>{title}</h2><button type="button" className="icon-button" onClick={p.onClose} aria-label="Cerrar panel y explorar el mapa">
+    <div className="inspector-heading"><h2 id={tab === "resources" ? "challenge-resources-title" : undefined}>{title}</h2><button type="button" className="icon-button" onClick={p.onClose} aria-label="Cerrar panel y explorar el mapa">
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
     </button></div>
-    <div className="inspector-content">
-      {p.error && <p className="status-message" role="alert">{p.error}</p>}
-      {p.contextLoading && tab !== "alerts" && tab !== "cases" && <p className="loading-state" role="status">Consultando las observaciones del lugar…</p>}
+    <div className="inspector-content" key={tab}>
+      {p.error && tab !== "resources" && <p className="status-message" role="alert">{p.error}</p>}
+      {p.contextLoading && tab !== "alerts" && tab !== "cases" && tab !== "resources" && <p className="loading-state" role="status">Consultando las observaciones del lugar…</p>}
+
+      {tab === "resources" && <Resources sources={p.sources} health={p.health} />}
 
       {tab === "cases" && <>
         <p className="panel-introduction">Cuatro territorios, distintas huellas. Elige un caso para situar las observaciones sobre el mapa.</p>
@@ -63,7 +119,7 @@ export function Inspector(p: Props) {
       </>}
 
       {tab === "alerts" && <>
-        {p.selected ? <AlertDetails feature={p.selected} onBack={p.onClearAlert} /> : <>
+        {p.selected ? <AlertDetails feature={p.selected} onBack={p.onClearAlert} onResources={p.onResources} /> : <>
           <div className="panel-subheading"><p>Observaciones con fuente y fecha</p><button type="button" className="text-button" disabled={p.alertsLoading} onClick={p.onRefresh}>{p.alertsLoading ? "Actualizando…" : "Actualizar"}</button></div>
           <div className="alert-filters">
             <label>Observación<select value={p.alertKind} onChange={event => p.setAlertKind(event.target.value as AlertKind | "all")}>
@@ -113,9 +169,25 @@ export function Inspector(p: Props) {
           <div className="story-actions"><button type="button" className="secondary-action" disabled={p.step === 0} onClick={() => p.setStep(p.step - 1)}>Anterior</button><button type="button" className="primary-action" disabled={p.step === story.steps.length - 1} onClick={() => p.setStep(p.step + 1)}>Siguiente</button></div>
         </section>
         <details className="technical-details"><summary>Hipótesis y evidencia</summary>{story.hypotheses.map(hypothesis => <div className="hypothesis" key={hypothesis.id}><p>{hypothesis.text}</p><small>{hypothesis.status === "por_verificar" ? "Por verificar con datos" : hypothesis.status}</small><p className="muted">{hypothesis.test}</p></div>)}</details>
-        <details className="technical-details"><summary>Por qué lo ve el radar</summary><p>{story.physics}</p><p>{story.human_factors}</p></details>
-        <details className="technical-details"><summary>Aplicaciones futuras</summary><p>{story.future}</p></details>
-        <a className="source-link" href="https://science.nasa.gov/mission/nisar/get-to-know-sar/" target="_blank" rel="noopener noreferrer">Aprende cómo funciona el radar · NASA ↗</a>
+        <details className="technical-details"><summary>Por qué lo ve el radar</summary><p>{story.physics}</p><p>{story.human_factors}</p>
+          <RadarGlossary /></details>
+        <details className="technical-details"><summary>Aplicaciones futuras</summary><p>{story.future}</p>
+          <ApplicationReference aoi={p.current?.id} />
+        </details>
+        {p.audience === "tecnico" && <a className="source-link" href={training.href} target="_blank" rel="noopener noreferrer">Fundamentos del método · NASA ARSET en español ↗</a>}
+        <ContextLayers items={previews} active={p.activeContext} onSelect={p.onContext} title="Vista visual NISAR" />
+        <ContextLayers items={complementary} active={p.activeContext} onSelect={p.onContext} />
+        {p.current?.id === "chosica-rimac" && <details className="technical-details">
+          <summary>Lluvia acumulada de tres días</summary>
+          {p.rainfall ? <>
+            <p>{p.rainfall.dates[0]} → {p.rainfall.dates.at(-1)}</p>
+            <p>{p.rainfall.mean_mm === null ? "Sin píxeles válidos en los tres días" : `${p.rainfall.mean_mm.toFixed(1)} mm de media en el área de estudio`}</p>
+            <p className="muted">Cobertura común · {p.rainfall.valid_area_pct.toFixed(1)} %</p>
+            <p className="muted">{p.rainfall.note}</p>
+            <ul className="granule-list">{p.rainfall.granules.map(granule => <li key={granule}>{granule}</li>)}</ul>
+          </> : <p className="empty-inline">Para calcular el acumulado se necesitan los tres productos diarios IMERG originales del 22 al 24 de febrero de 2026. El acceso exige una cuenta Earthdata.</p>}
+        </details>}
+        <LearnMore aoi={p.current} date={p.activeContext?.date ?? layer?.dates.b} onResources={p.onResources} />
       </>)}
 
       {tab === "changes" && <>
@@ -123,23 +195,35 @@ export function Inspector(p: Props) {
           <p className="current-place">{p.current.name}</p>
           {!p.layers.length && !p.contextLoading && <EmptyState title="Comparación pendiente de procesar">Se necesitan dos observaciones reales de la misma trayectoria y dirección para mostrar el cambio.</EmptyState>}
           <CatalogSummary catalog={p.catalog} />
+          <ContextLayers items={previews} active={p.activeContext} onSelect={p.onContext} title="Vista visual NISAR" />
           {!!p.layers.length && <>
             <label className="field-label" htmlFor="pol">Polarización<select id="pol" value={p.pol} onChange={event => p.setPol(event.target.value)}>
               {polarizations.map(value => <option key={value} value={value}>{value === "HVHV" ? "HV · vegetación" : value === "HHHH" ? "HH · superficie y agua" : value}</option>)}
             </select></label>
             {layer && <><h3>{layer.title}</h3><p className="date-comparison"><time>{layer.dates.a}</time><span aria-hidden="true">→</span><time>{layer.dates.b}</time></p>
-              <div className="data-legend"><span>{layer.range.min?.toFixed(1) ?? "—"} {layer.unit}</span><div className="color-scale" /><span>{layer.range.max?.toFixed(1) ?? "—"} {layer.unit}</span></div>
+              {!p.compare && <div className="data-legend"><span>{layer.range.min?.toFixed(1) ?? "—"} {layer.unit}</span><div className="color-scale" /><span>{layer.range.max?.toFixed(1) ?? "—"} {layer.unit}</span></div>}
               <p className="muted">Área válida · {layer.quality.valid_area_pct.toFixed(1)} %</p>
+              {layer.kind === "backscatter_diff_db" && <RadarGlossary terms={["hh", "hv", "retrodispersion"]} />}
               {p.polarizationSummary?.strongest && p.polarizationSummary.HHHH && p.polarizationSummary.HVHV &&
                 <p className="muted">Mayor área con caída de señal en {p.polarizationSummary.strongest.slice(0, 2)}.
                   HH · {p.polarizationSummary.HHHH.loss_area_ha} ha. HV · {p.polarizationSummary.HVHV.loss_area_ha} ha.</p>}
               <label className="comparison-toggle"><input type="checkbox" checked={p.compare} disabled={!layer.comparison || !p.health?.tiles} onChange={event => p.setCompare(event.target.checked)} /><span>Comparar antes y después</span></label>
-              {p.compare && <p className="muted">Arrastra la cortina del mapa o utiliza las flechas del teclado para recorrer ambas fechas.</p>}
+              {p.compare && <>
+                <p className="muted">Arrastra la cortina del mapa o utiliza las flechas del teclado para recorrer ambas fechas.</p>
+                {layer.kind === "backscatter_diff_db" && <label className="comparison-toggle">
+                  <input type="checkbox" checked={p.falseColor} disabled={!p.canUseFalseColor || !p.health?.tiles}
+                    onChange={event => p.setFalseColor(event.target.checked)} /><span>Falso color HH/HV</span>
+                </label>}
+                {p.falseColor && <p className="muted">Rojo: HH. Verde: HV. Azul: relación HH/HV. Ambas fechas usan la misma escala en dB. Los colores describen la señal radar.</p>}
+                {layer.kind === "backscatter_diff_db" && !p.canUseFalseColor && <p className="muted">Para el falso color se necesitan HH y HV de los mismos dos gránulos.</p>}
+                {p.falseColor && <a className="source-link" href={uavsarPostcards} target="_blank" rel="noopener noreferrer">Ejemplos de falso color · NASA/JPL ↗</a>}
+              </>}
               {!layer.comparison && <p className="muted">Esta capa conserva el cambio calculado. La cortina estará disponible al publicar también las dos observaciones de origen.</p>}
               {p.health && !p.health.tiles && <p className="status-message">El servidor de teselas aún no está disponible. Actívalo para ver estas capas sobre el terreno.</p>}
               {layer.quality.provisional && <p className="badge-provisional">NISAR provisional · interpretación pendiente de contraste.</p>}
             </>}
           </>}
+          {p.current.id === "ayacucho-huanta" && <OperaValidation result={p.validation} />}
         </>}
       </>}
 
@@ -158,10 +242,15 @@ export function Inspector(p: Props) {
           <p className="date-comparison"><span>{layer.dates.a}</span><span>→</span><span>{layer.dates.b}</span></p>
           <dl className="quality-facts"><div><dt>Unidad</dt><dd>{layer.unit}</dd></div><div><dt>Área válida</dt><dd>{layer.quality.valid_area_pct.toFixed(1)} %</dd></div><div><dt>Polarización</dt><dd>{String(layer.provenance.layer ?? "Sin informar")}</dd></div><div><dt>Umbral de cambio</dt><dd>{typeof layer.provenance.threshold_db === "number" ? `${layer.provenance.threshold_db.toFixed(2)} dB` : "Sin informar"}</dd></div></dl>
           <p className="muted">Método · {String(layer.provenance.method ?? "Sin informar")}</p>
-          {layer.quality.provisional && <p className="badge-provisional">Producto provisional. Las mediciones pueden revisarse durante la calibración.</p>}
-          <details className="technical-details"><summary>Gránulos de origen</summary><ul className="granule-list">{layer.provenance.granules.map(granule => <li key={granule}>{granule}</li>)}</ul></details>
+          {layer.quality.provisional && <p className="badge-provisional">Producto provisional. Las mediciones pueden revisarse.
+            {" "}<a href={`${nisarGuide}products-overview/#nisar-maturity-levels`} target="_blank" rel="noopener noreferrer">Niveles de madurez de ASF ↗</a></p>}
+          <details className="technical-details"><summary>Gránulos de origen</summary><ul className="granule-list">{layer.provenance.granules.map(granule =>
+            <li key={granule}><span>{granule}</span><br /><a className="source-link" href={vertexGranule(granule)} target="_blank" rel="noopener noreferrer">Consultar en Vertex ↗</a></li>)}</ul></details>
         </> : <><EmptyState title="Procedencia sin capa seleccionada">Selecciona una capa NISAR procesada para consultar sus fechas, gránulos y calidad.</EmptyState><CatalogSummary catalog={p.catalog} /></>}
-        <Resources />
+        <RadarGlossary terms={["provisional", "gcov", "gunw", "sme2"]} />
+        {p.moistureCatalog && <CatalogSummary catalog={p.moistureCatalog} />}
+        <a className="source-link" href={nisarGuide} target="_blank" rel="noopener noreferrer">Consultar la guía de datos NISAR ↗</a>
+        <button type="button" className="text-button" onClick={p.onResources}>Ver fuentes del reto</button>
       </>}
 
       {tab === "terrain" && <>

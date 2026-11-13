@@ -15,5 +15,10 @@ sources:
     status_note: Productos PROVISIONAL (calibrados) y BETA (precalibración). Confirma cobertura con `sarlab search`.
   opera:     { label: OPERA (NASA/JPL), kind: complementary, provider: Earthdata, requires: [EARTHDATA_TOKEN] }
   sentinel1: { label: Sentinel-1 (ESA), kind: complementary, provider: ASF DAAC, requires: [EARTHDATA_TOKEN] }
-  firms:     { label: NASA FIRMS, kind: complementary, provider: NASA, requires: [FIRMS_MAP_KEY] }
+  firms:
+    label: NASA FIRMS
+    kind: complementary
+    provider: NASA
+    requires: []
+    status_note: CSV público NOAA-20 de 24 horas. FIRMS_MAP_KEY amplía la consulta a siete días.
   usgs:      { label: Catálogo sísmico USGS, kind: complementary, provider: USGS, requires: [] }

@@ -110,6 +110,40 @@ def test_change_multi_compares_polarizations(data_dirs, tmp_path, monkeypatch):
     assert r["summary"]["strongest"] in {"HHHH", "HVHV"}
 
 
+def test_false_color_tiles_keep_granules_and_masks_aligned(data_dirs, tmp_path, monkeypatch):
+    from fastapi import HTTPException
+    from rasterio.io import MemoryFile
+
+    from app import main
+    from sarlab_pipeline import settings, workflows
+    from sarlab_pipeline.processing.false_color import backscatter_rgb
+
+    rgb, mask = backscatter_rgb(np.array([[-15.0, np.nan]]), np.array([[-20.0, -20.0]]))
+    assert rgb[:, 0, 0].tolist() == [128, 128, 85]
+    assert mask.tolist() == [[255, 0]]
+
+    _aoi_patch(monkeypatch, workflows)
+    monkeypatch.setattr(main, "PROCESSED", settings.PROCESSED)
+    a = make_synthetic_gcov(tmp_path / NAME.format(d="20251122"), seed=1)
+    b = make_synthetic_gcov(tmp_path / NAME.format(d="20260310"), seed=2, clearing=True)
+    workflows.change_multi("test", a, b)
+    manifest = next(item for item in main.layers("test") if item["provenance"]["layer"] == "HHHH")
+    for stage in ("before", "after"):
+        png = main.tile(manifest["id"], stage, 10, 312, 548, palette="rgb")
+        with MemoryFile(png.body) as file, file.open() as image:
+            assert image.count == 4
+            alpha = image.read(4)
+            assert alpha.max() == 255 and alpha.min() == 0
+
+    other_path = next(settings.PROCESSED.rglob("manifest_hvhv.json"))
+    other = json.loads(other_path.read_text(encoding="utf-8"))
+    other["provenance"]["granules"][0] = "other-granule"
+    other_path.write_text(json.dumps(other), encoding="utf-8")
+    with pytest.raises(HTTPException, match="mismas dos observaciones") as error:
+        main.tile(manifest["id"], "before", 10, 312, 548, palette="rgb")
+    assert error.value.status_code == 404
+
+
 def test_timeseries_orders_dates_and_ratio(data_dirs, tmp_path, monkeypatch):
     from sarlab_pipeline import analysis
     _aoi_patch(monkeypatch, analysis)

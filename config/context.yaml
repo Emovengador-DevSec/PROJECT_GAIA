@@ -1,0 +1,64 @@
+# Capa visual de NASA GIBS. La fecha corresponde a la imagen de GIBS.
+ayacucho-huanta:
+  - id: nisar-gcov
+    kind: nisar-preview
+    name: Comparación visual NISAR en falso color
+    product: NISAR GCOV provisional · mosaico NASA
+    source: NASA/ISRO · GIBS
+    layer: NISAR_L2_Geocoded_Polarimetric_Covariance
+    date: '2026-10-15'
+    before: '2026-06-17'
+    scenes:
+      - NISAR_L2_PR_GCOV_023_054_D_095_2005_DHDH_A_20260617T230917_20260617T230951_P05023_N_F_J_001
+      - NISAR_L2_PR_GCOV_033_054_D_095_2005_DHDH_A_20261015T230913_20261015T230948_P05023_N_F_J_001
+    note: Mosaicos diarios oficiales en falso color. ASF cataloga observaciones HH/HV de la trayectoria 54 descendente, marco 95, para ambas fechas. Los mosaicos permiten inspección visual. El cálculo de áreas y el compuesto propio HH/HV usan los gránulos HDF5 de la trayectoria 75.
+    href: https://nisar-docs.asf.alaska.edu/worldview/
+  - id: opera
+    name: Perturbación de vegetación
+    product: OPERA DIST-ALERT-HLS
+    source: NASA/JPL · GIBS
+    layer: OPERA_L3_DIST-ALERT-HLS_Color_Index
+    date: '2026-10-08'
+    legend: https://gibs.earthdata.nasa.gov/legends/OPERA_Vegetation_Disturbance_Status_H.svg
+    note: Estado de la vegetación observado por Landsat y Sentinel-2. La perturbación puede tener varias causas. La capa de color se usa para inspección visual.
+    href: https://doi.org/10.5067/SNWG/OPERA_L3_DIST-ALERT-HLS_V1.001
+madre-de-dios-la-pampa:
+  - id: opera
+    name: Perturbación de vegetación
+    product: OPERA DIST-ALERT-HLS
+    source: NASA/JPL · GIBS
+    layer: OPERA_L3_DIST-ALERT-HLS_Color_Index
+    date: '2026-10-05'
+    legend: https://gibs.earthdata.nasa.gov/legends/OPERA_Vegetation_Disturbance_Status_H.svg
+    note: Estado de la vegetación observado por Landsat y Sentinel-2. Comprueba la continuidad de las observaciones ópticas y el contexto local.
+    href: https://doi.org/10.5067/SNWG/OPERA_L3_DIST-ALERT-HLS_V1.001
+  - id: radarsat1
+    name: La Pampa en 1998
+    product: RADARSAT-1 · Banda C, HH
+    source: Recursos Naturales Canadá · EODMS
+    scene: 8d7424dd-0a1c-5281-8127-2f43e48c7d33
+    date: '1998-04-04'
+    license: Licencia de Gobierno Abierto de Canadá
+    note: Imagen histórica de amplitud para inspección visual. Reproyectada a partir de cuatro puntos de control. El relieve y la geometría limitan su precisión espacial.
+    href: https://www.eodms-sgdot.nrcan-rncan.gc.ca/search/collections/Radarsat-1-L1-COG/items/8d7424dd-0a1c-5281-8127-2f43e48c7d33
+sabancaya:
+  - id: radarsat1
+    name: Sabancaya en 2001
+    product: RADARSAT-1 · Banda C, HH
+    source: Recursos Naturales Canadá · EODMS
+    scene: 3b6acb74-fe6c-506d-84bc-b953698bc3bb
+    date: '2001-09-03'
+    license: Licencia de Gobierno Abierto de Canadá
+    note: Imagen histórica de amplitud para inspección visual. Reproyectada a partir de cuatro puntos de control. El relieve y la geometría limitan su precisión espacial.
+    href: https://www.eodms-sgdot.nrcan-rncan.gc.ca/search/collections/Radarsat-1-L1-COG/items/3b6acb74-fe6c-506d-84bc-b953698bc3bb
+chosica-rimac:
+  - id: gpm
+    name: Intensidad de precipitación
+    product: GPM IMERG · mm/h
+    source: NASA/GPM · GIBS
+    layer: IMERG_Precipitation_Rate
+    date: '2026-02-25'
+    legend: https://gibs.earthdata.nasa.gov/legends/GPM_Precipitation_Rate_H.svg
+    note: Visualización diaria para el episodio de escorrentía reportado por INDECI en Chosica. Los mm/h muestran intensidad, con una rejilla de unos 10 km. Para el acumulado de tres días se procesan los productos originales. La escala espacial requiere contraste con pluviómetros locales.
+    href: https://gpm.nasa.gov/data/imerg
+    report: https://www.gob.pe/institucion/indeci/noticias/1359263-indeci-realizo-visita-tecnica-en-lurigancho-chosica-y-coordino-acciones-de-preparacion-ante-lluvias-intensas

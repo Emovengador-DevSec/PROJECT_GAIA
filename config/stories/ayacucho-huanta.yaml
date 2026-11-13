@@ -30,14 +30,24 @@ steps:
     layer: none
     camera: zone
     text: Los focos de calor disponibles proceden de NASA FIRMS y conservan su fecha y confianza. Una detección de calor requiere contexto para atribuirla a un incendio.
+  - title: Cómo se obtienen las observaciones
+    layer: none
+    camera: zone
+    text: Una imagen óptica de luz visible depende de la iluminación solar y puede quedar tapada por nubes o humo. NISAR emite sus propios pulsos de microondas y registra el eco de día o de noche. FIRMS aporta focos térmicos en horas. NISAR repite la geometría orbital cada 12 días, y la publicación del producto añade demora.
   - title: La comparación radar
-    layer: diff_hvhv
-    camera: oblique
-    text: Cuando hay dos fechas NISAR procesadas, la cortina permite comparar la señal HV. Sin datos procesados, se indica qué observaciones hacen falta.
+    layer: none
+    camera: zone
+    context: nisar-gcov
+    text: Desliza la cortina para ver mosaicos oficiales NISAR en falso color de junio y octubre. El cálculo de pérdida de señal por polarización usa un par de gránulos HDF5 independiente.
   - title: El territorio expuesto
     layer: diff_hvhv
     camera: oblique
     text: Las áreas de cambio se contrastan con población, cultivos y centros poblados cuando existen capas de exposición verificadas. Las cifras pendientes se muestran como no disponibles.
+  - title: La vegetación desde otra fuente
+    layer: none
+    camera: zone
+    context: opera
+    text: OPERA usa observaciones ópticas de Landsat y Sentinel-2 para identificar perturbaciones de vegetación. Las áreas comunes permiten contrastar señales independientes. Para calcular un porcentaje se necesitan los rásteres originales y fechas compatibles.
   - title: Seguir la recuperación
     layer: diff_hvhv
     camera: zone

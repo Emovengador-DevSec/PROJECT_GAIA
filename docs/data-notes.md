@@ -2,6 +2,57 @@
 
 Cada entrada con fecha, archivo de origen y comando usado. Solo rutas vistas en archivos reales o en documentación oficial.
 
+## Fuentes públicas verificadas el 13 de noviembre de 2026
+
+- El CSV público VIIRS NOAA-20 de 24 horas devolvió 309 detecciones dentro de la frontera
+  de Perú en la consulta de las 20:46 UTC. Cada foco conserva fecha, confianza y potencia
+  radiativa en MW. La clave FIRMS amplía la consulta a siete días. La copia se guarda en
+  `data/catalog/live/fires.json`.
+  [Descargas oficiales FIRMS](https://firms.modaps.eosdis.nasa.gov/active_fire/)
+- NASA GIBS publica el mosaico diario `NISAR_L2_Geocoded_Polarimetric_Covariance`.
+  Se guardaron recortes de Ayacucho del 17 de junio y 15 de octubre de 2026. El catálogo
+  ASF confirma HH/HV, trayectoria 54 descendente y marco 95 para ambas fechas.
+  Los mosaicos visuales de GIBS tienen una descomposición RGB de NASA. Los cálculos de
+  cambio y la composición propia HH/HV siguen usando los dos HDF5 autorizados de la
+  trayectoria 75, pendientes de Earthdata.
+  [Visualización NISAR y colores del mosaico](https://nisar-docs.asf.alaska.edu/worldview/)
+- Se guardaron imágenes OPERA DIST-ALERT-HLS de Ayacucho del 8 de octubre de 2026 y
+  Madre de Dios del 5 de octubre. Son capas visuales de estado de perturbación. La
+  concordancia espacial usa los GeoTIFF originales `VEG-DIST-STATUS` y
+  `VEG-DIST-DATE`, con acceso Earthdata. El cálculo limita la comparación a la cobertura
+  común, perturbaciones confirmadas y fecha inicial dentro del intervalo NISAR.
+  [Especificación OPERA DIST-HLS](https://lpdaac.usgs.gov/documents/1766/OPERA_DIST_HLS_Product_Specification_V1.pdf)
+- La capa IMERG de GIBS sitúa la precipitación del 25 de febrero de 2026 en Chosica.
+  INDECI reportó escorrentía superficial ese día. El acumulado de los tres días previos
+  usa productos originales diarios IMERG del 22 al 24. El cálculo exige variables
+  inspeccionadas y unidades mm/día, tres fechas consecutivas y píxeles válidos en los
+  tres días. Los archivos de NASA respondieron HTTP 401 sin Earthdata.
+  Una copia pública NOAA de 2025 presentó numerosos valores faltantes y se descartó para
+  publicar un acumulado del caso de 2026.
+  [Episodio documentado por INDECI](https://www.gob.pe/institucion/indeci/noticias/1359263-indeci-realizo-visita-tecnica-en-lurigancho-chosica-y-coordino-acciones-de-preparacion-ante-lluvias-intensas)
+- El catálogo abierto EODMS devolvió escenas RADARSAT-1 con cobertura de las cuatro
+  zonas. Se publicaron recortes visuales de Madre de Dios del 4 de abril de 1998
+  (escena `8d7424dd-0a1c-5281-8127-2f43e48c7d33`) y Sabancaya del 3 de septiembre
+  de 2001 (`3b6acb74-fe6c-506d-84bc-b953698bc3bb`). Los COG originales tienen cuatro
+  puntos de control en EPSG 4326 y amplitud HH uint8. Se reproyectaron a la caja del
+  caso para inspección visual. La geometría radar y el relieve limitan su precisión.
+  Se conserva la Licencia de Gobierno Abierto de Canadá. La consulta pública de
+  RCMImageProducts devolvió cero escenas en las cajas estudiadas.
+  [Catálogo EODMS](https://www.eodms-sgdot.nrcan-rncan.gc.ca/search)
+- ASF devolvió 27 SME2 provisionales de Ayacucho y 58 GCOV provisionales de Chosica.
+  Los catálogos están guardados en `config/catalog/`. La inspección interna de SME2
+  y la lectura de humedad siguen pendientes de archivos originales.
+
+`scripts/cache_complementary.py` regenera los siete PNG publicados en
+`data/04_published/context/`. Las escenas de RADARSAT-1 se leen por rangos y se
+reducen antes de reproyectar.
+
+```powershell
+.venv/Scripts/python scripts/cache_complementary.py
+.venv/Scripts/sarlab validate-opera --help
+.venv/Scripts/sarlab rainfall --help
+```
+
 ## GCOV (documentación ASF, 2026-11-11)
 - Grupo: `/science/LSAR/GCOV/grids/frequencyA` (puede existir `frequencyB`).
 - Capas: `HHHH`, `HVHV`, `mask`, `numberOfLooks`, `rtcGammaToSigmaFactor`, `xCoordinates`, `yCoordinates`, `projection` (`attrs['epsg_code']`).

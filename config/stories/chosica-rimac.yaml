@@ -13,8 +13,13 @@ physics: >
   HH es sensible a la rugosidad superficial y a la humedad. Un depósito fresco de detritos cambia la
   rugosidad y la constante dieléctrica, y por eso la intensidad de la señal.
 human_factors: Ocupación urbana en conos de deyección.
-complementary: [Reportes de emergencias, imagen óptica posterior]
+complementary: [Precipitación GPM IMERG, reportes de INDECI, imagen óptica posterior]
 future: Mapas rápidos de zonas afectadas tras lluvias intensas, aun con cielo cubierto.
 steps:
   - { title: El valle del Rímac, layer: none, camera: overview, text: "Lima depende de este valle y de sus quebradas." }
+  - title: Lluvia y escorrentía
+    layer: none
+    camera: zone
+    context: gpm
+    text: El 25 de febrero de 2026, INDECI registró escorrentía superficial en quebradas de Chosica. La visualización GPM del día muestra intensidad estimada. Sirve para situar el episodio y contrastarlo con un eventual cambio de señal en NISAR.
   - { title: El cambio, layer: diff_hhhh, camera: oblique, text: "Cambios de rugosidad a lo largo de los cauces." }

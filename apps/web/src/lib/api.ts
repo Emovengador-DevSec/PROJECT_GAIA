@@ -24,7 +24,22 @@ export type Story = {
   audience_summary: Record<Audience, string>;
   hypotheses: { id: string; text: string; test: string; status: string }[];
   physics: string; human_factors: string; complementary: string[]; future: string;
-  steps: { title: string; layer: string; camera: CameraMode; text: string }[];
+  steps: { title: string; layer: string; camera: CameraMode; text: string; context?: string }[];
+};
+
+export type ContextLayer = {
+  id: string; name: string; product: string; source: string; date: string;
+  note: string; href: string; report?: string; scene?: string; scenes?: string[];
+  kind?: "nisar-preview"; before?: string; license?: string; legend?: string; available: boolean;
+};
+
+export type Validation = {
+  source: string; source_url: string; granule: string; date: string; note: string;
+  common_ha: number; nisar_loss_ha: number; opera_disturbance_ha: number; overlap_ha: number; agreement_pct: number | null;
+};
+export type Rainfall = {
+  source: string; source_url: string; note: string; dates: string[]; granules: string[];
+  mean_mm: number | null; valid_area_pct: number;
 };
 
 export type PolStats = { median_db: number; p10_db: number; p90_db: number; valid_pct: number } | null;
@@ -69,7 +84,13 @@ async function get<T>(path: string): Promise<T> {
 export const api = {
   aois: () => get<AOI[]>("/aois"),
   health: () => get<Health>("/health"),
-  catalog: (aoi: string) => get<Catalog>(`/catalog?aoi=${encodeURIComponent(aoi)}&product=${aoi === "sabancaya" ? "GUNW" : "GCOV"}`),
+  catalog: (aoi: string, product = aoi === "sabancaya" ? "GUNW" : "GCOV") =>
+    get<Catalog>(`/catalog?aoi=${encodeURIComponent(aoi)}&product=${encodeURIComponent(product)}`),
+  context: (aoi: string) => get<ContextLayer[]>(`/context/${encodeURIComponent(aoi)}`),
+  contextImage: (aoi: string, item: ContextLayer, date = item.date) =>
+    `${BASE}/context/${encodeURIComponent(aoi)}/${encodeURIComponent(item.id)}/${encodeURIComponent(date)}.png`,
+  validation: (id: string) => get<Validation | null>(`/validation/${encodeURIComponent(id)}`),
+  rainfall: (aoi: string) => get<Rainfall | null>(`/rainfall/${encodeURIComponent(aoi)}`),
   alerts: () => get<AlertCollection>("/alerts?include_live=true"),
   trend: (aoi: string, pol: string) => get<Trend>(`/trend?aoi=${encodeURIComponent(aoi)}&pol=${encodeURIComponent(pol)}`),
   layers: (aoi: string) => get<LayerManifest[]>(`/layers?aoi=${encodeURIComponent(aoi)}`),
@@ -77,6 +98,6 @@ export const api = {
   story: (aoi: string) => get<Story>(`/stories/${encodeURIComponent(aoi)}`),
   timeseries: (aoi: string) => get<TimeSeries>(`/timeseries?aoi=${encodeURIComponent(aoi)}&allow_empty=true`),
   /** Teselas por identificador de capa publicada. */
-  tileUrl: (m: LayerManifest, stage: "change" | "before" | "after" = "change") =>
-    `${BASE}/tiles/${encodeURIComponent(m.id)}/${stage}/{z}/{x}/{y}.png`,
+  tileUrl: (m: LayerManifest, stage: "change" | "before" | "after" = "change", rgb = false) =>
+    `${BASE}/tiles/${encodeURIComponent(m.id)}/${stage}/{z}/{x}/{y}.png${rgb ? "?palette=rgb" : ""}`,
 };

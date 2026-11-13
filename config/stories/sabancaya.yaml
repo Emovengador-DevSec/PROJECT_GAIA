@@ -17,4 +17,9 @@ complementary: [Reportes del observatorio vulcanológico, catálogo sísmico]
 future: Vigilancia continua de volcanes andinos remotos.
 steps:
   - { title: Los Andes del sur, layer: none, camera: overview, text: "Volcanes activos en zonas de difícil acceso." }
+  - title: El volcán en 2001
+    layer: none
+    camera: zone
+    context: radarsat1
+    text: La escena histórica de RADARSAT-1 muestra el entorno del Sabancaya en banda C. La deformación necesita pares interferométricos NISAR y control de coherencia.
   - { title: Relieve 3D, layer: none, camera: oblique, text: "La deformación se mostrará sobre el relieve real (fase P1)." }

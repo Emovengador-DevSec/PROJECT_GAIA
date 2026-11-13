@@ -116,14 +116,24 @@ def _quakes() -> list[dict]:
     return result
 
 
+PUBLIC_FIRMS = (
+    "https://firms.modaps.eosdis.nasa.gov/data/active_fire/noaa-20-viirs-c2/csv/"
+    "J1_VIIRS_C2_South_America_24h.csv"
+)
+
+
+def _fire_urls(key: str) -> list[str]:
+    if not key:
+        return [PUBLIC_FIRMS]
+    area = f"{FIRMS}/{key}/VIIRS_NOAA20_NRT/-82,-19,-68,1"
+    start = (datetime.now(UTC) - timedelta(days=6)).date().isoformat()
+    return [f"{area}/5", f"{area}/2/{start}"]
+
+
 def _fires(key: str) -> list[dict]:
-    # FIRMS allows at most five days per request. Two requests cover seven days.
     result = {}
     peru = _peru_boundary()
-    for days, date in ((5, None), (2, (datetime.now(UTC) - timedelta(days=6)).date().isoformat())):
-        url = f"{FIRMS}/{key}/VIIRS_NOAA20_NRT/-82,-19,-68,1/{days}"
-        if date:
-            url += "/" + date
+    for url in _fire_urls(key):
         rows = csv.DictReader(io.StringIO(_download(url).decode("utf-8-sig")))
         if not rows.fieldnames or "latitude" not in rows.fieldnames:
             raise ValueError("FIRMS no devolvió un catálogo válido")
@@ -222,10 +232,6 @@ def collection(provider: str) -> dict:
         failure = FAILURES.get(provider)
         if failure and time.monotonic() < failure[0]:
             message = failure[1]
-        elif provider == "fires" and not key:
-            message = (
-                "Configura FIRMS_MAP_KEY en el entorno del servidor para consultar focos de calor reales."
-            )
         else:
             try:
                 features = _quakes() if provider == "quakes" else _fires(key)
@@ -237,7 +243,10 @@ def collection(provider: str) -> dict:
                     "status": "ok",
                     "last_updated": _now(),
                     "stale": False,
-                    "message": None,
+                    "message": (
+                        "Archivo público VIIRS NOAA-20 de las últimas 24 h."
+                        if provider == "fires" and not key else None
+                    ),
                     "latency": "Minutos" if provider == "quakes" else "Horas",
                 }
                 _save(path, payload)

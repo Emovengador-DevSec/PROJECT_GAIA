@@ -4,6 +4,13 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- Integradas vistas públicas NISAR de Ayacucho, perturbación OPERA, precipitación IMERG y escenas históricas RADARSAT-1 con fecha, fuente y controles sobre el globo.
+- FIRMS admite el CSV público VIIRS NOAA-20 de las últimas 24 horas y conserva el acceso de siete días con clave.
+- Ampliados los 14 recursos del reto con su función y uso en GAIA, glosario, explicación temática en fichas y catálogo de humedad SME2.
+- Añadidos análisis cuantitativos de concordancia OPERA y acumulado IMERG de tres días para los archivos originales, con máscaras de datos, fechas y unidades verificadas en pruebas.
+- Añadida la pestaña Fuentes con los 14 recursos oficiales de Dancing with the SARs, el estado de las fuentes complementarias y enlaces temáticos en las historias y fichas.
+- La cortina NISAR admite un compuesto en falso color cuando ambas fechas tienen HH y HV de los mismos gránulos.
+
 - GAIA Alerta F0: globo con imagen satelital y luces nocturnas de NASA, mosaico Landsat y relieve Mapzen de Ayacucho, límites geoBoundaries, localidades OSM, búsqueda y relieve global Cesium ion configurable.
 - GAIA Alerta F1: caso Huanta y La Mar, catálogos ASF de Ayacucho y Sabancaya, selección por fechas, trayectoria y marco, ingesta con SHA-256 y publicación de las observaciones comparables.
 - GAIA Alerta F2: sismos USGS y detecciones NASA FIRMS por separado, con caché fechada y estados de disponibilidad.
@@ -51,3 +58,4 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 - La entrada «PROJECT GAIA» aparece a los 4,5 s de la introducción, con una línea de horizonte, una flecha circular y las tres cifras del radar en secuencia. Al saltar la intro o activar movimiento reducido, el acceso es inmediato.
 - «PROJECT GAIA» adopta la forma de cápsula del botón original, con fondo transparente, borde blanco y una flecha dentro. El botón y su nombre aparecen animados tras el amanecer.
 - Plan GAIA Alerta por fases para Codex en `docs/10_Plan_GAIA_Alerta_Codex.md`, con diagnóstico del globo y cobertura NISAR comprobada en Ayacucho y Sabancaya.
+- Diagnóstico de interactividad y momentos W1–W8 para Codex en `docs/11_Experiencia_Interactiva_Codex.md`.

@@ -22,6 +22,11 @@ complementary: [Imagen óptica posterior, alertas de pérdida de bosque (OPERA D
 future: Alertas tempranas de deforestación bajo nubes, con revisita de unos 12 días.
 steps:
   - { title: La selva bajo las nubes, layer: none, camera: overview, text: "Cada año, las nubes ocultan gran parte de la Amazonía a los satélites ópticos." }
+  - title: La Pampa en el archivo histórico
+    layer: none
+    camera: zone
+    context: radarsat1
+    text: RADARSAT-1 observó esta parte de Madre de Dios en abril de 1998. La escena de banda C ofrece una referencia visual de otra época. La cortina de cambio cuantitativo requiere dos fechas NISAR comparables.
   - { title: Antes, layer: before_hvhv, camera: zone, text: "Así se veía la señal HV en la primera fecha." }
   - { title: Después, layer: after_hvhv, camera: zone, text: "La misma zona en la segunda fecha." }
   - { title: El cambio, layer: diff_hvhv, camera: oblique, text: "En rojo, dónde la señal cayó más de lo normal para esta imagen." }

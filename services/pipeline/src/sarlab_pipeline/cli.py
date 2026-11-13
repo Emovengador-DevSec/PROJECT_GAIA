@@ -57,6 +57,17 @@ def main(argv: list[str] | None = None) -> int:
         e.add_argument(f"--{source}-date", help="Fecha de la fuente YYYY-MM-DD")
     e.add_argument("--buffer-m", type=float, default=2000,
                    help="Radio de centros poblados cercanos, en metros")
+    v = sub.add_parser("validate-opera", help="Compara pérdida HV con perturbación confirmada por OPERA")
+    v.add_argument("--layer", required=True, help="Identificador de la capa NISAR HV publicada")
+    v.add_argument("--status", required=True, type=Path)
+    v.add_argument("--onset", required=True, type=Path)
+    v.add_argument("--granule", required=True)
+    v.add_argument("--observed", required=True, help="Fecha de la observación OPERA, YYYY-MM-DD")
+    r = sub.add_parser("rainfall", help="Acumulado de tres días con originales IMERG diarios")
+    r.add_argument("--aoi", required=True)
+    r.add_argument("--variable", required=True, help="Variable confirmada con sarlab inspect")
+    r.add_argument("--group", help="Grupo interno confirmado al inspeccionar el NetCDF")
+    r.add_argument("files", nargs=3, type=Path)
 
     a = ap.parse_args(argv)
 
@@ -118,6 +129,20 @@ def main(argv: list[str] | None = None) -> int:
             result = calculate(a.aoi, a.population, a.landcover, a.places, a.population_unit,
                                a.population_date, a.landcover_date, a.places_date, a.buffer_m)
         except ValueError as exc:
+            ap.error(str(exc))
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+    elif a.cmd == "validate-opera":
+        from .processing.validation import compare_opera
+        try:
+            result = compare_opera(a.layer, a.status, a.onset, a.granule, a.observed)
+        except (ValueError, OSError) as exc:
+            ap.error(str(exc))
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+    elif a.cmd == "rainfall":
+        from .processing.rainfall import three_day_rain
+        try:
+            result = three_day_rain(a.aoi, a.files, a.variable, a.group)
+        except (ValueError, OSError) as exc:
             ap.error(str(exc))
         print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0

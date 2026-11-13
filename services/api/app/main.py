@@ -13,7 +13,7 @@ import yaml
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 ROOT = Path(os.environ.get("SARLAB_ROOT", Path(__file__).resolve().parents[3]))
@@ -95,25 +95,71 @@ def layer(layer_id: str):
     raise HTTPException(404, detail="Capa no encontrada. Procesa la zona con `sarlab change`.")
 
 
-@app.get("/api/tiles/{layer_id}/{stage}/{z}/{x}/{y}.png")
-def tile(layer_id: str, stage: Literal["change", "before", "after"], z: int, x: int, y: int):
-    if not TILES:
-        raise HTTPException(503, "Instala las dependencias del servidor para servir capas radar.")
-    if not 0 <= z <= 18 or not 0 <= x < 2**z or not 0 <= y < 2**z:
-        raise HTTPException(422, "Coordenadas de tesela inválidas.")
-    manifest = layer(layer_id)
-    path_value = (
-        manifest.get("cog_path")
-        if stage == "change"
-        else manifest.get("comparison", {}).get(stage + "_cog_path")
-    )
+def _local_cog(path_value: str | None) -> Path:
     if not path_value:
         raise HTTPException(404, "No existe esa observación en el manifiesto.")
     path = Path(path_value).resolve()
     if not path.is_relative_to(PROCESSED.resolve()) or not path.is_file():
         raise HTTPException(404, "El archivo procesado no está disponible localmente.")
-    from rio_tiler.colormap import cmap
+    return path
+
+
+def _rgb_tile(manifest: dict, stage: str, x: int, y: int, z: int) -> bytes:
+    from rio_tiler.utils import render
+
+    from sarlab_pipeline.processing.false_color import backscatter_rgb
+
+    provenance = manifest["provenance"]
+    matches = {
+        source["provenance"]["layer"]: source
+        for source in _manifests()
+        if source.get("comparison") and source.get("kind") == "backscatter_diff_db"
+        and source.get("aoi_id") == manifest["aoi_id"] and source.get("dates") == manifest["dates"]
+        and source.get("provenance", {}).get("layer") in ("HHHH", "HVHV")
+        and source["provenance"].get("frequency") == provenance.get("frequency")
+        and source["provenance"].get("granules") == provenance["granules"]
+    }
+    if not {"HHHH", "HVHV"} <= matches.keys():
+        raise HTTPException(404, "Se necesitan HH y HV de las mismas dos observaciones.")
+    bands = []
+    for polarization in ("HHHH", "HVHV"):
+        path = _local_cog(matches[polarization]["comparison"].get(stage + "_cog_path"))
+        with COGReader(str(path)) as cog:
+            bands.append(cog.tile(x, y, z, tilesize=256).array[0].filled(float("nan")))
+    rgb, mask = backscatter_rgb(*bands)
+    return render(rgb, mask, img_format="PNG")
+
+
+@app.get("/api/tiles/{layer_id}/{stage}/{z}/{x}/{y}.png")
+def tile(
+    layer_id: str, stage: Literal["change", "before", "after"], z: int, x: int, y: int,
+    palette: Literal["default", "rgb"] = "default",
+):
+    if not TILES:
+        raise HTTPException(503, "Instala las dependencias del servidor para servir capas radar.")
+    if not 0 <= z <= 18 or not 0 <= x < 2**z or not 0 <= y < 2**z:
+        raise HTTPException(422, "Coordenadas de tesela inválidas.")
+    manifest = layer(layer_id)
     from rio_tiler.errors import TileOutsideBounds
+
+    if palette == "rgb":
+        if stage == "change" or manifest.get("kind") != "backscatter_diff_db":
+            raise HTTPException(422, "El falso color se aplica a las observaciones antes y después.")
+        try:
+            body = _rgb_tile(manifest, stage, x, y, z)
+        except TileOutsideBounds:
+            body = TRANSPARENT_PNG
+        return Response(
+            content=body, media_type="image/png", headers={"Cache-Control": "public, max-age=3600"},
+        )
+
+    path_value = (
+        manifest.get("cog_path")
+        if stage == "change"
+        else manifest.get("comparison", {}).get(stage + "_cog_path")
+    )
+    path = _local_cog(path_value)
+    from rio_tiler.colormap import cmap
 
     limits = (
         manifest.get("range", {}) if stage == "change" else manifest.get("comparison", {}).get("range", {})
@@ -136,7 +182,9 @@ def tile(layer_id: str, stage: Literal["change", "before", "after"], z: int, x: 
 
 
 @app.get("/api/catalog")
-def catalog(aoi: str = Query(..., pattern=r"^[a-z0-9-]+$"), product: Literal["GCOV", "GUNW"] = "GCOV"):
+def catalog(
+    aoi: str = Query(..., pattern=r"^[a-z0-9-]+$"), product: Literal["GCOV", "GUNW", "SME2"] = "GCOV",
+):
     from sarlab_pipeline.sources.nisar import load_cached_catalog
 
     try:
@@ -226,6 +274,48 @@ def live_fires():
 
 
 AOI_PATTERN = r"^[a-z0-9-]+$"
+
+
+def _context_image(aoi: str, product: str, day: str) -> Path:
+    return PROCESSED.parent / "04_published" / "context" / aoi / f"{product}-{day}.png"
+
+
+@app.get("/api/context/{aoi}")
+def study_context(aoi: str):
+    if not re.fullmatch(AOI_PATTERN, aoi):
+        raise HTTPException(422, "Identificador de zona inválido.")
+    return [
+        {**item, "available": all(
+            _context_image(aoi, item["id"], day).is_file()
+            for day in (item["date"], item.get("before", item["date"]))
+        )}
+        for item in _yaml(CONFIG / "context.yaml").get(aoi, [])
+    ]
+
+
+@app.get("/api/context/{aoi}/{product}/{day}.png")
+def context_image(aoi: str, product: str, day: str):
+    for item in study_context(aoi):
+        if item["id"] == product and day in (item["date"], item.get("before")) and item["available"]:
+            return FileResponse(_context_image(aoi, product, day), media_type="image/png")
+    raise HTTPException(404, "No hay una imagen complementaria para esa fecha.")
+
+
+@app.get("/api/validation/{layer_id}")
+def validation(layer_id: str):
+    manifest = layer(layer_id)
+    path = PROCESSED.parent / "04_published" / "validation" / f"{manifest['id']}.json"
+    if path.is_file():
+        return json.loads(path.read_text(encoding="utf-8"))
+    return None
+
+
+@app.get("/api/rainfall/{aoi}")
+def rainfall(aoi: str):
+    if not re.fullmatch(AOI_PATTERN, aoi):
+        raise HTTPException(422, "Identificador de zona inválido.")
+    path = PROCESSED.parent / "04_published" / "rainfall" / f"{aoi}.json"
+    return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else None
 
 
 @app.get("/api/stories/{aoi}")

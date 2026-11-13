@@ -1,16 +1,11 @@
 import type { AlertFeature } from "../../lib/api";
+import { formatDate } from "../../lib/formatDate";
+import { ApplicationReference, LearnMore } from "./Resources";
 
-export const formatDate = (value?: string | null) => {
-  if (!value) return "Fecha sin informar";
-  const date = new Date(value);
-  return Number.isFinite(date.valueOf()) ? new Intl.DateTimeFormat("es-PE", {
-    dateStyle: "medium", timeStyle: "short", timeZone: "UTC",
-  }).format(date) + " UTC" : value;
-};
 const number = (value?: number | null) => typeof value === "number" && Number.isFinite(value)
   ? new Intl.NumberFormat("es-PE", { maximumFractionDigits: 2 }).format(value) : "Sin dato";
 
-export function AlertDetails({ feature, onBack }: { feature: AlertFeature; onBack: () => void }) {
+export function AlertDetails({ feature, onBack, onResources }: { feature: AlertFeature; onBack: () => void; onResources: () => void }) {
   const p = feature.properties;
   const source = p.source_kind === "primary" ? "NISAR · fuente principal" : `${p.source} · complementario`;
   const shareUrl = new URL(window.location.href);
@@ -61,5 +56,7 @@ export function AlertDetails({ feature, onBack }: { feature: AlertFeature; onBac
       <button type="button" className="secondary-action" onClick={() => window.print()}>Imprimir ficha</button>
     </div>
     {external && <a className="source-link" href={external} target="_blank" rel="noopener noreferrer">Consultar la observación original ↗</a>}
+    <ApplicationReference kind={p.kind} aoi={p.aoi_id} />
+    <LearnMore kind={p.kind} onResources={onResources} />
   </article>;
 }
