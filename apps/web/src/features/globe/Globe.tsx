@@ -1,9 +1,11 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useReducedMotion } from "framer-motion";
 import * as Cesium from "cesium";
 import "cesium/Build/Cesium/Widgets/widgets.css";
 import type { AOI, AlertFeature, CameraMode, GlobeStatus } from "../../lib/api";
 import { loadAyacuchoTerrain } from "./localTerrain";
+import { observationMetric } from "../workspace/AlertFeed";
+import { formatDate } from "../../lib/formatDate";
 
 type Props = {
   aoi?: AOI; tileUrl?: string; beforeUrl?: string; afterUrl?: string; split: number;
@@ -35,6 +37,7 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
   const selectRef = useRef(onSelect);
   const statusRef = useRef(onStatus);
   const lastInput = useRef(performance.now());
+  const [hover, setHover] = useState<{ feature: AlertFeature; x: number; y: number }>();
   selectRef.current = onSelect;
   statusRef.current = onStatus;
 
@@ -173,12 +176,54 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
       }
     }).catch(() => { /* La imagen satelital sigue disponible. */ });
     const clicks = new Cesium.ScreenSpaceEventHandler(v.scene.canvas);
+    let lastPick = 0;
+    let highlighted: Cesium.Entity | undefined;
+    let oldScale: Cesium.Property | undefined;
+    let oldSize: Cesium.Property | undefined;
+    let oldOutline: Cesium.Property | undefined;
+    const clearHover = () => {
+      if (highlighted?.billboard) highlighted.billboard.scale = oldScale;
+      if (highlighted?.point) highlighted.point.pixelSize = oldSize;
+      if (highlighted?.polygon) highlighted.polygon.outlineColor = oldOutline;
+      highlighted = undefined;
+      v.scene.canvas.style.cursor = "";
+      setHover(undefined);
+    };
+    const leave = () => clearHover();
+    v.scene.canvas.addEventListener("mouseleave", leave);
+    clicks.setInputAction((event: { endPosition: Cesium.Cartesian2 }) => {
+      if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+      const now = performance.now();
+      if (now - lastPick < 50) return;
+      lastPick = now;
+      const picked = v.scene.pick(event.endPosition);
+      const entity = picked?.id as Cesium.Entity | undefined;
+      const feature = entity?.properties?.alert?.getValue(v.clock.currentTime) as AlertFeature | undefined;
+      if (!feature) { if (highlighted) clearHover(); return; }
+      if (highlighted !== entity) {
+        clearHover();
+        highlighted = entity;
+        oldScale = entity?.billboard?.scale;
+        oldSize = entity?.point?.pixelSize;
+        oldOutline = entity?.polygon?.outlineColor;
+        if (entity?.billboard) entity.billboard.scale = new Cesium.ConstantProperty(1.35);
+        if (entity?.point) entity.point.pixelSize = new Cesium.ConstantProperty(12);
+        if (entity?.polygon) entity.polygon.outlineColor = new Cesium.ConstantProperty(Cesium.Color.WHITE);
+      }
+      v.scene.canvas.style.cursor = "pointer";
+      setHover({ feature, x: Math.max(12, Math.min(event.endPosition.x + 20, v.scene.canvas.clientWidth - 332)),
+        y: Math.max(12, Math.min(event.endPosition.y + 18, v.scene.canvas.clientHeight - 205)) });
+    }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
     clicks.setInputAction((event: { position: Cesium.Cartesian2 }) => {
       const picked = v.scene.pick(event.position);
       const feature = picked?.id?.properties?.alert?.getValue(v.clock.currentTime) as AlertFeature | undefined;
       if (feature) selectRef.current(feature);
     }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
-    return () => { window.removeEventListener("resize", resize); clicks.destroy(); v.destroy(); viewer.current = null; };
+    return () => {
+      window.removeEventListener("resize", resize);
+      v.scene.canvas.removeEventListener("mouseleave", leave);
+      clicks.destroy(); v.destroy(); viewer.current = null;
+    };
   }, [offline]);
 
   useEffect(() => { if (viewer.current) viewer.current.scene.verticalExaggeration = exaggeration; }, [exaggeration, offline]);
@@ -402,5 +447,17 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
     return () => { active = false; if (polygon && !v.isDestroyed()) v.dataSources.remove(polygon, true); };
   }, [selected, offline]);
 
-  return <div ref={host} className="globe" aria-label="Globo satelital de Sudamérica con observaciones georreferenciadas" />;
+  const metric = hover && observationMetric(hover.feature);
+  return <>
+    <div ref={host} className="globe" aria-label="Globo satelital de Sudamérica con observaciones georreferenciadas" />
+    {hover && metric && <div className="map-tooltip" role="tooltip" data-kind={hover.feature.properties.kind}
+      data-observation={hover.feature.properties.id}
+      style={{ left: hover.x, top: hover.y }}>
+      <small>{hover.feature.properties.source} · {hover.feature.properties.source_kind === "primary" ? "NISAR" : "complementario"}</small>
+      <strong>{hover.feature.properties.title}</strong>
+      <span>{hover.feature.properties.place}</span>
+      <b>{new Intl.NumberFormat("es-PE", { maximumFractionDigits: metric.decimals }).format(metric.value)} <small>{metric.unit}</small></b>
+      <time dateTime={hover.feature.properties.date}>{formatDate(hover.feature.properties.date)}</time>
+    </div>}
+  </>;
 }

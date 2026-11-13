@@ -43,6 +43,11 @@
 .live-totals [data-kind="quake"] strong { color: #fbd777; }
 .live-totals [data-kind="fire"] strong { color: #ff876d; }
 .live-totals [data-kind="surface_change"] strong { color: #c4f1f7; }
+.map-tooltip { position: absolute; z-index: 6; width: 312px; padding: 16px 20px; display: grid; gap: 3px; background: rgb(6 13 19 / 97%); border: 1px solid #607b8a; border-radius: 10px; box-shadow: 0 14px 45px #0008; color: #eef7fc; pointer-events: none; font-size: var(--workspace-text); }
+.map-tooltip small, .map-tooltip time { font-size: 16px; color: #b5c9d7; }
+.map-tooltip > strong { font-size: 18px; line-height: 1.25; }
+.map-tooltip > b { font: 550 30px/1.3 var(--font-display); color: #ffb492; }
+.map-tooltip[data-kind="quake"] > b { color: #fbd777; }
 .map-context small { font-size: var(--workspace-text); color: #c5d2dc; }
 .map-context button { justify-self: start; margin-top: 6px; padding: 5px 9px; border: 1px solid #766337; border-radius: 5px; background: rgb(36 29 15 / 86%); color: #f9dfa5; font-size: var(--workspace-text); }
 .shell[data-workspace] .rail { top: auto; bottom: max(22px, env(safe-area-inset-bottom)); left: 50%; right: auto; transform: translateX(-50%); width: max-content; max-width: calc(100% - 40px); height: auto; display: flex; flex-direction: row; gap: 3px; padding: 6px; border: 1px solid rgb(196 216 233 / 19%); border-radius: 12px; background: rgb(5 9 14 / 91%); backdrop-filter: blur(16px); z-index: 3; }

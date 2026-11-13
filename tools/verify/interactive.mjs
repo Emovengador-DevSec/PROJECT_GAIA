@@ -25,7 +25,22 @@ try {
     if (moment !== "W8") {
       await page.emulateMediaFeatures([{ name: "prefers-reduced-motion", value: "no-preference" }]);
     }
-    await new Promise(resolve => setTimeout(resolve, moment === "W1" ? 4400 : 900));
+    await new Promise(resolve => setTimeout(resolve, ["W1", "W3"].includes(moment) ? 4400 : 900));
+    if (moment === "W3" && width === 1440) {
+      // Stop the idle rotation while checking five actual geographic markers.
+      await page.mouse.click(350, 400);
+      const found = new Set();
+      for (let y = 165; y < 670 && found.size < 5; y += 15) {
+        for (let x = 520; x < 760 && found.size < 5; x += 15) {
+          await page.mouse.move(x, y);
+          await new Promise(resolve => setTimeout(resolve, 60));
+          const id = await page.$eval("body", () => document.querySelector(".map-tooltip")?.getAttribute("data-observation"));
+          if (id) found.add(id);
+        }
+      }
+      if (found.size < 5) throw new Error(`Only ${found.size} geographic markers responded to the cursor`);
+      console.log(JSON.stringify({ moment, hoverResponded: [...found] }));
+    }
     const layout = await page.$eval(".inspector", element => {
       const rect = element.getBoundingClientRect();
       return { left: rect.left, right: rect.right, scroll: element.scrollWidth, width: element.clientWidth };
