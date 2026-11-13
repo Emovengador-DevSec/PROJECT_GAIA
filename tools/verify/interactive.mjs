@@ -15,11 +15,12 @@ try {
   for (const [width, height] of [[1440, 900], [2560, 1440], [390, 844]]) {
     const page = await browser.newPage();
     const errors = [];
-    page.on("pageerror", error => errors.push(error.message));
+    page.on("pageerror", error => { errors.push(error.message); console.log(error.stack); });
     await page.setViewport({ width, height });
     await page.emulateMediaFeatures([{ name: "prefers-reduced-motion", value: "reduce" }]);
     await page.goto("http://127.0.0.1:5173/", { waitUntil: "domcontentloaded" });
     await page.locator(".gaia-cta").click();
+    if (width < 720) await page.locator(".panel-reopen").click();
     await page.waitForSelector(".featured-observation");
     await page.waitForFunction(() => !document.querySelector(".loading-state"));
     if (moment !== "W8") {
@@ -65,6 +66,18 @@ try {
       if (later <= playFrom) throw new Error("The timeline did not advance");
       console.log(JSON.stringify({ moment, width, expectedAtCutoff: expected, advancedHours: (later - playFrom) / 3_600_000 }));
     }
+    if (moment === "W4") {
+      await page.locator('.featured-observation[data-kind="quake"]').click();
+      await new Promise(resolve => setTimeout(resolve, 3500));
+      await page.screenshot({ path: path.join(output, `debug-${width}.jpg`), type: "jpeg", quality: 80 });
+      await page.waitForSelector(".camera-tour");
+      await page.keyboard.press("Escape");
+      await page.waitForFunction(() => !document.querySelector(".camera-tour"));
+      await page.locator(".detail-back").click();
+      await page.locator('.featured-observation[data-kind="fire"]').click();
+      await page.waitForSelector(".camera-tour");
+      console.log(JSON.stringify({ moment, width, immersion: "quake and fire", escapeStopsOrbit: true }));
+    }
     const layout = await page.$eval(".inspector", element => {
       const rect = element.getBoundingClientRect();
       return { left: rect.left, right: rect.right, scroll: element.scrollWidth, width: element.clientWidth };
@@ -73,6 +86,8 @@ try {
       throw new Error(JSON.stringify({ moment, width, layout }));
     }
     if (errors.length) throw new Error(errors.join("\n"));
+    const renderError = await page.$(".cesium-widget-errorPanel");
+    if (renderError) throw new Error(await renderError.evaluate(element => element.textContent));
     await page.screenshot({ path: path.join(output, `${width}x${height}.jpg`), type: "jpeg", quality: 85 });
     console.log(JSON.stringify({ moment, width, layout, errors }));
     await page.close();

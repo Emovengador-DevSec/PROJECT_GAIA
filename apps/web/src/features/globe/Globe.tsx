@@ -41,6 +41,17 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
   const [hover, setHover] = useState<{ feature: AlertFeature; x: number; y: number }>();
   const cutoffRef = useRef(cutoff);
   const updateVisibility = useRef<() => void>(() => undefined);
+  const orbit = useRef<{ target: Cesium.Cartesian3; heading: number; pitch: number; range: number } | undefined>(undefined);
+  const [orbiting, setOrbiting] = useState(false);
+  const stopOrbit = () => {
+    const v = viewer.current;
+    if (!v) return;
+    v.camera.cancelFlight();
+    if (orbit.current) v.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
+    orbit.current = undefined;
+    setOrbiting(false);
+    lastInput.current = performance.now();
+  };
   cutoffRef.current = cutoff;
   selectRef.current = onSelect;
   statusRef.current = onStatus;
@@ -266,6 +277,9 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
     const interacted = () => {
       lastInput.current = performance.now();
       v.camera.cancelFlight();
+      if (orbit.current) v.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
+      orbit.current = undefined;
+      setOrbiting(false);
     };
     const canvas = v.scene.canvas;
     canvas.addEventListener("pointerdown", interacted);
@@ -275,7 +289,11 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
       const now = performance.now();
       const delta = Math.min(.1, (now - lastFrame) / 1000);
       lastFrame = now;
-      if (!aoi && !selected && now - lastInput.current > 20_000 && v.camera.positionCartographic.height > 4_000_000) {
+      if (orbit.current) {
+        orbit.current.heading += delta * .025;
+        const { target, heading, pitch, range } = orbit.current;
+        v.camera.lookAt(target, new Cesium.HeadingPitchRange(heading, pitch, range));
+      } else if (!aoi && !selected && now - lastInput.current > 20_000 && v.camera.positionCartographic.height > 4_000_000) {
         v.camera.rotate(Cesium.Cartesian3.UNIT_Z, delta * .007);
       }
     });
@@ -339,7 +357,10 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
     const data = new Cesium.CustomDataSource("Alertas con fuente");
     const reduce = !!reduceMotion;
     const started = performance.now();
-    const phase = (offset = 0, period = 2600) => ((performance.now() - started + offset) % period) / period;
+    let frameTime = started;
+    // Both ellipse axes must use exactly the same radius in a frame.
+    const removeClock = v.clock.onTick.addEventListener(() => { frameTime = performance.now(); });
+    const phase = (offset = 0, period = 2600) => (((frameTime - started + offset) % period) + period) % period / period;
     const latest = [...alerts].filter(item => item.properties.kind === "quake")
       .sort((a, b) => b.properties.date.localeCompare(a.properties.date)).slice(0, 14);
     const animated = new Set(latest.map(item => item.properties.id));
@@ -486,6 +507,7 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
     return () => {
       cancelled = true;
       removeCamera();
+      removeClock();
       removeFlicker();
       updateVisibility.current = () => undefined;
       if (!v.isDestroyed()) {
@@ -500,28 +522,47 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
 
   useEffect(() => {
     const v = viewer.current;
-    if (!v || !selected?.geometry) return;
-    let active = true;
-    let polygon: Cesium.GeoJsonDataSource | undefined;
-    const color = Cesium.Color.fromCssColorString(COLORS[selected.properties.kind] ?? COLORS.surface_change);
-    if (selected.geometry.type === "Point") {
-      const [lon, lat] = selected.geometry.coordinates as number[];
-      v.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(lon, lat, selected.properties.kind === "quake" ? 500_000 : 45_000),
-        duration: window.matchMedia(REDUCED).matches ? 0 : 2 });
-    } else {
-      Cesium.GeoJsonDataSource.load(selected, { clampToGround: true, fill: color.withAlpha(.35), stroke: color, strokeWidth: 2 }).then(data => {
-        if (!active || v.isDestroyed()) return;
-        polygon = data;
-        v.dataSources.add(data);
-        v.flyTo(data, { duration: window.matchMedia(REDUCED).matches ? 0 : 2 });
-      }).catch(() => { /* La ficha conserva la procedencia aunque una geometría sea inválida. */ });
-    }
-    return () => { active = false; if (polygon && !v.isDestroyed()) v.dataSources.remove(polygon, true); };
-  }, [selected, offline]);
+    if (!v) return;
+    orbit.current = undefined;
+    setOrbiting(false);
+    v.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
+    if (!selected?.geometry || !active) return;
+    const positions: number[][] = [];
+    const collect = (coordinates: unknown) => {
+      if (!Array.isArray(coordinates)) return;
+      if (typeof coordinates[0] === "number" && typeof coordinates[1] === "number") positions.push(coordinates);
+      else coordinates.forEach(collect);
+    };
+    collect(selected.geometry.coordinates);
+    if (!positions.length) return;
+    const lon = positions.reduce((sum, point) => sum + point[0], 0) / positions.length;
+    const lat = positions.reduce((sum, point) => sum + point[1], 0) / positions.length;
+    const elevation = v.scene.globe.getHeight(Cesium.Cartographic.fromDegrees(lon, lat)) ?? 0;
+    const target = Cesium.Cartesian3.fromDegrees(lon, lat, Math.max(0, elevation) * exaggeration);
+    const radius = Cesium.BoundingSphere.fromPoints(positions.map(point => Cesium.Cartesian3.fromDegrees(point[0], point[1]))).radius;
+    const range = selected.properties.kind === "quake" ? 260_000 : Math.max(65_000, radius * 3.2);
+    const heading = Cesium.Math.toRadians(-25);
+    const pitch = Cesium.Math.toRadians(-38);
+    let cancelled = false;
+    v.camera.flyToBoundingSphere(new Cesium.BoundingSphere(target, 0), {
+      offset: new Cesium.HeadingPitchRange(heading, pitch, range), duration: reduceMotion ? 0 : 2.6,
+      easingFunction: Cesium.EasingFunction.QUINTIC_IN_OUT,
+      complete: () => {
+        if (!cancelled && !reduceMotion) { orbit.current = { target, heading, pitch, range }; setOrbiting(true); }
+      },
+    });
+    return () => {
+      cancelled = true;
+      v.camera.cancelFlight();
+      if (orbit.current && !v.isDestroyed()) v.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
+      orbit.current = undefined;
+    };
+  }, [selected, offline, active, reduceMotion]);
 
   const metric = hover && observationMetric(hover.feature);
   return <>
     <div ref={host} className="globe" aria-label="Globo satelital de Sudamérica con observaciones georreferenciadas" />
+    {orbiting && <button type="button" className="camera-tour" onClick={stopOrbit}>Detener recorrido <kbd>Esc</kbd></button>}
     {hover && metric && <div className="map-tooltip" role="tooltip" data-kind={hover.feature.properties.kind}
       data-observation={hover.feature.properties.id}
       style={{ left: hover.x, top: hover.y }}>

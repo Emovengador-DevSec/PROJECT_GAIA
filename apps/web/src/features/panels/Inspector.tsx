@@ -99,7 +99,7 @@ export function Inspector(p: Props) {
   const complementary = p.context.filter(item => item.kind !== "nisar-preview");
   const polarizations = [...new Set(p.layers.map(item => String(item.provenance.layer)))];
   const title = tab === "resources" ? "Fuentes del reto" : TABS.find(item => item.id === tab)?.label;
-  return <motion.aside className="inspector" aria-label={title} initial={reduce ? false : { opacity: .5, transform: "translateX(18px)" }}
+  return <motion.aside key={p.selected?.properties.id ?? tab} className="inspector" aria-label={title} initial={reduce ? false : { opacity: .5, transform: "translateX(18px)" }}
     animate={{ opacity: 1, transform: "translateX(0)" }} transition={{ duration: .25, ease: [.23, 1, .32, 1] }}>
     <div className="inspector-heading"><h2 id={tab === "resources" ? "challenge-resources-title" : undefined}>{title}</h2><button type="button" className="icon-button" onClick={p.onClose} aria-label="Cerrar panel y explorar el mapa">
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>

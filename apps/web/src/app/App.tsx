@@ -47,7 +47,7 @@ export function App() {
   const [compare, setCompare] = useState(false);
   const [falseColor, setFalseColor] = useState(false);
   const [split, setSplit] = useState(50);
-  const [panelOpen, setPanelOpen] = useState(true);
+  const [panelOpen, setPanelOpen] = useState(() => window.innerWidth > 720);
   const [search, setSearch] = useState("");
   const [searchMessage, setSearchMessage] = useState("");
   const [ready, setReady] = useState(false);
