@@ -10,6 +10,7 @@ type Props = {
   contextOverlay?: { url: string; credit: string; beforeUrl?: string };
   exaggeration: number; camera?: CameraMode; alerts: AlertFeature[]; selected?: AlertFeature;
   fireCells: AlertFeature[];
+  active: boolean;
   offline?: boolean;
   onSelect: (alert: AlertFeature) => void; onStatus: (status: GlobeStatus) => void;
 };
@@ -27,12 +28,13 @@ function marker(kind: string, color: string): string {
 }
 
 export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split, exaggeration, camera = "oblique",
-  alerts, fireCells, selected, onSelect, onStatus, offline = false }: Props) {
+  alerts, fireCells, active, selected, onSelect, onStatus, offline = false }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
   const viewer = useRef<Cesium.Viewer | null>(null);
   const selectRef = useRef(onSelect);
   const statusRef = useRef(onStatus);
+  const lastInput = useRef(performance.now());
   selectRef.current = onSelect;
   statusRef.current = onStatus;
 
@@ -63,7 +65,7 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
     v.scene.postProcessStages.fxaa.enabled = true;
     v.scene.fog.enabled = true;
     if (v.scene.skyAtmosphere) v.scene.skyAtmosphere.show = true;
-    v.camera.setView({ destination: Cesium.Cartesian3.fromDegrees(-70, -15, 13_500_000) });
+    v.camera.setView({ destination: Cesium.Cartesian3.fromDegrees(-105, 4, 22_000_000) });
     let terrain: GlobeStatus["terrain"] = "loading";
     let imagery = "NASA Blue Marble · respaldo local";
     let regionalImagery: string | undefined;
@@ -183,10 +185,11 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
 
   useEffect(() => {
     const v = viewer.current;
-    if (!v) return;
+    if (!v || !active) return;
     if (!aoi) {
-      v.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(-70, -15, 13_500_000),
-        duration: window.matchMedia(REDUCED).matches ? 0 : 2 });
+      lastInput.current = performance.now() - 16_400;
+      v.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(-66, -17, 11_500_000),
+        duration: reduceMotion ? 0 : 3.6, easingFunction: Cesium.EasingFunction.QUINTIC_IN_OUT });
       return;
     }
     const [w, s, e, n] = aoi.bbox;
@@ -196,7 +199,35 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
       orientation: { heading: Cesium.Math.toRadians(cam.heading_deg ?? 20),
         pitch: Cesium.Math.toRadians(camera === "zone" ? -90 : camera === "overview" ? -60 : cam.pitch_deg ?? -38), roll: 0 },
       duration: window.matchMedia(REDUCED).matches ? 0 : 2.4, easingFunction: Cesium.EasingFunction.QUINTIC_IN_OUT });
-  }, [aoi, camera, offline]);
+  }, [aoi, camera, offline, active, reduceMotion]);
+
+  useEffect(() => {
+    const v = viewer.current;
+    if (!v || !active || reduceMotion) return;
+    let lastFrame = performance.now();
+    const interacted = () => {
+      lastInput.current = performance.now();
+      v.camera.cancelFlight();
+    };
+    const canvas = v.scene.canvas;
+    canvas.addEventListener("pointerdown", interacted);
+    canvas.addEventListener("wheel", interacted, { passive: true });
+    window.addEventListener("keydown", interacted);
+    const removeFrame = v.scene.preRender.addEventListener(() => {
+      const now = performance.now();
+      const delta = Math.min(.1, (now - lastFrame) / 1000);
+      lastFrame = now;
+      if (!aoi && !selected && now - lastInput.current > 20_000 && v.camera.positionCartographic.height > 4_000_000) {
+        v.camera.rotate(Cesium.Cartesian3.UNIT_Z, delta * .007);
+      }
+    });
+    return () => {
+      removeFrame();
+      canvas.removeEventListener("pointerdown", interacted);
+      canvas.removeEventListener("wheel", interacted);
+      window.removeEventListener("keydown", interacted);
+    };
+  }, [active, aoi, selected, reduceMotion, offline]);
 
   useEffect(() => {
     const v = viewer.current;

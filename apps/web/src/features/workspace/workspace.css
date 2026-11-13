@@ -36,6 +36,13 @@
 .workspace-action { flex: none; padding: 10px 15px; min-height: 44px; border: 1px solid #53616e; background: rgb(10 15 21 / 72%); color: #f4f7fb; border-radius: 8px; font-size: var(--workspace-text); }
 .map-context { position: absolute; left: 28px; top: 99px; display: grid; gap: 4px; max-width: min(32vw, 360px); color: #f4f7fb; text-shadow: 0 2px 9px #000; }
 .map-context > span { font: 520 18px/1.25 var(--font-display); }
+.live-totals { display: flex; gap: clamp(15px, 2vw, 34px); margin-top: 22px; pointer-events: auto; }
+.map-context .live-totals button { display: grid; justify-items: start; gap: 5px; border: 0; padding: 0; margin: 0; background: transparent; color: #f4f7fb; text-align: left; }
+.live-totals strong { font: 550 clamp(30px, 2.2vw, 48px)/1 var(--font-display); letter-spacing: -.025em; }
+.live-totals button > span { font-size: var(--workspace-text); white-space: nowrap; }
+.live-totals [data-kind="quake"] strong { color: #fbd777; }
+.live-totals [data-kind="fire"] strong { color: #ff876d; }
+.live-totals [data-kind="surface_change"] strong { color: #c4f1f7; }
 .map-context small { font-size: var(--workspace-text); color: #c5d2dc; }
 .map-context button { justify-self: start; margin-top: 6px; padding: 5px 9px; border: 1px solid #766337; border-radius: 5px; background: rgb(36 29 15 / 86%); color: #f9dfa5; font-size: var(--workspace-text); }
 .shell[data-workspace] .rail { top: auto; bottom: max(22px, env(safe-area-inset-bottom)); left: 50%; right: auto; transform: translateX(-50%); width: max-content; max-width: calc(100% - 40px); height: auto; display: flex; flex-direction: row; gap: 3px; padding: 6px; border: 1px solid rgb(196 216 233 / 19%); border-radius: 12px; background: rgb(5 9 14 / 91%); backdrop-filter: blur(16px); z-index: 3; }

@@ -25,7 +25,7 @@ try {
     if (moment !== "W8") {
       await page.emulateMediaFeatures([{ name: "prefers-reduced-motion", value: "no-preference" }]);
     }
-    await new Promise(resolve => setTimeout(resolve, 900));
+    await new Promise(resolve => setTimeout(resolve, moment === "W1" ? 4400 : 900));
     const layout = await page.$eval(".inspector", element => {
       const rect = element.getBoundingClientRect();
       return { left: rect.left, right: rect.right, scroll: element.scrollWidth, width: element.clientWidth };

@@ -3,6 +3,7 @@ import { GaiaCover } from "../features/gaia/GaiaCover";
 import { FringeIntro } from "../features/intro/FringeIntro";
 import { Inspector } from "../features/panels/Inspector";
 import { SectionIcon } from "../features/workspace/SectionIcon";
+import { LiveSummary } from "../features/workspace/LiveSummary";
 import { api, type AOI, type AlertFeature, type AlertKind, type Audience, type Catalog,
   type ContextLayer, type FeedStatus, type GlobeStatus, type Health, type LayerManifest, type PolarizationSummary, type Rainfall, type Story, type TimeSeries, type Trend, type Validation } from "../lib/api";
 import { TABS, type TabId } from "../config/tabs";
@@ -203,7 +204,7 @@ export function App() {
   return <div className="shell" data-workspace={ready || undefined}
     data-panel-open={panelOpen || undefined} data-comparison={comparison || undefined}>
     {warm && <Suspense fallback={null}>
-      <Globe aoi={current} exaggeration={exaggeration} camera={activeContext ? "zone" : storyStep?.camera ?? "oblique"}
+      <Globe aoi={current} active={ready} exaggeration={exaggeration} camera={activeContext ? "zone" : storyStep?.camera ?? "oblique"}
         offline={health?.offline}
         tileUrl={health?.tiles && layer && !comparison && !activeContext ? api.tileUrl(layer) : undefined}
         beforeUrl={layer && radarComparison ? api.tileUrl(layer, "before", rgb) : undefined}
@@ -244,6 +245,9 @@ export function App() {
         {activeContext && <small className="map-context-source">{activeContext.product} · {activeContext.date} · {preview ? "Vista visual NISAR" : "Complementario"}</small>}
         {mapStatus.terrain === "unavailable" && <button type="button" onClick={() => chooseTab("terrain")}>Relieve sin activar</button>}
         {mapStatus.terrain === "regional" && <button type="button" onClick={() => chooseTab("terrain")}>Relieve local de Ayacucho</button>}
+        {!current && !alertsLoading && <LiveSummary alerts={alerts} onKind={kind => {
+          setAlertKind(kind); setSelected(undefined); chooseTab("alerts");
+        }} />}
       </div>
 
       <nav className="rail" aria-label="Secciones">

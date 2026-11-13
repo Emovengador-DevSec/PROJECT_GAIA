@@ -4,6 +4,8 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- W1: llegada a Sudamérica, giro orbital lento que se interrumpe con gestos y contadores calculados a partir de las fuentes disponibles.
+
 - W2: ondas sísmicas, polígonos NISAR sobre el relieve y columnas FIRMS agregadas en hexágonos de unos 10 km, con focos individuales al acercarse.
 
 - W8: paneles con texto legible adaptable, observaciones prioritarias por tipo, grupos por lugar y cifras animadas con movimiento reducido.
