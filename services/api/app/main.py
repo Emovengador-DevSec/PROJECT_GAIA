@@ -5,11 +5,12 @@ from __future__ import annotations
 import json
 import os
 import re
+import secrets
 from base64 import b64decode
 from collections import OrderedDict
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
-from functools import cache
+from functools import cache, lru_cache
 from pathlib import Path
 from threading import Lock
 from time import monotonic
@@ -17,11 +18,14 @@ from typing import Literal
 
 import yaml
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import FastAPI, Header, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
+from pydantic import ValidationError
+
+from . import reports
 
 ROOT = Path(os.environ.get("SARLAB_ROOT", Path(__file__).resolve().parents[3]))
 load_dotenv(ROOT / ".env", override=False)
@@ -60,7 +64,7 @@ app.add_middleware(TextCompression, minimum_size=1024, compresslevel=5)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[os.environ.get("ALLOWED_ORIGIN", "http://localhost:5173")],
-    allow_methods=["GET"],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
@@ -377,6 +381,133 @@ def live_quakes():
 @app.get("/api/live/fires")
 def live_fires():
     return live.collection("fires")
+
+
+@app.get("/api/community")
+def community_index():
+    from .community import publication
+
+    data = publication(PROCESSED.parent / "04_published")
+    if data is None:
+        return None
+    return {**data, "places": [{key: value for key, value in place.items() if key != "impact"}
+                               for place in data["places"]]}
+
+
+@app.get("/api/community/{place_id}")
+def community_place(place_id: str):
+    from .community import community_detail, publication
+
+    published = PROCESSED.parent / "04_published"
+    data = publication(published)
+    entry = next((place for place in (data or {}).get("places", []) if place["id"] == place_id), None)
+    if not entry:
+        raise HTTPException(404, "No hay una ficha comunitaria para este lugar.")
+    feeds = {provider: live.collection(provider) for provider in ("quakes", "fires")}
+    weather = study_climate("ayacucho-huanta")
+    thresholds = _yaml(CONFIG / "thresholds.yaml")["community"]
+    return {**entry, **community_detail(entry, feeds, thresholds, weather)}
+
+
+@app.get("/api/climate/{aoi}")
+def study_climate(aoi: str):
+    if not re.fullmatch(r"[a-z0-9-]+", aoi):
+        raise HTTPException(422, "Identificador de zona inválido.")
+    path = PROCESSED.parent / "04_published" / "climate" / f"{aoi}.json"
+    return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else None
+
+
+def _reports_db() -> Path:
+    return PROCESSED.parent / "reports" / "reports.sqlite3"
+
+
+@app.get("/api/reports")
+def visible_reports():
+    with _report_list_lock:
+        payload = _published_reports(_reports_db(), int(monotonic() // 60))
+    return Response(json.dumps(payload, ensure_ascii=False), media_type="application/json",
+                    headers={"Cache-Control": "no-store"})
+
+
+_report_list_lock = Lock()
+
+
+@lru_cache(maxsize=1)
+def _published_reports(path: Path, _minute: int) -> list[dict]:
+    records = reports.list_reports(path, "visible")
+    if not records:
+        return records
+    aoi = "ayacucho-huanta"
+    period = _active_gcov(aoi)
+    hv = PROCESSED / aoi / "gcov" / (period or "") / "alerts_hvhv.geojson"
+    areas = _hv_areas(hv, hv.stat().st_mtime_ns) if period and hv.is_file() else []
+    return reports.annotate(records, live.collection("fires")["features"], areas)
+
+
+@lru_cache(maxsize=1)
+def _hv_areas(path: Path, _modified: int):
+    from shapely.geometry import shape
+
+    return [shape(item["geometry"]) for item in json.loads(path.read_text(encoding="utf-8"))["features"]]
+
+
+@app.post("/api/reports", status_code=201)
+async def submit_report(request: Request):
+    origin = request.headers.get("origin")
+    allowed = {str(request.base_url).rstrip("/"), os.environ.get("ALLOWED_ORIGIN", "http://localhost:5173")}
+    if origin and origin not in allowed and request.headers.get("sec-fetch-site") != "same-origin":
+        raise HTTPException(403, "Abre la ficha desde GAIA para enviar un reporte.")
+    if request.headers.get("content-type", "").partition(";")[0].strip() != "application/json":
+        raise HTTPException(415, "Envía un reporte en JSON.")
+    body = bytearray()
+    async for chunk in request.stream():
+        if len(body) + len(chunk) > 4096:
+            raise HTTPException(413, "El reporte supera el tamaño permitido.")
+        body.extend(chunk)
+    try:
+        report = reports.ReportIn.model_validate_json(body)
+    except ValidationError as exc:
+        raise HTTPException(422, "Revisa el tipo, ubicación, fecha y nota. Evita datos de contacto.") from exc
+    west, south, east, north = _yaml(CONFIG / "aois" / "ayacucho-huanta.yaml")["bbox"]
+    if not (west <= report.lon <= east and south <= report.lat <= north):
+        raise HTTPException(422, "Selecciona una ubicación dentro de la zona de estudio de Ayacucho.")
+    if not reports.allow_submission(request.client.host if request.client else "unknown"):
+        raise HTTPException(
+            429, "Alcanzaste el límite de reportes por hora.", headers={"Retry-After": "3600"},
+        )
+    from starlette.concurrency import run_in_threadpool
+
+    ident = await run_in_threadpool(reports.create, _reports_db(), report)
+    return {"id": ident, "status": "pending"}
+
+
+def _require_moderator(token: str | None) -> None:
+    expected = os.environ.get("GAIA_REPORTS_ADMIN_TOKEN", "")
+    prefix = "Bearer "
+    if not expected or not token or not token.startswith(prefix) or not secrets.compare_digest(
+        token[len(prefix):].encode(), expected.encode(),
+    ):
+        raise HTTPException(403, "Se requiere acceso de moderación.")
+
+
+@app.get("/api/reports/moderation")
+def pending_reports(authorization: str | None = Header(None)):
+    _require_moderator(authorization)
+    return Response(json.dumps(reports.list_reports(_reports_db(), "pending"), ensure_ascii=False),
+                    media_type="application/json", headers={"Cache-Control": "no-store"})
+
+
+@app.patch("/api/reports/moderation/{report_id}", status_code=204)
+def moderate_report(
+    report_id: str, action: Literal["visible", "rejected"], authorization: str | None = Header(None),
+):
+    _require_moderator(authorization)
+    with _report_list_lock:
+        valid_id = re.fullmatch(r"[a-f0-9]{32}", report_id)
+        if not valid_id or not reports.moderate(_reports_db(), report_id, action):
+            raise HTTPException(404, "Reporte no encontrado o transición no disponible.")
+        _published_reports.cache_clear()
+    return Response(status_code=204)
 
 
 @app.get("/api/orbit")

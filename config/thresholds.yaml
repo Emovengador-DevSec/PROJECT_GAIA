@@ -18,3 +18,9 @@ min_alert_pixels:
   value: 25
   initial: true
   tune_with: tamaño mínimo de mancha a reportar (píxeles)
+community:
+  fire_radius_km: 5
+  quake_radius_km: 100
+  quake_magnitude: 4.5
+  heat_days: 3
+  rain_ratio: 0.5
