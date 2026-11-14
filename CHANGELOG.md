@@ -4,6 +4,8 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- C3 agrega los arcos climáticos de Ayacucho con NASA POWER, observaciones recientes y una extrapolación térmica hasta 2035.
+
 - C2 activa el semáforo informativo con umbrales publicados, fuentes oficiales peruanas y una ficha para imprimir o compartir por WhatsApp.
 
 - C1 publica fichas de Mi comunidad con exposición HV por lugar, cultivos, población estimada y observaciones recientes de FIRMS y USGS.

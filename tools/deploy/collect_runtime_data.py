@@ -64,7 +64,8 @@ def collect(destination: Path) -> tuple[int, int]:
             if "alert_count" in report:
                 report["alert_count"] = len(report["alerts"])
             documents[path.relative_to(DATA)] = report
-    for pattern in ("04_published/context/*/*.png", "04_published/rainfall/*.json", "catalog/nisar_*.json"):
+    for pattern in ("04_published/context/*/*.png", "04_published/rainfall/*.json",
+                    "04_published/community/*.json", "04_published/climate/*.json", "catalog/nisar_*.json"):
         for path in sorted(DATA.glob(pattern)):
             add(path)
 

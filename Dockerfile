@@ -5,6 +5,7 @@ COPY apps/web/package.json apps/web/package-lock.json ./
 RUN npm ci
 COPY apps/web/ ./
 RUN --mount=type=secret,id=VITE_CESIUM_ION_TOKEN,mode=0400 \
+    --mount=type=secret,id=web_env,target=/build/.env,mode=0400 \
     if [ -f /run/secrets/VITE_CESIUM_ION_TOKEN ]; then \
       export VITE_CESIUM_ION_TOKEN="$(cat /run/secrets/VITE_CESIUM_ION_TOKEN)"; \
     fi && npm run build

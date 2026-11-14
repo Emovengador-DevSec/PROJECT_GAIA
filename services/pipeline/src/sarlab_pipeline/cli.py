@@ -72,7 +72,22 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--group", help="Grupo interno confirmado al inspeccionar el NetCDF")
     r.add_argument("files", nargs=3, type=Path)
 
+    climate = sub.add_parser("climate", help="Publica la climatología diaria de NASA POWER")
+    climate.add_argument("--aoi", required=True)
+    climate.add_argument("--input", type=Path, help="Respuesta original descargada de NASA POWER")
+
     a = ap.parse_args(argv)
+
+    if a.cmd == "climate":
+        from .climate import publish
+
+        try:
+            result = publish(a.aoi, a.input)
+        except (OSError, ValueError, KeyError) as exc:
+            ap.error(str(exc))
+        print(json.dumps({"years": len(result["annual"]), "current": result["current"]["date"],
+                          "trend_per_decade": result["trend_per_decade"]}))
+        return 0
 
     if a.cmd == "search":
         from .config import load_aois
