@@ -4,6 +4,8 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- Los focos individuales FIRMS actualizan su color al mover la fecha de reproducción, también con movimiento reducido; el contenedor incorpora la escala por antigüedad ya confirmada.
+
 - El fuego FIRMS usa una escala por antigüedad (rojo con brillo < 24 h, naranja 1–3 días, marrón 4–7 días) con su leyenda; antes solo era rojo con menos de 12 h y casi siempre se veía naranja.
 - Datos extra D1–D4: cruce de cultivos y pendiente, cortina óptica HLS, contexto agrícola oficial de Ayacucho y archivo histórico MODIS con cobertura diaria verificada y cuota persistente.
 

@@ -469,6 +469,7 @@ export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint
     const individualFires: Cesium.Entity[] = [];
     const columns: Cesium.Entity[] = [];
     const fireColors = FIRE_AGE_COLORS.map(color => Cesium.Color.fromCssColorString(color));
+    const fireMarkers = FIRE_AGE_COLORS.map(color => marker("fire", color));
     const reference = () => cutoffRef.current ?? Date.now();
     const points = alerts.filter(item => item.properties.kind === "fire").length > 1000
       ? v.scene.primitives.add(new Cesium.PointPrimitiveCollection()) as Cesium.PointPrimitiveCollection : undefined;
@@ -503,6 +504,9 @@ export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint
       });
       if (p.kind === "fire") {
         individualFires.push(entity);
+        entity.billboard!.image = new Cesium.CallbackProperty(
+          () => fireMarkers[fireAge(p.date, reference())], false,
+        );
         if (!reduce && entity.billboard) entity.billboard.color = new Cesium.CallbackProperty(
           (_time, result) => Cesium.Color.WHITE.withAlpha(.65 + .35 * Math.sin(phase(lat * 1000) * Math.PI) ** 2, result), false,
         );
@@ -561,6 +565,8 @@ export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint
       for (const [index, { point, date, lon, lat }] of firePoints.entries()) {
         point.show = close && date <= until && index < Math.ceil(progress * firePoints.length);
         if (point.show) {
+          const tier = fireAge(new Date(date).toISOString(), reference());
+          point.color = fireColors[tier].withAlpha(FIRE_AGE_ALPHA[tier]);
           const terrainHeight = v.scene.globe.getHeight(Cesium.Cartographic.fromDegrees(lon, lat)) ?? 0;
           point.position = Cesium.Cartesian3.fromDegrees(lon, lat, Math.max(0, terrainHeight) * v.scene.verticalExaggeration + 10);
         }
