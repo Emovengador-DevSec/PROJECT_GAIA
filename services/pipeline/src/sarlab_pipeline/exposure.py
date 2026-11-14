@@ -39,7 +39,7 @@ def _raster(path: Path, geometry: dict):
         return values[0], affine, CRS.from_wkt(src.crs.to_wkt()), shape(projected)
 
 
-def _weighted_cells(path: Path, geometry: dict):
+def _weighted_cells(path: Path, geometry: dict, *, with_columns: bool = False):
     """Weight each valid cell by the fraction of its footprint inside the alert."""
     pixels, affine, crs, polygon = _raster(path, geometry)
     valid = ~np.ma.getmaskarray(pixels) & np.isfinite(pixels.data)
@@ -51,7 +51,8 @@ def _weighted_cells(path: Path, geometry: dict):
         top = affine.f + affine.e * rows[section]
         cells = box(left, top + affine.e, left + affine.a, top)
         weights[section] = area(intersection(cells, polygon)) / abs(affine.a * affine.e)
-    return pixels.data[rows, cols], weights.clip(0, 1), rows, affine, crs, polygon
+    result = (pixels.data[rows, cols], weights.clip(0, 1), rows, affine, crs, polygon)
+    return (*result, cols) if with_columns else result
 
 
 def _population(path: Path, geometry: dict) -> float | None:

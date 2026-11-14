@@ -12,6 +12,7 @@ import { Sparkline } from "./Sparkline";
 import { RainfallChart } from "./RainfallChart";
 import { Community } from "../community/Community";
 import { ClimateArcs } from "../community/ClimateArcs";
+import { AgricultureStory } from "../community/AgricultureEvidence";
 
 type Props = {
   tab: TabId; aois: AOI[]; current?: AOI; layers: LayerManifest[]; layer?: LayerManifest;
@@ -63,9 +64,9 @@ function ContextLayers({ items, active, onSelect, title = "Observaciones complem
       <p><strong>{item.name}</strong><small>{item.product} · {item.source} · {item.before && `${item.before} → `}<time dateTime={item.date}>{item.date}</time></small></p>
       <p className="muted">{item.note}</p>
       {item.scene && <p className="muted">Escena · <span className="granule-id">{item.scene}</span></p>}
-      {item.scenes && <details className="technical-details"><summary>Gránulos ASF de estas fechas</summary>
-        <ul className="granule-list">{item.scenes.map(scene => <li key={scene}><a className="source-link granule-id"
-          href={vertexGranule(scene)} target="_blank" rel="noopener noreferrer">{scene} ↗</a></li>)}</ul>
+      {item.scenes && <details className="technical-details"><summary>Gránulos de estas fechas</summary>
+        <ul className="granule-list">{item.scenes.map(scene => <li key={scene}>{scene.startsWith("NISAR_") ? <a className="source-link granule-id"
+          href={vertexGranule(scene)} target="_blank" rel="noopener noreferrer">{scene} ↗</a> : <span className="granule-id">{scene}</span>}</li>)}</ul>
       </details>}
       {item.license && <p className="muted">{item.license}</p>}
       {item.available ? <button type="button" className="secondary-action" aria-pressed={active?.id === item.id}
@@ -186,6 +187,7 @@ export function Inspector(p: Props) {
             <ul className="granule-list">{p.rainfall.granules.map(granule => <li key={granule}>{granule}</li>)}</ul>
           </> : <p className="empty-inline">Para calcular el acumulado se necesitan los tres productos diarios IMERG originales del 22 al 24 de febrero de 2026. El acceso exige una cuenta Earthdata.</p>}
         </details>}
+        {p.current?.id === "ayacucho-huanta" && <AgricultureStory />}
         <LearnMore aoi={p.current} date={p.activeContext?.date ?? layer?.dates.b} onResources={p.onResources} />
       </>)}
 

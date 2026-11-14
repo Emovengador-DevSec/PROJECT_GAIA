@@ -60,3 +60,19 @@
   .community .muted, .community dt, .community a { color: #252525 !important; }
   .community-block { break-inside: avoid; }
 }
+.agricultural-calendar { margin: 0 0 18px; padding-left: 22px; }
+.agricultural-calendar li { padding: 8px 0; }
+.agricultural-calendar a { font-size: 16px; }
+.agriculture-evidence .agricultural-calendar p { margin: 6px 0; }
+.agricultural-context { padding-top: 18px; }
+.agricultural-print-source { display: none; }
+.fire-history { margin-top: 22px; padding-top: 18px; border-top: 1px solid #334451; }
+.fire-history svg { display: block; width: 100%; margin: 14px 0; }
+.fire-history svg text { fill: #cbd9e4; font: 12px var(--font-body); }
+.fire-history table { width: 100%; border-collapse: collapse; font-size: 16px; }
+.fire-history th, .fire-history td { padding: 6px 3px; text-align: right; border-bottom: 1px solid #334451; }
+.fire-history th:first-child { text-align: left; }
+@media print {
+  .agricultural-context { display: none; }
+  .agricultural-print-source { display: block; }
+}

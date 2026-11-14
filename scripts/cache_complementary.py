@@ -1,5 +1,6 @@
 """Prepara recortes públicos de NASA GIBS y del archivo RADARSAT-1."""
 
+import argparse
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
@@ -60,15 +61,25 @@ def gibs_png(client: httpx.Client, layer: dict, bounds: tuple, width: int, heigh
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--aoi")
+    parser.add_argument("--layer")
+    args = parser.parse_args()
     zones = load_aois()
     config = yaml.safe_load((CONFIG_DIR / "context.yaml").read_text(encoding="utf-8"))
     with httpx.Client(timeout=30) as client:
         for zone, layers in config.items():
+            if args.aoi and args.aoi != zone:
+                continue
             bounds = zones[zone].bbox
             west, south, east, north = bounds
             width = 768
             height = round(width * (north - south) / (east - west))
             for layer in layers:
+                if args.layer and args.layer != layer["id"]:
+                    continue
+                width = layer.get("width", 768)
+                height = round(width * (north - south) / (east - west))
                 fetch = historic_png if layer["id"] == "radarsat1" else gibs_png
                 for day in [layer["before"], layer["date"]] if "before" in layer else [layer["date"]]:
                     body = fetch(client, {**layer, "date": day}, bounds, width, height)

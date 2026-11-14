@@ -51,3 +51,8 @@ steps:
     layer: diff_hvhv
     camera: zone
     text: Una serie de cuatro fechas o más permite explorar tendencias con incertidumbre. La hipótesis de recuperación se contrasta con lluvias, imagen óptica y conocimiento local.
+  - title: Cultivos, laderas y lluvias
+    layer: none
+    camera: zone
+    context: hls-optical
+    text: La ficha cruza las manchas radar con cultivos y pendiente real del terreno. Desliza la comparación óptica HLS del 22 de junio y 8 de octubre. La cosecha y la preparación de la tierra son hipótesis que requieren registros locales. Ni la caída de HV ni una ladera inclinada confirman suelo desnudo o erosión.

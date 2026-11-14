@@ -417,6 +417,25 @@ def study_climate(aoi: str):
     return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else None
 
 
+@app.get("/api/agriculture/{aoi}")
+def study_agriculture(aoi: str):
+    if not re.fullmatch(r"[a-z0-9-]+", aoi):
+        raise HTTPException(422, "Identificador de zona inválido.")
+    path = PROCESSED.parent / "04_published" / "agriculture" / f"{aoi}.json"
+    if not path.is_file():
+        return None
+    return {key: value for key, value in json.loads(path.read_text(encoding="utf-8")).items()
+            if key != "alerts"}
+
+
+@app.get("/api/fire-history/{aoi}")
+def study_fire_history(aoi: str):
+    if not re.fullmatch(r"[a-z0-9-]+", aoi):
+        raise HTTPException(422, "Identificador de zona inválido.")
+    path = PROCESSED.parent / "04_published" / "fire-history" / f"{aoi}.json"
+    return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else None
+
+
 def _reports_db() -> Path:
     return PROCESSED.parent / "reports" / "reports.sqlite3"
 

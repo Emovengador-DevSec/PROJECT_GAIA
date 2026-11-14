@@ -1,13 +1,15 @@
 """Ingesta: data/00_inbox -> validación -> data/01_raw (inmutable) + catálogo; fallos a cuarentena."""
 from __future__ import annotations
 
+import csv
 import hashlib
+import io
 import json
 import os
 import re
 import shutil
 from contextlib import contextmanager
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from uuid import uuid4
@@ -21,6 +23,8 @@ NAME_RE = re.compile(r"^NISAR_(?P<level>L\d)_(?P<cfg>[A-Z]{2})_(?P<product>[A-Z0
                      r"_(?P<start>\d{8}T\d{6})_(?P<end>\d{8}T\d{6})_.*\.h5$")
 IMERG_RE = re.compile(r"^3B-DAY-L\.MS\.MRG\.3IMERG\.(?P<day>\d{8})"
                       r"-S000000-E235959\.V07B\.nc4$")
+TERRAIN_RE = re.compile(r"^MAPZEN_12_(?P<x>\d{1,4})_(?P<y>\d{1,4})\.tif$")
+FIRMS_RE = re.compile(r"^FIRMS_MODIS_SP_ayacucho-huanta_(?P<day>\d{4}-\d{2}-\d{2})_(?P<days>[1-5])\.csv$")
 
 
 def sha256(path: Path) -> str:
@@ -32,6 +36,28 @@ def sha256(path: Path) -> str:
 
 
 def identify(path: Path) -> dict:
+    if match := TERRAIN_RE.fullmatch(path.name):
+        import rasterio
+
+        with rasterio.open(path) as raster:
+            if raster.count != 1 or raster.crs.to_epsg() != 3857 or raster.shape != (512, 512):
+                raise ValueError("La tesela Mapzen no tiene la rejilla esperada.")
+        return {"source": "mapzen", "level": "DEM", "cfg": "ST", "product": "TERRAIN",
+                "acquired": datetime.now(UTC).date().isoformat(), "date_kind": "retrieved",
+                "x": int(match["x"]), "y": int(match["y"]), "zoom": 12}
+    if match := FIRMS_RE.fullmatch(path.name):
+        start = datetime.fromisoformat(match["day"])
+        end = start + timedelta(days=int(match["days"]))
+        reader = csv.DictReader(io.StringIO(path.read_text(encoding="utf-8")))
+        if not reader.fieldnames or not {"acq_date", "latitude", "longitude"} <= set(reader.fieldnames):
+            raise ValueError("FIRMS debe conservar su cabecera original.")
+        for row in reader:
+            if not start <= datetime.fromisoformat(row["acq_date"]) < end:
+                raise ValueError("El CSV FIRMS contiene una observación fuera del intervalo.")
+            if not (-74.4 <= float(row["longitude"]) <= -73.9 and -13.4 <= float(row["latitude"]) <= -12.8):
+                raise ValueError("El CSV FIRMS contiene una observación fuera de Ayacucho.")
+        return {"source": "firms", "level": "L2", "cfg": "ST", "product": "MODIS_SP",
+                "acquired": match["day"], "days": int(match["days"])}
     imerg = IMERG_RE.fullmatch(path.name)
     if imerg:
         with h5py.File(path, "r"):
@@ -142,7 +168,8 @@ def _ingest_locked() -> dict:
     checksums = json.loads(checksums_p.read_text()) if checksums_p.exists() else {}
     report = {"ingeridos": [], "omitidos": [], "cuarentena": [], "recuperados": []}
     accepted = []
-    for path in sorted([*S.INBOX.glob("*.h5"), *S.INBOX.glob("*.nc4")]):
+    for path in sorted([*S.INBOX.glob("*.h5"), *S.INBOX.glob("*.nc4"),
+                        *S.INBOX.glob("MAPZEN_*.tif"), *S.INBOX.glob("FIRMS_*.csv")]):
         if not path.is_file():
             continue
         try:

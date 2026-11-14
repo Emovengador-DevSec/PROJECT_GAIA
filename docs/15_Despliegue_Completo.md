@@ -14,6 +14,10 @@ docker run --rm --name gaia-alerta -p 127.0.0.1:7860:7860 --env-file .env gaia-a
 
 El exportador genera `deploy/data/` con el par activo, la exposición, la validación, las capas visuales y los catálogos que consulta la API. El paquete probado ocupa 259,37 MB. El destino debe estar vacío y se crea con cada exportación. Para repetir el proceso se puede usar `--output deploy/otro-destino` y sustituir la copia local `deploy/data/` antes de compilar. Los HDF5 y el período de la trayectoria 75 permanecen en el archivo de trabajo.
 
+La exportación también recoge comunidad, NASA POWER, pendientes agrícolas, historia MODIS y lluvia IMERG cuando están publicados. Los recortes ópticos HLS se cargan a petición. El tamaño cambia al añadir estas capas; usa la cifra que imprime el exportador.
+
+Los reportes ciudadanos requieren un almacenamiento persistente en `/srv/gaia/data/reports`. En la validación local se monta `deploy/reports-runtime` en esa ruta. En el servicio de producción configura un volumen persistente y `GAIA_REPORTS_ADMIN_TOKEN` como secreto de ejecución. Así los reportes sobreviven al reemplazo del contenedor. No incluyas esa carpeta en la imagen ni en Git.
+
 Para compilar con la configuración local de Cesium, usa `docker build --secret id=web_env,src=apps/web/.env -t gaia-alerta .`. Vite consume el archivo montado como secreto durante la compilación. Las credenciales del servidor se suministran al ejecutar el contenedor.
 
 Abre [la aplicación local](http://127.0.0.1:7860/) y [el estado de la API](http://127.0.0.1:7860/api/health). Entra a Ayacucho, abre Cambios, mueve la cortina y consulta la ficha de exposición. En Observaciones revisa las fechas de USGS y FIRMS. Si añades Cesium en local, autoriza esa URL en un token de desarrollo.

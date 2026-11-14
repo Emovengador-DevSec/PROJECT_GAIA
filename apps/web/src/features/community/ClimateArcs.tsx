@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api, type AlertFeature, type Climate, type FeedStatus, type Rainfall } from "../../lib/api";
 import { formatDate } from "../../lib/formatDate";
 import { formatNumber as number } from "../../lib/formatNumber";
+import { FireHistory } from "./FireHistory";
 
 type Period = "past" | "present" | "future";
 const periods: [Period, string][] = [["past", "Pasado"], ["present", "Presente"], ["future", "Futuro"]];
@@ -58,6 +59,7 @@ export function ClimateArcs({ alerts, sources, rainfall }: { alerts: AlertFeatur
         {current && <p>Máxima de <strong>{number(current.max_c)} °C</strong> el {formatDate(current.date)}. {current.hot_last_year} días dentro de episodios de calor en los 365 días previos al último dato.</p>}
         <p className="muted">FIRMS · {fire && fire.status !== "unavailable" ? `${alerts.filter(event => event.properties.kind === "fire").length} focos en Perú · ${formatDate(fire.last_updated)}` : "fuente sin actualizar"}</p>
       </>}
+      {period === "past" && <FireHistory />}
     </section>
     <section className="climate-lane"><h4>Tierra y agua</h4>
       {period === "past" && latest && <p><strong>{number(latest.rain_mm, 1)} mm</strong> acumulados en {latest.year} en el punto de estudio.</p>}

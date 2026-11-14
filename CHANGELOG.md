@@ -4,6 +4,8 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- Datos extra D1–D4: cruce de cultivos y pendiente, cortina óptica HLS, contexto agrícola oficial de Ayacucho y archivo histórico MODIS con cobertura diaria verificada y cuota persistente.
+
 - Revisión 19: lluvia excesiva en el semáforo, acumulado IMERG real de Chosica, vuelo y radar desde Mi comunidad, explicación del área fuera de las provincias y panel orbital legible.
 
 - Añadido el plan de datos extra y entrega del domingo (docs/18): erosión por pendiente, óptico HLS, calendario agrícola, historial de incendios y pitch de 30 s en inglés.

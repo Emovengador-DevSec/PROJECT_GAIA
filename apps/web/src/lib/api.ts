@@ -96,14 +96,24 @@ export type PolarizationSummary = {
 
 type CommunitySource = { name: string; url: string; year?: number; date?: string; license?: string };
 type CommunityImpact = { zones: number; cropland_ha: number | null; grassland_ha: number | null;
+  cropland_low_slope_ha?: number | null; cropland_steep_ha?: number | null; cropland_slope_unknown_ha?: number | null;
   forest_ha: number | null; population: number | null; population_zones: number };
 export type CommunityPlace = { id: string; name: string; kind: "province" | "district" | "place";
   province: string; center: [number, number]; url?: string };
 export type CommunityIndex = { period: { a: string; b: string }; granules: string[]; coverage_pct: number;
+  agriculture?: Agriculture | null;
   region: CommunityImpact; outside_provinces?: CommunityImpact; sources: Record<string, CommunitySource>; district_source?: CommunitySource;
   places: CommunityPlace[] };
 type NearbyEvents = { status: string; updated_at: string | null; radius_km: number;
   events: { date: string; km: number; magnitude?: number }[] };
+export type Agriculture = { threshold_deg: number; grid_m: number; source: string; source_url: string;
+  attribution_url: string; retrieved_at: string; note: string;
+  region: { cropland_low_slope_ha: number; cropland_steep_ha: number; cropland_slope_unknown_ha: number };
+  calendar: { label: string; date: string; text: string; source: string; url: string }[]; calendar_note: string;
+  erosion_reference?: { name: string; url: string } };
+export type FireHistory = { start: string; end: string; count: number; covered_days: number;
+  annual: { year: number; count: number }[]; monthly: { month: number; total: number; mean: number }[];
+  source: string; source_url: string; retrieved_at: string; versions: string[]; originals: number; note: string };
 export type Climate = { source: string; version: string; source_url: string; fetched_at: string;
   coordinates: [number, number]; trend_per_decade: number;
   annual: { year: number; temperature: number; rain_mm: number }[];
@@ -137,6 +147,8 @@ export const api = {
   },
   climate: (aoi: string, signal?: AbortSignal) => get<Climate | null>(`/climate/${encodeURIComponent(aoi)}`, signal),
   community: (signal?: AbortSignal) => get<CommunityIndex | null>("/community", signal),
+  agriculture: (signal?: AbortSignal) => get<Agriculture | null>("/agriculture/ayacucho-huanta", signal),
+  fireHistory: (signal?: AbortSignal) => get<FireHistory | null>("/fire-history/ayacucho-huanta", signal),
   communityPlace: (id: string, signal?: AbortSignal) => get<CommunityDetail>(`/community/${encodeURIComponent(id)}`, signal),
   orbit: () => get<OrbitData>("/orbit"),
   aois: () => get<AOI[]>("/aois"),

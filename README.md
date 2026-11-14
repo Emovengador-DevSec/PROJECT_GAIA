@@ -23,6 +23,22 @@ HV presenta **3.607 ha con caída de señal**. Las **498 manchas delimitadas** r
 
 El globo abre con **Siempre de día**. El selector de la barra permite explorar la iluminación solar en **Hora real**.
 
+## Comunidades, clima y agricultura
+
+Mi comunidad reúne 3 provincias, 39 distritos y 1148 localidades de Ayacucho. Cada ficha muestra cultivos, pastizales, bosque y población estimada dentro de las manchas radar, con la cobertura de cada fuente. La selección activa la zona NISAR y vuela al lugar. El semáforo combina observaciones recientes de FIRMS, USGS y NASA POWER, con razones y umbrales visibles. Es informativo y enlaza las recomendaciones oficiales.
+
+El cruce agrícola delimita **518,36 ha de cultivos con cambio HV**, de las cuales **58,046 ha** caen en pendientes de más de **15°**. Usa elevaciones Mapzen sobre una rejilla métrica de 30 m y WorldCover 2021, con ponderación por área. Estos datos no confirman suelo desnudo ni erosión. La comparación óptica **HLS S30 v2 del 22-jun y 8-oct de 2026** y las observaciones fenológicas de SENAMHI sirven para investigar la hipótesis agrícola. Los documentos de SENAMHI corresponden a otras localidades y campañas y se identifican como contexto.
+
+Tiempo muestra 45 años completos de NASA POWER (1981–2025), observaciones recientes y una extrapolación estadística con incertidumbre. El archivo MODIS 2001–2025 reúne **914 detecciones** tras verificar las consultas de sus **9131 días**. Sus focos son detecciones térmicas, no incendios únicos ni hectáreas quemadas. Chosica cuenta con un acumulado IMERG Late real de **13,62 mm** en el episodio del 22–24 de febrero de 2026.
+
+Los reportes ciudadanos se guardan como pendientes y requieren moderación con una clave del servidor. Las notas no se publican y la ubicación se aproxima para proteger a las personas. Las fichas se pueden compartir o imprimir.
+
+Para reproducir los datos extra, consulta [el registro de la ampliación](docs/21_Datos_Extra_Verificados.md). La [revisión 19](docs/20_Cierre_Revision_19.md) documenta los ajustes de lluvia, comunidad y navegación.
+
+![Historial MODIS real de Ayacucho, 2001–2025](art/verificacion/datos-extra/modis-1440.jpg)
+
+[Cortina óptica HLS](art/verificacion/datos-extra/hls-1440.jpg) · [Ficha agrícola en teléfono](art/verificacion/datos-extra/pendiente-390.jpg)
+
 ![Comparación NISAR activa en Ayacucho](art/verificacion/final/radar-1440.jpg)
 
 [Ver exposición territorial](art/verificacion/final/exposicion-1440.jpg) · [Video de respaldo de 2 min 38 s](art/verificacion/gaia-alerta-demo.mp4)

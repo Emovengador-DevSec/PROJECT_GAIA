@@ -1,5 +1,20 @@
 # Capa visual de NASA GIBS. La fecha corresponde a la imagen de GIBS.
 ayacucho-huanta:
+  - id: hls-optical
+    name: Cultivos en junio y octubre · imagen óptica
+    product: HLS S30 v2 · Sentinel-2, 30 m
+    source: NASA HLS / Copernicus Sentinel-2 · GIBS
+    layer: HLS_S30_Nadir_BRDF_Adjusted_Reflectance
+    date: '2026-10-08'
+    before: '2026-06-22'
+    width: 1536
+    scenes:
+      - HLS.S30.T18LWL.2026173T150941.v2.0
+      - HLS.S30.T18LXL.2026173T150941.v2.0
+      - HLS.S30.T18LWL.2026281T150721.v2.0
+      - HLS.S30.T18LXL.2026281T150721.v2.0
+    note: Reflectancia óptica diaria. Dos días antes de cada observación NISAR. Nubes y huecos pueden ocultar el terreno. La imagen no confirma por sí sola cosecha, incendio ni suelo desnudo.
+    href: https://gibs.earthdata.nasa.gov/layer-metadata/v1.0/HLS_S30_Nadir_BRDF_Adjusted_Reflectance.json
   - id: nisar-gcov
     kind: nisar-preview
     name: Comparación visual NISAR en falso color

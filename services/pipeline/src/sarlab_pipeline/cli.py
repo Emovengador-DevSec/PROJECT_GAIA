@@ -75,8 +75,19 @@ def main(argv: list[str] | None = None) -> int:
     climate = sub.add_parser("climate", help="Publica la climatología diaria de NASA POWER")
     climate.add_argument("--aoi", required=True)
     climate.add_argument("--input", type=Path, help="Respuesta original descargada de NASA POWER")
+    fires = sub.add_parser("fire-history", help="Publica el archivo histórico completo de focos MODIS")
+    fires.add_argument("--aoi", required=True)
 
     a = ap.parse_args(argv)
+    if a.cmd == "fire-history":
+        from .fire_history import publish
+
+        try:
+            result = publish(a.aoi)
+        except (OSError, ValueError) as exc:
+            ap.error(str(exc))
+        print(json.dumps({"detections": result["count"], "days": result["covered_days"]}))
+        return 0
 
     if a.cmd == "climate":
         from .climate import publish

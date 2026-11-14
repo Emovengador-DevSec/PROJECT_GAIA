@@ -4,6 +4,7 @@ import { formatDate } from "../../lib/formatDate";
 import { formatNumber as number } from "../../lib/formatNumber";
 import { Indicator } from "./Indicator";
 import { CitizenReports } from "./CitizenReports";
+import { AgricultureEvidence } from "./AgricultureEvidence";
 import "./community.css";
 
 const normalize = (name?: string | null) => (name ?? "").normalize("NFD").replace(/\p{Diacritic}/gu, "").trim().toLowerCase();
@@ -111,10 +112,11 @@ export function Community({ onLocate, reports, reportError, reportLayer, onRepor
           <p className="muted">USGS · hasta {detail.quakes.radius_km} km · {formatDate(detail.quakes.updated_at)}{detail.quakes.status === "cached" && " · copia guardada"}</p>
           {detail.quakes.events[0] && <p>Último sismo · M {number(detail.quakes.events[0].magnitude, 1)} · {formatDate(detail.quakes.events[0].date)}</p>}
         </section>
-        <section className="community-block"><h4>Qué investigar en las chacras</h4>
+        {index?.agriculture && detail.impact && <AgricultureEvidence data={index.agriculture} impact={detail.impact} />}
+        {!index?.agriculture && <section className="community-block"><h4>Qué investigar en las chacras</h4>
           <p>En el área estudiada, {number(index?.region.cropland_ha)} ha de cultivo coinciden con manchas HV. La cosecha y la preparación del terreno podrían explicar parte de la caída de señal.</p>
           <p className="muted">Contrasta esa hipótesis con el calendario de siembra, registros locales y observaciones ópticas. Lluvia, humedad e incendios también pueden modificar el eco radar.</p>
-        </section>
+        </section>}
       </>}
       <CitizenReports reports={reports} error={reportError} active={reportLayer} onLayer={onReportLayer}
         picking={picking} onPick={onPick} point={point} onLocate={onLocateReport} />

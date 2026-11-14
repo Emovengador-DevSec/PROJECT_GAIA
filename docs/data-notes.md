@@ -271,3 +271,25 @@ delimitadas. El cociente sobre NISAR es 2,25 % y la intersección/unión es 0,80
 Se muestran ambos cocientes y sus denominadores. La coincidencia limitada conserva
 la hipótesis de incendios como `por_verificar`. Los datos actuales sostienen un cambio
 de señal medido y requieren observaciones independientes para explicar su causa.
+## Ampliación agrícola y archivo MODIS · 14-nov-2026
+
+Los originales Mapzen y los CSV de FIRMS también entran por `00_inbox` y `sarlab ingest`.
+La ingesta comprueba contenedor, CRS y tamaño de las teselas Mapzen y cabecera, fechas y
+coordenadas de los CSV. Conserva SHA-256 y nombres de consulta. La fecha de los GeoTIFF
+se identifica como archivado/recuperación, no como fecha de observación del DEM compuesto.
+
+El cruce de 498 manchas HV con cultivos WorldCover produce 460,314 ha hasta 15° y
+58,046 ha por encima de 15°, sin cultivos con pendiente desconocida. La suma conserva
+518,360 ha. Es una clasificación exploratoria; no es una medición de erosión ni prueba
+de suelo desnudo. `docs/21_Datos_Extra_Verificados.md` documenta reproyección y ponderación.
+
+Las capacidades y metadatos GIBS confirman `HLS_S30_Nadir_BRDF_Adjusted_Reflectance`
+como HLSS30 v2.0. Los mosaicos del 22-jun y 8-oct de 2026 usan la misma caja y tamaño;
+los identificadores CMR T18LWL/T18LXL están en `config/context.yaml` y la interfaz.
+Se conserva la imagen con nubes. El alfa válido no se interpreta como máscara de nubes.
+
+MODIS_SP se procesa por fecha y hora originales. La publicación anual exige cobertura
+de las consultas de cada día de 2001–2025; los huecos no se convierten en ceros. El
+presupuesto FIRMS registra cada intento antes del HTTP, incluidos los reintentos, y
+consulta el contador oficial de transacciones antes de descargar, sin almacenar la
+clave o una URL que la contenga. Los focos no se convierten en área quemada.

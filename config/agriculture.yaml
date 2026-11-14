@@ -1,0 +1,15 @@
+calendar:
+  - label: Junio · cosecha observada
+    date: '2026-06-10'
+    text: SENAMHI registró cosecha de maíz en Chilcayoc y Paucaray, Ayacucho, al 10 de junio de 2026.
+    source: SENAMHI · monitoreo fenológico de maíz
+    url: https://www.senamhi.gob.pe/load/file/02950SENA-300.pdf
+  - label: Octubre · siembra observada
+    date: '2025-10-20'
+    text: En octubre de 2025, SENAMHI observó siembra y crecimiento inicial del maíz en Pauza, Chilcayoc y Lampa, Ayacucho.
+    source: SENAMHI · monitoreo fenológico de maíz
+    url: https://www.senamhi.gob.pe/load/file/02950SENA-277.pdf
+calendar_note: Estas observaciones de otras localidades y campañas apoyan un contexto estacional. No confirman qué pasó en cada chacra de Huamanga, Huanta o La Mar en 2026.
+erosion_reference:
+  name: FAO · factores de la erosión hídrica
+  url: https://www.fao.org/soils-portal/soil-degradation-restoration/evaluacion-de-los-indicadores-globales-de-la-salud-del-suelo/salud-del-suelo-fisica/es/

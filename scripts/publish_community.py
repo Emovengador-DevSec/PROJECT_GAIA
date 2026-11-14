@@ -14,6 +14,8 @@ from shapely.ops import unary_union
 
 from sarlab_pipeline import exposure
 from sarlab_pipeline import settings as S
+from sarlab_pipeline.agriculture import FIELDS as SLOPE_FIELDS
+from sarlab_pipeline.agriculture import slope_exposure
 from sarlab_pipeline.config import load_aois
 
 AOI = "ayacucho-huanta"
@@ -47,7 +49,7 @@ def read_districts(path: Path) -> dict:
 
 def summarize(patches: list[dict]) -> dict:
     result = {}
-    for key in (*COVER, "population"):
+    for key in (*COVER, *SLOPE_FIELDS, "population"):
         values = [row[key] for row in patches if row.get(key) is not None]
         result[key] = round(sum(values), 3) if values else (None if patches else 0)
     return {
@@ -67,9 +69,23 @@ def publish(districts: Path | None) -> dict:
     coverage = box(*load_aois()[AOI].bbox)
     local = S.INTERIM / AOI
     published = read(S.PUBLISHED / "exposure" / f"{AOI}.json")
+    agriculture_path = S.PUBLISHED / "agriculture" / f"{AOI}.json"
+    agriculture = read(agriculture_path) if agriculture_path.exists() else None
+    if agriculture and agriculture["period"] != period:
+        raise ValueError("La pendiente agrícola corresponde a otro periodo NISAR. Vuelve a publicarla.")
+    slope_alerts = (agriculture or {}).get("alerts", {})
     patches = [
-        (shape(feature["geometry"]), published["alerts"][feature["properties"]["id"]]) for feature in features
+        (shape(feature["geometry"]), {**published["alerts"][feature["properties"]["id"]],
+                                     **slope_alerts.get(feature["properties"]["id"], {})})
+        for feature in features
     ]
+    def clipped_metrics(geometry):
+        metrics = {**exposure._landcover(local / "worldcover.tif", mapping(geometry)),
+                   "population": exposure._population(local / "worldpop.tif", mapping(geometry))}
+        if agriculture:
+            metrics.update(slope_exposure(mapping(geometry), local / "worldcover.tif",
+                                          local / "slope-30m.tif", metrics["cropland_ha"] or 0))
+        return metrics
     places = read(local / "places.geojson")["features"]
     by_node = {feature["properties"]["osm_id"]: feature for feature in places}
     by_place = defaultdict(list)
@@ -123,12 +139,7 @@ def publish(districts: Path | None) -> dict:
             elif surveyed.intersects(patch):
                 clipped = surveyed.intersection(patch)
                 if clipped.area:
-                    rows.append(
-                        {
-                            **exposure._landcover(local / "worldcover.tif", mapping(clipped)),
-                            "population": exposure._population(local / "worldpop.tif", mapping(clipped)),
-                        }
-                    )
+                    rows.append(clipped_metrics(clipped))
         entries.append(
             {
                 "id": key,
@@ -163,10 +174,7 @@ def publish(districts: Path | None) -> dict:
     for patch, metrics in patches:
         remainder = patch.difference(province_union)
         if remainder.area:
-            outside.append(metrics if remainder.equals(patch) else {
-                **exposure._landcover(local / "worldcover.tif", mapping(remainder)),
-                "population": exposure._population(local / "worldpop.tif", mapping(remainder)),
-            })
+            outside.append(metrics if remainder.equals(patch) else clipped_metrics(remainder))
     result = {
         "aoi": AOI,
         "period": manifest["dates"],
@@ -176,6 +184,8 @@ def publish(districts: Path | None) -> dict:
         "outside_provinces": summarize(outside),
         "sources": published["sources"],
         "district_source": district_source,
+        "agriculture": {key: value for key, value in agriculture.items() if key != "alerts"}
+        if agriculture else None,
         "places": entries,
     }
     folder = S.PUBLISHED / "community"

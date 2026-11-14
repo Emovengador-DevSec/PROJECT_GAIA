@@ -277,7 +277,14 @@ export function App() {
       ?? fireCells.find(feature => feature.properties.id === linkedAlert.current);
     if (match) { linkedAlert.current = null; pickAlert(match); }
   }, [alerts, fireCells, pickAlert]);
-  const chooseTab = (id: TabId) => { setPickingReport(false); setTab(id); setSelected(undefined); setPanelOpen(true); };
+  const chooseTab = (id: TabId) => {
+    if (id === "series") {
+      cancelSweep();
+      setCompare(false);
+      setContextChoice(null);
+    }
+    setPickingReport(false); setTab(id); setSelected(undefined); setPanelOpen(true);
+  };
   const locateCommunity = useCallback((place: CommunityPlace) => {
     const zone = aois.find(item => item.id === "ayacucho-huanta");
     if (!zone) return;
@@ -345,7 +352,7 @@ export function App() {
       <div className="map-context" aria-live="polite">
         <span className="map-zone">{current?.name ?? "Sudamérica"}</span>
         <small>{current?.id === "ayacucho-huanta" ? mapStatus.regionalImagery ?? mapStatus.imagery : mapStatus.imagery}</small>
-        {activeContext && <small className="map-context-source">{activeContext.product} · {activeContext.date} · {preview ? "Vista visual NISAR" : "Complementario"}</small>}
+        {activeContext && <small className="map-context-source">{activeContext.product} · {activeContext.date} · {activeContext.kind === "nisar-preview" ? "Vista visual NISAR" : "Complementario"}</small>}
         {mapStatus.terrain === "unavailable" && <button type="button" onClick={() => chooseTab("terrain")}>Relieve sin activar</button>}
         {mapStatus.terrain === "regional" && <button type="button" onClick={() => chooseTab("terrain")}>Relieve local de Ayacucho</button>}
         {!current && !alertsLoading && !alertsError && <LiveSummary alerts={cutoff == null ? alerts : timelineAlerts} sources={sources} onKind={kind => {
