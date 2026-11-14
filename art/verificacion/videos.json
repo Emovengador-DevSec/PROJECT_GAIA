@@ -1,0 +1,90 @@
+[
+  {
+    "file": "gaia-intro-v.mp4",
+    "codec": "h264",
+    "width": 1080,
+    "height": 1920,
+    "fps": "30/1",
+    "frames": 180,
+    "seconds": 6.0,
+    "range": "tv",
+    "bytes": 2979258
+  },
+  {
+    "file": "gaia-intro-v.webm",
+    "codec": "vp9",
+    "width": 1080,
+    "height": 1920,
+    "fps": "30/1",
+    "frames": 180,
+    "seconds": 6.0,
+    "range": "tv",
+    "bytes": 1597611
+  },
+  {
+    "file": "gaia-intro.mp4",
+    "codec": "h264",
+    "width": 2560,
+    "height": 1440,
+    "fps": "30/1",
+    "frames": 180,
+    "seconds": 6.0,
+    "range": "tv",
+    "bytes": 5217773
+  },
+  {
+    "file": "gaia-intro.webm",
+    "codec": "vp9",
+    "width": 2560,
+    "height": 1440,
+    "fps": "30/1",
+    "frames": 180,
+    "seconds": 6.0,
+    "range": "tv",
+    "bytes": 3192474
+  },
+  {
+    "file": "gaia-loop-v.mp4",
+    "codec": "h264",
+    "width": 1080,
+    "height": 1920,
+    "fps": "30/1",
+    "frames": 300,
+    "seconds": 10.0,
+    "range": "tv",
+    "bytes": 5622501
+  },
+  {
+    "file": "gaia-loop-v.webm",
+    "codec": "vp9",
+    "width": 1080,
+    "height": 1920,
+    "fps": "30/1",
+    "frames": 300,
+    "seconds": 10.0,
+    "range": "tv",
+    "bytes": 3385466
+  },
+  {
+    "file": "gaia-loop.mp4",
+    "codec": "h264",
+    "width": 2560,
+    "height": 1440,
+    "fps": "30/1",
+    "frames": 300,
+    "seconds": 10.0,
+    "range": "tv",
+    "bytes": 12304447
+  },
+  {
+    "file": "gaia-loop.webm",
+    "codec": "vp9",
+    "width": 2560,
+    "height": 1440,
+    "fps": "30/1",
+    "frames": 300,
+    "seconds": 10.0,
+    "range": "tv",
+    "bytes": 9081565
+  }
+]

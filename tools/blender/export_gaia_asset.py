@@ -3,7 +3,6 @@
 Uso dentro de Blender (con art/blender/gaia.blend abierto):
     exec(open(r"<repo>/tools/blender/export_gaia_asset.py", encoding="utf-8").read())
     export_asset("NISAR", "nisar.glb")
-    export_asset("Astronauta", "astronauta.glb")
 
 Exporta la jerarquía bajo el vacío raíz, centrada en el origen y sin animación,
 a apps/web/public/models/. Los materiales procedurales (celdas del panel solar,

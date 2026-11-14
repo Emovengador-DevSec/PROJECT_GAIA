@@ -1,0 +1,204 @@
+{
+  "viewports": [
+    {
+      "width": 320,
+      "height": 568,
+      "horizontalOverflow": false,
+      "verticalScroll": false,
+      "ctaReachable": true,
+      "entryPlacement": true,
+      "fullFrame": true,
+      "button": {
+        "x": 22,
+        "y": 402,
+        "right": 298,
+        "bottom": 462
+      },
+      "facts": {
+        "x": 22,
+        "y": 482,
+        "right": 298,
+        "bottom": 546
+      },
+      "videos": 0
+    },
+    {
+      "width": 360,
+      "height": 640,
+      "horizontalOverflow": false,
+      "verticalScroll": false,
+      "ctaReachable": true,
+      "entryPlacement": true,
+      "fullFrame": true,
+      "button": {
+        "x": 22,
+        "y": 473.203125,
+        "right": 338,
+        "bottom": 533.203125
+      },
+      "facts": {
+        "x": 22,
+        "y": 553.203125,
+        "right": 338,
+        "bottom": 618
+      },
+      "videos": 0
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "horizontalOverflow": false,
+      "verticalScroll": false,
+      "ctaReachable": true,
+      "entryPlacement": true,
+      "fullFrame": true,
+      "button": {
+        "x": 22,
+        "y": 671.8125,
+        "right": 368,
+        "bottom": 731.8125
+      },
+      "facts": {
+        "x": 22,
+        "y": 751.8125,
+        "right": 368,
+        "bottom": 822
+      },
+      "videos": 0
+    },
+    {
+      "width": 409,
+      "height": 1278,
+      "horizontalOverflow": false,
+      "verticalScroll": false,
+      "ctaReachable": true,
+      "entryPlacement": true,
+      "fullFrame": true,
+      "button": {
+        "x": 22,
+        "y": 1102.390625,
+        "right": 387,
+        "bottom": 1162.390625
+      },
+      "facts": {
+        "x": 22,
+        "y": 1182.390625,
+        "right": 387,
+        "bottom": 1256
+      },
+      "videos": 0
+    },
+    {
+      "width": 768,
+      "height": 1024,
+      "horizontalOverflow": false,
+      "verticalScroll": false,
+      "ctaReachable": true,
+      "entryPlacement": true,
+      "fullFrame": true,
+      "button": {
+        "x": 445.28125,
+        "y": 893.96875,
+        "right": 731.28125,
+        "bottom": 955.96875
+      },
+      "facts": {
+        "x": 55.28125,
+        "y": 869.96875,
+        "right": 421.28125,
+        "bottom": 979.96875
+      },
+      "videos": 0
+    },
+    {
+      "width": 1024,
+      "height": 600,
+      "horizontalOverflow": false,
+      "verticalScroll": false,
+      "ctaReachable": true,
+      "entryPlacement": true,
+      "fullFrame": true,
+      "button": {
+        "x": 393.125,
+        "y": 500.203125,
+        "right": 679.125,
+        "bottom": 562.203125
+      },
+      "facts": {
+        "x": 73.71875,
+        "y": 488.203125,
+        "right": 368.5625,
+        "bottom": 574.203125
+      },
+      "videos": 0
+    },
+    {
+      "width": 760,
+      "height": 390,
+      "horizontalOverflow": false,
+      "verticalScroll": false,
+      "ctaReachable": true,
+      "entryPlacement": true,
+      "fullFrame": true,
+      "button": {
+        "x": 348.71875,
+        "y": 306,
+        "right": 634.71875,
+        "bottom": 368
+      },
+      "facts": {
+        "x": 54.71875,
+        "y": 298,
+        "right": 324.71875,
+        "bottom": 376
+      },
+      "videos": 0
+    },
+    {
+      "width": 2494,
+      "height": 1152,
+      "horizontalOverflow": false,
+      "verticalScroll": false,
+      "ctaReachable": true,
+      "entryPlacement": true,
+      "fullFrame": true,
+      "button": {
+        "x": 671.5625,
+        "y": 1001.46875,
+        "right": 1091.5625,
+        "bottom": 1083.46875
+      },
+      "facts": {
+        "x": 179.5625,
+        "y": 982.46875,
+        "right": 615.5625,
+        "bottom": 1102.46875
+      },
+      "videos": 0
+    }
+  ],
+  "fallback": {
+    "introHidden": true,
+    "title": "visible",
+    "poster": "url(\"http://127.0.0.1:5173/media/gaia-poster.jpg?v=4\")",
+    "globe": true
+  },
+  "mp4": {
+    "time": 0.6072,
+    "width": 1080,
+    "height": 1920,
+    "error": null
+  },
+  "reducedGlobe": true,
+  "aparicion": {
+    "pausa": 4.2,
+    "ocultaEnPausa": true,
+    "fondo": "none",
+    "segundoVisible": 4.7557,
+    "globo": true
+  },
+  "rotate": {
+    "frame": "50% 50%",
+    "creditsClosed": true
+  }
+}
