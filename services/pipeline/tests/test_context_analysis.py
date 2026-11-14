@@ -46,10 +46,23 @@ def test_opera_uses_confirmed_changes_in_common_coverage(data_dirs):
     assert result["opera_disturbance_ha"] == 1
     assert result["overlap_ha"] == 1
     assert result["agreement_pct"] == 50
+    assert result["nisar_confirmed_pct"] == 50
     with pytest.raises(ValueError, match="fecha OPERA"):
         compare_opera("test", status, onset, name, "2026-10-10")
     alerts.write_text(json.dumps({"features": []}))
     assert compare_opera("test", status, onset, name, "2026-10-08")["nisar_loss_ha"] == 0
+    companion = "OPERA_L3_DIST-ALERT-HLS_T19LCH_20261008T150721Z_20261010T061317Z_S2C_30_v1"
+    extra_status = settings.INTERIM / f"{companion}_VEG-DIST-STATUS.tif"
+    extra_onset = settings.INTERIM / f"{companion}_VEG-DIST-DATE.tif"
+    with rasterio.open(extra_status, "w", **profile, dtype="uint8", nodata=255) as dst:
+        dst.write(np.array([[255, 255, 255], [255, 3, 255]], "uint8"), 1)
+    with rasterio.open(extra_onset, "w", **profile, dtype="int16", nodata=-1) as dst:
+        dst.write(np.array([[-1, -1, -1], [-1, day, -1]], "int16"), 1)
+    combined = compare_opera("test", status, onset, name, "2026-10-08",
+                             [(extra_status, extra_onset, companion, "2026-10-08")])
+    assert combined["common_ha"] == 5
+    assert combined["opera_disturbance_ha"] == 2
+    assert len(combined["granules"]) == 2
 
 
 def test_imerg_three_days_require_common_data_and_consecutive_dates(data_dirs):

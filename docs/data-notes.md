@@ -187,3 +187,76 @@ centros poblados requiere un inventario que cubra la zona de estudio y su entorn
 `scripts/process_ayacucho.py` comprueba el token en tiempo de ejecución, selecciona las dos fechas
 autorizadas, ingiere, guarda el inventario HDF5 en `data/catalog/ayacucho-huanta-inspect.txt` y
 procesa HH, HV y la exposición disponible. La ejecución se detuvo al faltar Earthdata.
+
+## G1 · Comparación activa con cobertura completa
+
+La ejecución del 13 de noviembre local sustituyó el período activo por el 24 de junio y el
+10 de octubre de 2026, trayectoria 147 ascendente, marco 171, HH/HV, `P05023` en ambas fechas.
+Los tamaños verificados son 2.084.569.088 y 2.080.374.784 bytes, 4.164.943.872 bytes en total.
+La selección respeta la autorización de dos fechas. Los originales de la trayectoria 75 se
+conservan. Sus huellas tocaban aproximadamente el 15 % de la caja y su máscara reducía la
+cobertura útil común al 1,69 %. El catálogo completo se guardó en
+`data/catalog/ayacucho-g1-asf.geojson`.
+
+El 22 de octubre sí está publicado en la colección validada `NISAR_L2_GCOV_V1`, con
+`P05036` y una versión PGE posterior. Se eligió el 10 de octubre para conservar la misma
+versión de procesamiento que junio. El 23 de agosto solo tiene HH y se excluyó del par HH/HV.
+Las rutas HDF5 se confirmaron con la inspección real de ambos originales y se registraron
+en `data/catalog/ayacucho-huanta-inspect.txt` antes del cálculo.
+[Catálogo y madurez NISAR de ASF](https://nisar-docs.asf.alaska.edu/asf-search/)
+
+Las rejillas usan EPSG 32718 y píxeles de 20 m. La máscara conserva subfranjas válidas y
+excluye `0` y `255`. Cada fecha tiene el 99,92 % de cobertura válida y la intersección
+conserva el 99,91 %, equivalente a 359.375,92 ha. El proceso prepara los resultados en un
+directorio temporal y activa el período mediante `active-comparison.json` solo cuando se
+completan ambos canales, la serie y la comprobación del 80 % mínimo. La app pide el período
+activo a la API. Las capas archivadas siguen consultables por identificador.
+[Especificación GCOV](https://nisar-docs.asf.alaska.edu/gcov/)
+
+| Polarización | Umbral robusto | Caída total | Manchas ≥25 píxeles | Área delimitada |
+|---|---|---|---|---|
+| HH | 2,49 dB | 4.240,44 ha | 608 | 1.560,92 ha |
+| HV | 2,63 dB | 3.607,00 ha | 498 | 938,28 ha |
+
+Los totales incluyen fragmentos menores que 25 píxeles, una hectárea en esta rejilla.
+La ficha destacada toma el total HV del manifiesto. La ficha de cada mancha muestra su
+propia superficie. El suavizado es un promedio de 3×3 en dB, seguido de diferencia entre
+fechas y umbral de tres dispersiones robustas respecto a la mediana del cambio.
+La diferencia de retrodispersión conserva múltiples interpretaciones físicas.
+
+## G2 · Exposición de las manchas activas
+
+Se cruzaron las 1.106 manchas del par activo con WorldCover 2021 v200 y WorldPop
+Global2 R2025A de 2025. Overpass devolvió 1.192 localidades OSM en la caja ampliada a
+[-74,43, -13,43, -73,87, -12,77], con fecha de base 14 de noviembre UTC. Cada distancia
+se mide desde la localidad hasta la mancha en metros, con un máximo de 2 km.
+Los archivos y sus licencias están en el registro `sources` de la exposición publicada.
+[WorldPop](https://www.worldpop.org/), [WorldCover](https://esa-worldcover.org/en/data-access),
+[OpenStreetMap](https://www.openstreetmap.org/copyright)
+
+La intersección geométrica de cada celda WorldCover y cada mancha permite reconciliar
+las categorías con el área geodésica. La diferencia máxima fue 0,00138 ha por mancha.
+WorldPop pondera la fracción de cada píxel dentro del polígono. Los valores enmascarados
+se conservan como falta de dato. La suma sobre la unión HV da 436,2 personas estimadas
+en cobertura disponible, con 243 de 498 manchas sin píxeles válidos WorldPop. Es una
+estimación parcial. Las manchas HV incluyen 518,36 ha de cultivo, 19,055 ha de árboles,
+384,143 ha de pastizal y 17,282 ha de otras clases. Hay 632 localidades distintas a 2 km.
+Auditoría guardada en `data/catalog/ayacucho-g2-verificacion.json`.
+
+## G3 · Contraste cuantitativo con OPERA
+
+CMR devolvió dos teselas OPERA DIST-ALERT-HLS del 13 de octubre de 2026, T18LWL y T18LXL.
+Se descargaron con Earthdata los TIFF originales `VEG-DIST-STATUS` y `VEG-DIST-DATE`.
+Las etiquetas reales confirman clases 0–8, relleno 255 y fecha en días con nodata −1.
+La especificación fija el origen temporal en el 31 de diciembre de 2020.
+Los nombres y URLs originales están en `data/catalog/ayacucho-g3-opera.json`.
+[Algoritmo oficial OPERA DIST](https://lpdaac.usgs.gov/documents/1835/OPERA_DIST_ATBD__V1.pdf)
+
+Ambas teselas se reproyectaron con vecino más próximo a la rejilla NISAR. La cobertura
+común ocupa el 100 % del radar válido. Se tomaron perturbaciones confirmadas de clases
+3, 6, 7 y 8 con inicio posterior al 24 de junio y hasta el 10 de octubre. OPERA presenta
+1.703,16 ha en ese intervalo y coincide en 21,08 ha con las 938,28 ha de manchas HV
+delimitadas. El cociente sobre NISAR es 2,25 % y la intersección/unión es 0,80 %.
+Se muestran ambos cocientes y sus denominadores. La coincidencia limitada conserva
+la hipótesis de incendios como `por_verificar`. Los datos actuales sostienen un cambio
+de señal medido y requieren observaciones independientes para explicar su causa.

@@ -50,6 +50,12 @@ export function AlertFeed({ alerts, onSelect }: { alerts: AlertFeature[]; onSele
     const kinds: AlertKind[] = ["surface_change", "deformation", "quake", "fire"];
     const featured = kinds.map(kind => {
       const candidates = alerts.filter(item => item.properties.kind === kind);
+      if (kind === "surface_change") {
+        const comparable = candidates.filter(item => item.properties.comparison_summary);
+        if (comparable.length) return comparable.sort((a, b) =>
+          (b.properties.comparison_summary?.loss_area_ha ?? 0) - (a.properties.comparison_summary?.loss_area_ha ?? 0) ||
+          (b.properties.metrics.area_ha ?? 0) - (a.properties.metrics.area_ha ?? 0))[0];
+      }
       return candidates.sort((a, b) => (observationMetric(b).value ?? -Infinity) - (observationMetric(a).value ?? -Infinity))[0];
     }).filter((item): item is AlertFeature => !!item).slice(0, 3);
     const recent = alerts.find(item => !featured.includes(item) &&
@@ -68,10 +74,12 @@ export function AlertFeed({ alerts, onSelect }: { alerts: AlertFeature[]; onSele
       <h3 id="featured-heading">Lo más importante ahora</h3>
       {featured.map(feature => {
         const a = feature.properties;
-        const metric = observationMetric(feature);
+        const summary = a.comparison_summary;
+        const metric = summary ? { value: summary.loss_area_ha, unit: "ha", decimals: 2 } : observationMetric(feature);
         return <button key={a.id} type="button" className="featured-observation" data-kind={a.kind} onClick={() => onSelect(feature)}>
           <span className="featured-source"><span className="alert-symbol"><AlertSymbol kind={a.kind} /></span>{a.source}</span>
           <span className="featured-metric">{metric.value == null ? "—" : <CountUp value={metric.value} decimals={metric.decimals} />}<small>{metric.unit}</small></span>
+          {summary && <><span>Caída de señal HV</span><span>{summary.alerts} zonas delimitadas · {summary.mapped_loss_area_ha.toLocaleString("es-PE")} ha</span></>}
           <strong>{a.place}</strong><time dateTime={a.date}>{formatDate(a.date)}</time>
         </button>;
       })}

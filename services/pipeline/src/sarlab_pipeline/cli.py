@@ -63,6 +63,9 @@ def main(argv: list[str] | None = None) -> int:
     v.add_argument("--onset", required=True, type=Path)
     v.add_argument("--granule", required=True)
     v.add_argument("--observed", required=True, help="Fecha de la observación OPERA, YYYY-MM-DD")
+    v.add_argument("--additional", action="append", nargs=4, default=[],
+                   metavar=("STATUS", "ONSET", "GRANULE", "OBSERVED"),
+                   help="Otra tesela OPERA original para completar la cobertura")
     r = sub.add_parser("rainfall", help="Acumulado de tres días con originales IMERG diarios")
     r.add_argument("--aoi", required=True)
     r.add_argument("--variable", required=True, help="Variable confirmada con sarlab inspect")
@@ -134,7 +137,8 @@ def main(argv: list[str] | None = None) -> int:
     elif a.cmd == "validate-opera":
         from .processing.validation import compare_opera
         try:
-            result = compare_opera(a.layer, a.status, a.onset, a.granule, a.observed)
+            additional = [(Path(s), Path(o), g, d) for s, o, g, d in a.additional]
+            result = compare_opera(a.layer, a.status, a.onset, a.granule, a.observed, additional)
         except (ValueError, OSError) as exc:
             ap.error(str(exc))
         print(json.dumps(result, ensure_ascii=False, indent=2))

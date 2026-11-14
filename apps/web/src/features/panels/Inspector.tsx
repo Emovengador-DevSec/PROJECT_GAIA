@@ -83,9 +83,13 @@ function OperaValidation({ result }: { result?: Validation }) {
         <div><dt>Caída NISAR HV</dt><dd>{number(result.nisar_loss_ha)} ha</dd></div>
         <div><dt>Perturbación OPERA</dt><dd>{number(result.opera_disturbance_ha)} ha</dd></div>
         <div><dt>Intersección</dt><dd>{number(result.overlap_ha)} ha</dd></div>
-        <div><dt>Concordancia</dt><dd>{result.agreement_pct === null ? "Muestra insuficiente" : `${number(result.agreement_pct)} %`}</dd></div>
+        <div><dt>Coincidencia sobre las manchas NISAR</dt><dd>{result.nisar_confirmed_pct == null ? "Sin publicar" : `${number(result.nisar_confirmed_pct)} %`}</dd></div>
+        <div><dt>Intersección / unión</dt><dd>{result.agreement_pct === null ? "Muestra insuficiente" : `${number(result.agreement_pct)} %`}</dd></div>
+        {result.radar_coverage_pct != null && <div><dt>Cobertura del contraste</dt><dd>{number(result.radar_coverage_pct)} % del radar válido</dd></div>}
       </dl>
-      <p className="muted">{result.note}</p><p className="granule-id">{result.granule}</p>
+      <p className="muted">{result.note}</p>
+      {(result.granules ?? [{ name: result.granule, date: result.date }]).map(item =>
+        <p key={item.name} className="granule-id">{item.name}</p>)}
       <a className="source-link" href={result.source_url} target="_blank" rel="noopener noreferrer">Consultar producto OPERA ↗</a>
     </> : <p className="empty-inline">El porcentaje requiere la capa NISAR HV procesada y los rásteres originales de estado y fecha OPERA para el mismo intervalo.</p>}
   </details>;
@@ -187,7 +191,7 @@ export function Inspector(p: Props) {
               {p.health && !p.health.credentials.earthdata && " El acceso Earthdata aún no está configurado en el servidor."}
             </EmptyState>
             <details className="technical-details"><summary>Preparar la comparación real</summary>
-              <p>Configura EARTHDATA_TOKEN en el servidor. Para Ayacucho están autorizadas dos fechas, unos 3,9 GB en total. Después hay que ingerir los archivos y procesar HH y HV.</p>
+              <p>Configura EARTHDATA_TOKEN en el servidor. Para Ayacucho, descarga e ingiere los gránulos seleccionados para procesar HH y HV.</p>
               <p>El revelado del radar se habilitará cuando estén publicadas las capas procesadas.</p>
             </details>
           </>}
@@ -245,6 +249,7 @@ export function Inspector(p: Props) {
             <li key={granule}><span>{granule}</span><br /><a className="source-link" href={vertexGranule(granule)} target="_blank" rel="noopener noreferrer">Consultar en Vertex ↗</a></li>)}</ul></details>
         </> : <><EmptyState title="Procedencia sin capa seleccionada">Selecciona una capa NISAR procesada para consultar sus fechas, gránulos y calidad.</EmptyState><CatalogSummary catalog={p.catalog} /></>}
         <RadarGlossary terms={["provisional", "gcov", "gunw", "sme2"]} />
+        {p.current?.id === "ayacucho-huanta" && layer?.provenance.layer === "HVHV" && <OperaValidation result={p.validation} />}
         {p.moistureCatalog && <CatalogSummary catalog={p.moistureCatalog} />}
         <a className="source-link" href={nisarGuide} target="_blank" rel="noopener noreferrer">Consultar la guía de datos NISAR ↗</a>
         <button type="button" className="text-button" onClick={p.onResources}>Ver fuentes del reto</button>
