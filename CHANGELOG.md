@@ -4,6 +4,7 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- Diseño adaptado a laptops (≤1600 px de ancho o ≤900 px de alto): el panel de Sudamérica ya no tapa la línea de tiempo, cifras y textos más compactos, panel de alertas más angosto.
 - Añadida la guía para llevar GAIA a otra PC (docs/22): qué copiar por Drive, claves, instalación, estado del proyecto y mensaje de contexto para Codex y Claude Code.
 - Los focos individuales FIRMS actualizan su color al mover la fecha de reproducción, también con movimiento reducido; el contenedor incorpora la escala por antigüedad ya confirmada.
 
