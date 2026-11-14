@@ -1,0 +1,116 @@
+# Tabla suelo → riesgo → especies protectoras (SbN)
+# Fuente: FAO WRB 4ª edición (2022) y bibliografía de restauración andina.
+# Licencia de la tabla: CC BY 4.0 (elaboración propia con fuentes citadas).
+# Las especies son nativas de los Andes peruanos o ampliamente usadas en SbN local.
+# "combustibility": indicador relativo de acumulación de biomasa seca fina (1=bajo, 3=alto).
+
+groups:
+  - wrb_code: AN  # Andosols
+    wrb_name: Andosoles
+    texture: ["arcilla media", "franco arenosa"]
+    organic_carbon_pct_typical: 4.0
+    combustibility: 2
+    fire_risk_modifier: 0.5   # retienen humedad, menor riesgo incendio
+    erosion_risk_modifier: 0.6
+    species:
+      - name: Queñua
+        scientific: Polylepis spp.
+        function: cortafuego, restauración de bosque altoandino
+        altitude_m: [3400, 4800]
+        source: "SERFOR, Guía de reforestación con especies nativas (2021)"
+      - name: Quishuar
+        scientific: Buddleja incana
+        function: cortafuego, estabilización de laderas
+        altitude_m: [3000, 4200]
+        source: "SERFOR, Guía de reforestación con especies nativas (2021)"
+      - name: Ichu
+        scientific: Stipa ichu
+        function: cobertura de suelo, control de erosión
+        altitude_m: [3500, 5000]
+        source: "Sierra Azul-MIDAGRI, Manual de técnicas de siembra de agua (2022)"
+
+  - wrb_code: LP  # Leptosols (antes Litosoles/Regosoles en USDA)
+    wrb_name: Leptosoles y regosoles
+    texture: ["franco arenosa", "arenosa"]
+    organic_carbon_pct_typical: 1.5
+    combustibility: 3
+    fire_risk_modifier: 1.2
+    erosion_risk_modifier: 1.4
+    species:
+      - name: Maguey
+        scientific: Agave americana
+        function: control de erosión en pendiente, barrera viva
+        altitude_m: [1500, 3200]
+        source: "AGRORURAL, Programa de recuperación de andenes (2020)"
+      - name: Tuna
+        scientific: Opuntia ficus-indica
+        function: cortafuego vivo, control de erosión
+        altitude_m: [1500, 3200]
+        source: "AGRORURAL, Programa de recuperación de andenes (2020)"
+      - name: Ichu
+        scientific: Stipa ichu
+        function: cobertura de suelo, control de erosión
+        altitude_m: [3500, 5000]
+        source: "Sierra Azul-MIDAGRI, Manual de técnicas de siembra de agua (2022)"
+
+  - wrb_code: KS  # Kastanozems / Phaeozems (suelos pardo-oscuros)
+    wrb_name: Kastanozems y phaeozems
+    texture: ["franco arcillosa", "franca"]
+    organic_carbon_pct_typical: 2.5
+    combustibility: 2
+    fire_risk_modifier: 0.8
+    erosion_risk_modifier: 0.9
+    species:
+      - name: Tara / Guarango
+        scientific: Caesalpinia spinosa
+        function: agroforestería, restauración de suelos degradados
+        altitude_m: [1000, 3200]
+        source: "SERFOR, Guía de reforestación con especies nativas (2021)"
+      - name: Aliso
+        scientific: Alnus acuminata
+        function: fijación de nitrógeno, restauración ribereña
+        altitude_m: [2000, 3800]
+        source: "SERFOR, Guía de reforestación con especies nativas (2021)"
+      - name: Molle
+        scientific: Schinus molle
+        function: cortafuego, agroforestería
+        altitude_m: [1500, 3500]
+        source: "AGRORURAL, Programa de recuperación de andenes (2020)"
+
+  - wrb_code: CM  # Cambisols (suelos en desarrollo)
+    wrb_name: Cambisoles
+    texture: ["franca", "franco arcillosa"]
+    organic_carbon_pct_typical: 2.0
+    combustibility: 2
+    fire_risk_modifier: 0.9
+    erosion_risk_modifier: 0.9
+    species:
+      - name: Tara / Guarango
+        scientific: Caesalpinia spinosa
+        function: agroforestería, restauración de suelos degradados
+        altitude_m: [1000, 3200]
+        source: "SERFOR, Guía de reforestación con especies nativas (2021)"
+      - name: Aliso
+        scientific: Alnus acuminata
+        function: fijación de nitrógeno, restauración ribereña
+        altitude_m: [2000, 3800]
+        source: "SERFOR, Guía de reforestación con especies nativas (2021)"
+
+  - wrb_code: DEFAULT
+    wrb_name: Suelo no clasificado
+    texture: []
+    organic_carbon_pct_typical: 2.0
+    combustibility: 2
+    fire_risk_modifier: 1.0
+    erosion_risk_modifier: 1.0
+    species:
+      - name: Molle
+        scientific: Schinus molle
+        function: cortafuego, agroforestería
+        altitude_m: [1500, 3500]
+        source: "AGRORURAL, Programa de recuperación de andenes (2020)"
+      - name: Ichu
+        scientific: Stipa ichu
+        function: cobertura de suelo, control de erosión
+        altitude_m: [3500, 5000]
+        source: "Sierra Azul-MIDAGRI, Manual de técnicas de siembra de agua (2022)"

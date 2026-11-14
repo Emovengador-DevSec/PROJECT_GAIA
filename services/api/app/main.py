@@ -301,6 +301,14 @@ def alerts(aoi: str | None = Query(None, pattern=r"^[a-z0-9-]+$"), include_live:
         path = PROCESSED.parent / "04_published" / "exposure" / f"{zone}.json"
         return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
 
+    @cache
+    def remediation_map_for(zone: str) -> dict:
+        path = PROCESSED.parent / "04_published" / "remediation" / f"{zone}.json"
+        if not path.is_file():
+            return {}
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return {alert["alert_id"]: alert for alert in data.get("alerts", []) if "alert_id" in alert}
+
     manifests = {manifest["id"]: manifest for manifest in _manifests()}
     feats = []
     pattern = f"{aoi}/*/*/alerts*.geojson" if aoi else "*/*/*/alerts*.geojson"
@@ -341,6 +349,7 @@ def alerts(aoi: str | None = Query(None, pattern=r"^[a-z0-9-]+$"), include_live:
                 "metrics": {"area_ha": props.get("area_ha")},
                 "comparison_summary": manifest.get("change_summary") if polarization == "HVHV" else None,
                 "exposure": None,
+                "remediation": None,
             }
             item = exposure_for(zone).get("alerts", {}).get(props.get("id"))
             if item:
@@ -349,6 +358,10 @@ def alerts(aoi: str | None = Query(None, pattern=r"^[a-z0-9-]+$"), include_live:
                     "people": item.get("population"),
                     "crop_ha": item.get("cropland_ha"),
                 }
+            rem_item = remediation_map_for(zone).get(props.get("id"))
+            if rem_item:
+                props["remediation"] = rem_item
+                props["level"] = rem_item.get("level", props.get("level", "medio"))
             feats.append({**feature, "geometry": geometry, "properties": props})
     sources = []
     if include_live:
@@ -619,6 +632,34 @@ def polarizations(aoi: str = Query(..., pattern=AOI_PATTERN), active_only: bool 
         for p in sorted((PROCESSED / aoi).glob("*/*/polarizations.json"))
         if not tag or p.parent.parent.name != "gcov" or p.parent.name == tag
     ]
+
+
+@app.get("/api/remediation/{aoi}")
+def remediation(aoi: str):
+    if not re.fullmatch(AOI_PATTERN, aoi):
+        raise HTTPException(422, "Identificador de zona inválido.")
+    path = PROCESSED.parent / "04_published" / "remediation" / f"{aoi}.json"
+    if not path.is_file():
+        raise HTTPException(
+            404, detail="No hay datos de remediación para esta zona. Ejecuta `sarlab remediation --aoi <zona>`."
+        )
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+@app.get("/api/remediation/{aoi}/{zone_id}")
+def remediation_zone(aoi: str, zone_id: str):
+    if not re.fullmatch(AOI_PATTERN, aoi):
+        raise HTTPException(422, "Identificador de zona inválido.")
+    path = PROCESSED.parent / "04_published" / "remediation" / f"{aoi}.json"
+    if not path.is_file():
+        raise HTTPException(
+            404, detail="No hay datos de remediación para esta zona. Ejecuta `sarlab remediation --aoi <zona>`."
+        )
+    data = json.loads(path.read_text(encoding="utf-8"))
+    for alert in data.get("alerts", []):
+        if alert.get("alert_id") == zone_id:
+            return alert
+    raise HTTPException(404, detail="Mancha no encontrada en los datos de remediación.")
 
 
 WEB_DIST = ROOT / "apps" / "web" / "dist"

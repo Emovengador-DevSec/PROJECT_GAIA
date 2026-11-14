@@ -1,0 +1,132 @@
+# Recetas de soluciones basadas en la naturaleza (SbN) por tipo de riesgo
+# Una receta por riesgo. Cada receta tiene condición, técnicas, especies, temporada,
+# ejecutores y fuente. Las condiciones se evalúan con el índice de risk.py.
+
+recipes:
+
+  - risk_id: incendio_sequia
+    risk_name: Incendio o sequía
+    risk_description: >
+      Señal HV baja y focos de calor recientes indican pérdida de vegetación por
+      fuego o estrés hídrico severo. La humedad del suelo baja confirma el diagnóstico.
+    condition: >
+      caida_hv > 0 AND (heat_score > 0.3 OR soil_moisture_normalized < 0.3)
+    color_hex: "#FF4500"
+    interventions:
+      - intervention_id: cortafuego_verde
+        priority: 1
+        timing: "Implementar en temporada seca (abril–agosto), antes de las quemas"
+        notes: >
+          Banda mínima de 10 m a favor del viento dominante. Priorizar quebradas
+          y bordes de cultivo con mayor pendiente.
+      - intervention_id: zanjas_infiltracion
+        priority: 2
+        timing: "Construir en temporada seca (mayo–agosto)"
+        notes: "Curvas de nivel cada 20–30 m de desnivel. Limpiar anualmente antes de lluvias."
+    species_primary:
+      - Molle (Schinus molle)
+      - Tara / Guarango (Caesalpinia spinosa)
+      - Maguey (Agave americana)
+      - Tuna (Opuntia ficus-indica)
+    executor: ["Minka comunal", "Municipio distrital", "AGRORURAL"]
+    source: "SERFOR, Guía técnica de cortafuegos (2021) · Sierra Azul-MIDAGRI (2022)"
+    disclaimer: >
+      Si en campo se confirma incendio reciente, se recomienda aplicar esta receta.
+      El radar detecta cambio de señal; la causa requiere verificación independiente.
+
+  - risk_id: erosion_huaico
+    risk_name: Erosión o huaico
+    risk_description: >
+      Combinación de pendiente pronunciada (>15°), caída HV y lluvia acumulada
+      sugiere remoción de suelo, deslizamiento o huaico potencial.
+    condition: >
+      caida_hv > 0 AND slope_normalized > 0.4 AND rain_score > 0.3
+    color_hex: "#8B4513"
+    interventions:
+      - intervention_id: bioingenieria_ichu
+        priority: 1
+        timing: "Siembra al inicio de lluvias (octubre–noviembre)"
+        notes: >
+          Estaquillado en fajas de 2 m de ancho perpendiculares a la pendiente.
+          Mínimo 5 000 plantines de ichu por hectárea.
+      - intervention_id: restauracion_andenes
+        priority: 2
+        timing: "Reparación en temporada seca (abril–agosto)"
+        notes: >
+          Priorizar andenes con canal colmado o muro con grietas visibles.
+          Incluir revisión de bocatomas y canales de derivación.
+    species_primary:
+      - Ichu (Stipa ichu)
+      - Vetiver (Chrysopogon zizanioides)
+      - Queñua (Polylepis spp.)
+      - Quishuar (Buddleja incana)
+    executor: ["Minka comunal", "Municipio distrital", "AGRORURAL", "Sierra Azul-MIDAGRI"]
+    source: "AGRORURAL, Programa de recuperación de andenes (2020) · SERFOR (2021)"
+    disclaimer: >
+      Si en campo se confirma erosión activa o deslizamiento, se recomienda
+      esta receta. La señal radar puede responder a varios procesos.
+
+  - risk_id: ladera_inestable_sismo
+    risk_name: Ladera inestable tras sismo
+    risk_description: >
+      Sismo reciente (magnitud ≥4,0 a menos de 50 km) en zona con pendiente alta
+      y caída HV aumenta el riesgo de deslizamiento en quebradas.
+    condition: >
+      caida_hv > 0 AND quake_score > 0.5 AND slope_normalized > 0.3
+    color_hex: "#800080"
+    interventions:
+      - intervention_id: reforestacion_contención
+        priority: 1
+        timing: "Reforestar en temporada de lluvias (noviembre–marzo)"
+        notes: >
+          Priorizar cabeceras de quebrada y laderas con cicatrices de deslizamiento.
+          Densidad mínima 1 100 plantines por hectárea.
+      - intervention_id: qochas_amunas
+        priority: 2
+        timing: "Revisión de canales en temporada seca (mayo–agosto)"
+        notes: >
+          Verificar estado de canales y amunas existentes; limpiar y reforzar
+          taludes después del sismo.
+    species_primary:
+      - Aliso (Alnus acuminata)
+      - Queñua (Polylepis spp.)
+      - Tara / Guarango (Caesalpinia spinosa)
+    executor: ["Municipio distrital", "AGRORURAL", "INDECI (coordinación)", "Minka comunal"]
+    source: "SERFOR (2021) · Sierra Azul-MIDAGRI (2022)"
+    disclaimer: >
+      Verificar en campo con un técnico antes de cualquier intervención.
+      Un sismo puede activar fallas no visibles. Este es un aviso de monitoreo,
+      no una alerta oficial de INDECI.
+
+  - risk_id: estres_hidrico_agricola
+    risk_name: Estrés hídrico agrícola
+    risk_description: >
+      Cultivos expuestos con humedad del suelo baja y sin lluvia reciente
+      indican riesgo de pérdida de cosecha por falta de agua.
+    condition: >
+      caida_hv > 0 AND crop_exposure_ha > 0 AND (soil_moisture_normalized < 0.35 OR rain_score < 0.2)
+    color_hex: "#DAA520"
+    interventions:
+      - intervention_id: agroforesteria
+        priority: 1
+        timing: "Plantar árboles al inicio de lluvias (octubre–diciembre)"
+        notes: >
+          Combinar tara y aliso en bordes de parcela. Distancia mínima 6×6 m
+          para no competir con el cultivo principal.
+      - intervention_id: zanjas_infiltracion
+        priority: 2
+        timing: "Construir en temporada seca (mayo–agosto)"
+        notes: "Captar agua de lluvia para recarga del acuífero superficial."
+      - intervention_id: qochas_amunas
+        priority: 3
+        timing: "Limpiar y mantener antes de lluvias (septiembre–octubre)"
+        notes: "Una qocha de 1 ha puede almacenar hasta 5 000 m³ de agua."
+    species_primary:
+      - Tara / Guarango (Caesalpinia spinosa)
+      - Aliso (Alnus acuminata)
+      - Molle (Schinus molle)
+    executor: ["Minka comunal", "AGRORURAL", "Sierra Azul-MIDAGRI", "Agencia Agraria local"]
+    source: "Sierra Azul-MIDAGRI, Manual de técnicas de siembra de agua (2022)"
+    disclaimer: >
+      El calendario agrícola local y el saber de los comuneros tienen prioridad.
+      Esta receta es una sugerencia basada en datos satelitales; verificar en campo.

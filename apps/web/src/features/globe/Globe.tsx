@@ -630,9 +630,17 @@ export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint
       for (const entity of source.entities.values) {
         const feature = primary.find(item => item.properties.id === entity.id);
         entity.properties = new Cesium.PropertyBag({ alert: feature });
-        if (entity.polygon && !reduce) entity.polygon.material = new Cesium.ColorMaterialProperty(
-          new Cesium.CallbackProperty((_time, result) => Cesium.Color.fromCssColorString(COLORS.surface_change).withAlpha(.18 + .08 * Math.sin(phase() * Math.PI), result), false),
-        );
+        const colorHex = feature?.properties.remediation?.color_hex ?? COLORS.surface_change;
+        if (entity.polygon) {
+          entity.polygon.outlineColor = new Cesium.ConstantProperty(Cesium.Color.fromCssColorString(colorHex));
+          if (!reduce) {
+            entity.polygon.material = new Cesium.ColorMaterialProperty(
+              new Cesium.CallbackProperty((_time, result) => Cesium.Color.fromCssColorString(colorHex).withAlpha(.20 + .08 * Math.sin(phase() * Math.PI), result), false),
+            );
+          } else {
+            entity.polygon.material = new Cesium.ColorMaterialProperty(Cesium.Color.fromCssColorString(colorHex).withAlpha(.24));
+          }
+        }
       }
       v.dataSources.add(source);
       visibility();

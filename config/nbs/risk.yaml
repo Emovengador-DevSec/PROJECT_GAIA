@@ -1,0 +1,93 @@
+# Pesos y umbrales del índice de riesgo ponderado (Fase 1)
+# Todos los factores se normalizan de 0 a 1 antes de aplicar los pesos.
+# El peso de cada factor en el índice final. Deben sumar 1.0.
+# Los umbrales se usan para clasificar el nivel: bajo / medio / alto.
+# Estos valores son un punto de partida; se refinan con validación de campo.
+
+factors:
+  # Factor 1: Caída de retrodispersión HV (NISAR, dB)
+  # 0 = sin caída; 1 = caída máxima observada en el conjunto de datos.
+  hv_drop:
+    weight: 0.30
+    min_db: 0.0       # umbral mínimo de caída significativa
+    max_db: 10.0      # caída extrema (normalización)
+
+  # Factor 2: Humedad del suelo (NISAR SME2, m³/m³)
+  # Valor bajo → estrés. Se invierte: 0 = suelo húmedo, 1 = suelo muy seco.
+  soil_moisture:
+    weight: 0.15
+    dry_threshold: 0.10     # suelo muy seco
+    wet_threshold: 0.35     # suelo normal-húmedo
+    # Si SME2 no disponible: factor ausente → peso redistribuido a hv_drop.
+    fallback_weight: 0.0    # peso cuando ausente; hv_drop absorbe la diferencia
+
+  # Factor 3: Pendiente (grados, Copernicus DEM / Mapzen)
+  # 0° plano → 0.0; 45°+ → 1.0.
+  slope:
+    weight: 0.15
+    flat_deg: 0.0
+    steep_deg: 45.0
+
+  # Factor 4: Focos de calor FIRMS (VIIRS, 7 y 30 días)
+  # Combinación del número de focos a <2 km y confianza media.
+  heat:
+    weight: 0.15
+    no_fire_score: 0.0
+    max_fire_score: 1.0
+    radius_km: 2.0
+    days_recent: 7
+    days_history: 30
+    weight_recent: 0.7     # los focos recientes pesan más
+    weight_history: 0.3
+
+  # Factor 5: Sismo reciente (USGS, magnitud y distancia)
+  # Un sismo M≥4 a <50 km en los últimos 30 días da puntaje alto.
+  quake:
+    weight: 0.10
+    min_magnitude: 4.0
+    max_magnitude: 7.0
+    min_distance_km: 0.0
+    max_distance_km: 50.0
+    days_window: 30
+
+  # Factor 6: Lluvia acumulada (GPM IMERG o NASA POWER, mm)
+  # Alta lluvia en 7 días + pendiente alta = riesgo de huaico.
+  rainfall:
+    weight: 0.10
+    low_mm: 10.0
+    high_mm: 80.0
+    days: 7
+
+  # Factor 7: Exposición agrícola (ha de cultivo dentro de la mancha)
+  # Más cultivos = más riesgo humano/económico.
+  crop_exposure:
+    weight: 0.05
+    min_ha: 0.0
+    max_ha: 50.0    # mancha típica máxima con cultivos
+
+# Umbrales para el nivel de riesgo final (índice 0–1)
+levels:
+  low:
+    max: 0.33
+    label: bajo
+    color_hex: "#4CAF50"
+  medium:
+    min: 0.33
+    max: 0.60
+    label: medio
+    color_hex: "#FF9800"
+  high:
+    min: 0.60
+    label: alto
+    color_hex: "#F44336"
+
+# Umbral mínimo para incluir una mancha en la salida de remediación
+min_index_to_report: 0.10
+
+# Reglas de asignación de riesgo dominante
+# Si hay empate, se aplica el orden de esta lista (prioridad descendente).
+risk_priority:
+  - ladera_inestable_sismo   # sismo + pendiente: más urgente
+  - erosion_huaico
+  - incendio_sequia
+  - estres_hidrico_agricola

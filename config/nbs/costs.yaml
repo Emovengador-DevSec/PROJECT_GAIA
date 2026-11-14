@@ -1,0 +1,121 @@
+# Costos unitarios de intervenciones de soluciones basadas en la naturaleza (SbN)
+# en soles (S/) peruanos. Todos con fuente, fecha y estado de verificación.
+# Si status == "por_verificar", la interfaz muestra «costo por confirmar» en lugar del número.
+# Minka: hasta 40 % de reducción en efectivo cuando hay trabajo comunitario, solo si fuente citada.
+
+interventions:
+
+  - id: cortafuego_verde
+    name: Cortafuego vivo con especies nativas
+    description: Banda de 10 m de molle, tara, maguey y tuna como barrera ignífuga
+    unit: S/ por km
+    unit_en: PEN per km
+    cost_min: 8000
+    cost_max: 15000
+    cost_mid: 11500
+    minka_discount_pct: 30
+    source: "por_verificar"
+    source_name: "SERFOR / AGRORURAL"
+    source_note: >
+      Rango tomado del documento del equipo. Pendiente de verificar contra
+      SERFOR (Guía técnica de cortafuegos) o AGRORURAL (expediente de proyecto 2022).
+    retrieved_date: null
+    status: por_verificar
+    applicable_risks: [incendio_sequia]
+
+  - id: zanjas_infiltracion
+    name: Zanjas de infiltración
+    description: Zanjas en curvas de nivel para captación de agua de lluvia
+    unit: S/ por km
+    unit_en: PEN per km
+    cost_min: 3500
+    cost_max: 6000
+    cost_mid: 4750
+    minka_discount_pct: 40
+    source: "Sierra Azul-MIDAGRI, Manual de técnicas de siembra de agua (2022)"
+    source_url: "https://sierraazul.gob.pe"
+    retrieved_date: "2026-11-14"
+    status: por_verificar
+    applicable_risks: [incendio_sequia, estres_hidrico_agricola]
+
+  - id: bioingenieria_ichu
+    name: Bioingeniería con ichu y vetiver
+    description: Estaquillado de ichu y siembra de vetiver en surcos para anclar suelo
+    unit: S/ por ha
+    unit_en: PEN per ha
+    cost_min: 2500
+    cost_max: 5000
+    cost_mid: 3750
+    minka_discount_pct: 35
+    source: "por_verificar"
+    source_name: "AGRORURAL"
+    source_note: >
+      Rango estimado. Pendiente de verificar contra AGRORURAL
+      (Programa de recuperación de andenes, expediente 2022).
+    retrieved_date: null
+    status: por_verificar
+    applicable_risks: [erosion_huaico]
+
+  - id: restauracion_andenes
+    name: Restauración de andenes
+    description: Reconstrucción de muros y canales de andenes degradados
+    unit: S/ por ha
+    unit_en: PEN per ha
+    cost_min: 8000
+    cost_max: 20000
+    cost_mid: 14000
+    minka_discount_pct: 40
+    source: "por_verificar"
+    source_name: "Sierra Azul-MIDAGRI / AGRORURAL"
+    source_note: >
+      Rango tomado de proyectos de andenes en Ayacucho 2019-2023.
+      Pendiente de verificar contra expedientes oficiales.
+    retrieved_date: null
+    status: por_verificar
+    applicable_risks: [erosion_huaico, estres_hidrico_agricola]
+
+  - id: reforestacion_contención
+    name: Reforestación de contención en quebradas
+    description: Plantación de aliso, queñua y tara en cabeceras y laderas de quebradas
+    unit: S/ por ha
+    unit_en: PEN per ha
+    cost_min: 3000
+    cost_max: 7000
+    cost_mid: 5000
+    minka_discount_pct: 35
+    source: "SERFOR, Guía de reforestación con especies nativas (2021)"
+    source_url: "https://www.serfor.gob.pe"
+    retrieved_date: "2026-11-14"
+    status: por_verificar
+    applicable_risks: [ladera_inestable_sismo]
+
+  - id: agroforesteria
+    name: Agroforestería con tara y aliso
+    description: Combinación de cultivos con árboles fijadores de nitrógeno y sombra
+    unit: S/ por ha
+    unit_en: PEN per ha
+    cost_min: 2000
+    cost_max: 5000
+    cost_mid: 3500
+    minka_discount_pct: 30
+    source: "por_verificar"
+    source_name: "AGRORURAL"
+    source_note: "Pendiente de verificar contra proyectos AGRORURAL Ayacucho 2022."
+    retrieved_date: null
+    status: por_verificar
+    applicable_risks: [estres_hidrico_agricola]
+
+  - id: qochas_amunas
+    name: Qochas y amunas (siembra y cosecha de agua)
+    description: Lagunas artificiales y canales ancestrales para retener agua de lluvia
+    unit: S/ por unidad
+    unit_en: PEN per unit
+    cost_min: 5000
+    cost_max: 15000
+    cost_mid: 10000
+    minka_discount_pct: 40
+    source: "Sierra Azul-MIDAGRI, Manual de técnicas de siembra de agua (2022)"
+    source_url: "https://sierraazul.gob.pe"
+    retrieved_date: "2026-11-14"
+    status: por_verificar
+    applicable_risks: [estres_hidrico_agricola, ladera_inestable_sismo]

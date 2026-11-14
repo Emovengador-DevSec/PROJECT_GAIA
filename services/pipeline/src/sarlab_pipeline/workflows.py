@@ -139,3 +139,235 @@ def _date(name: str) -> str:
     import re
     m = re.search(r"_(\d{8})T\d{6}_", name)
     return f"{m.group(1)[:4]}-{m.group(1)[4:6]}-{m.group(1)[6:]}" if m else "unknown"
+
+
+def run_remediation(aoi_id: str, *, offline: bool = False) -> dict:
+    """Compute weighted risk index and NbS recipes for all HV alert polygons.
+
+    Reads the active alerts_hvhv.geojson, enriches each polygon with:
+    - Soil data (SoilGrids REST, unless --offline)
+    - Slope from agriculture.py D1 output
+    - Live fires from FIRMS cache
+    - Earthquakes from USGS cache
+    - 7-day rainfall from published rainfall data
+
+    Outputs data/04_published/remediation/<aoi_id>.json
+    """
+    import logging
+    from datetime import UTC, datetime
+
+    from .remediation.risk import compute_risk_for_alert
+
+    logger = logging.getLogger(__name__)
+
+    aois = load_aois()
+    if aoi_id not in aois:
+        raise ValueError(f"Zona desconocida: {aoi_id}. Disponibles: {', '.join(aois)}")
+    aoi = aois[aoi_id]
+
+    # --- Load active alerts ---
+    active_path = S.PROCESSED / aoi_id / "gcov" / "active-comparison.json"
+    if not active_path.exists():
+        raise FileNotFoundError(
+            f"No hay comparación activa en {active_path}. Ejecutar sarlab change primero."
+        )
+    period = json.loads(active_path.read_text(encoding="utf-8"))["period"]
+    alerts_path = S.PROCESSED / aoi_id / "gcov" / period / "alerts_hvhv.geojson"
+    if not alerts_path.exists():
+        raise FileNotFoundError(f"No se encontró {alerts_path}")
+
+    geojson = json.loads(alerts_path.read_text(encoding="utf-8"))
+    features = geojson.get("features", [])
+    logger.info("Remediación: %d manchas HV en %s", len(features), period)
+
+    # --- Load exposure (crop_ha per alert id) ---
+    exposure_path = S.DATA_DIR / "04_published" / "exposure" / f"{aoi_id}.json"
+    exposure_by_id: dict = {}
+    if exposure_path.exists():
+        exp = json.loads(exposure_path.read_text(encoding="utf-8"))
+        exposure_by_id = exp.get("alerts", {})
+
+    # --- Load slope from agriculture.py output ---
+    agr_path = S.DATA_DIR / "04_published" / "agriculture" / f"{aoi_id}.json"
+    slope_by_id: dict[str, float] = {}
+    if agr_path.exists():
+        agr = json.loads(agr_path.read_text(encoding="utf-8"))
+        # agriculture output has alerts list or dict keyed by alert id
+        agr_alerts = agr.get("alerts", {})
+        if isinstance(agr_alerts, dict):
+            for aid, v in agr_alerts.items():
+                slope_by_id[aid] = v.get("slope_mean_deg") or v.get("slope_deg")
+        elif isinstance(agr_alerts, list):
+            for v in agr_alerts:
+                if "id" in v:
+                    slope_by_id[v["id"]] = v.get("slope_mean_deg") or v.get("slope_deg")
+
+    # --- Load live fires from catalog cache ---
+    fires_cache = S.DATA_DIR / "catalog" / "live" / "fires.json"
+    all_fires: list[dict] = []
+    if fires_cache.exists():
+        try:
+            fc = json.loads(fires_cache.read_text(encoding="utf-8"))
+            if isinstance(fc, dict) and fc.get("type") == "FeatureCollection":
+                # GeoJSON FeatureCollection: extract feature dicts
+                all_fires = fc.get("features", [])
+            elif isinstance(fc, dict) and "detections" in fc:
+                all_fires = fc["detections"]
+            elif isinstance(fc, list):
+                all_fires = fc
+        except Exception:
+            pass
+
+    # --- Load earthquakes from live cache ---
+    quakes_cache = S.DATA_DIR / "catalog" / "live" / "quakes.json"
+    all_quakes: list[dict] = []
+    if quakes_cache.exists():
+        try:
+            qc = json.loads(quakes_cache.read_text(encoding="utf-8"))
+            all_quakes = qc.get("features", [])
+        except Exception:
+            pass
+
+    # --- Load rainfall summary ---
+    rain_path = S.DATA_DIR / "04_published" / "rainfall" / f"{aoi_id}.json"
+    rain_7d: float | None = None
+    if rain_path.exists():
+        try:
+            rj = json.loads(rain_path.read_text(encoding="utf-8"))
+            rain_7d = rj.get("accumulated_mm") or rj.get("total_mm")
+        except Exception:
+            pass
+
+    # --- SoilGrids centroid cache (avoid one API call per polygon) ---
+    soil_cache: dict[str, dict] = {}
+
+    def _centroid(geometry: dict) -> tuple[float, float]:
+        """Return approximate centroid (lon, lat) of a polygon geometry."""
+        coords = geometry.get("coordinates", [[]])[0]
+        if not coords:
+            return 0.0, 0.0
+        lons = [c[0] for c in coords]
+        lats = [c[1] for c in coords]
+        return sum(lons) / len(lons), sum(lats) / len(lats)
+
+    def _fires_near(lon: float, lat: float, radius_km: float = 2.0) -> list[dict]:
+        import math
+        result = []
+        for f in all_fires:
+            if isinstance(f, dict) and f.get("type") == "Feature":
+                # GeoJSON Feature
+                coords = f.get("geometry", {}).get("coordinates", [])
+                flon = coords[0] if len(coords) >= 2 else None
+                flat = coords[1] if len(coords) >= 2 else None
+            else:
+                flat = f.get("latitude") or f.get("lat")
+                flon = f.get("longitude") or f.get("lon")
+            if flat is None or flon is None:
+                continue
+            dlat = math.radians(lat - flat)
+            dlon = math.radians(lon - flon)
+            a = (math.sin(dlat / 2) ** 2
+                 + math.cos(math.radians(flat)) * math.cos(math.radians(lat)) * math.sin(dlon / 2) ** 2)
+            dist_km = 6371 * 2 * math.asin(min(1, math.sqrt(a)))
+            if dist_km <= radius_km:
+                result.append(f)
+        return result
+
+    def _quakes_near(lon: float, lat: float, radius_km: float = 50.0) -> list[dict]:
+        import math
+        result = []
+        for q in all_quakes:
+            coords = q.get("geometry", {}).get("coordinates", [])
+            if len(coords) < 2:
+                continue
+            qlon, qlat = coords[0], coords[1]
+            dlat = math.radians(lat - qlat)
+            dlon = math.radians(lon - qlon)
+            a = (math.sin(dlat / 2) ** 2
+                 + math.cos(math.radians(qlat)) * math.cos(math.radians(lat)) * math.sin(dlon / 2) ** 2)
+            dist_km = 6371 * 2 * math.asin(min(1, math.sqrt(a)))
+            if dist_km <= radius_km:
+                q_copy = dict(q)
+                q_copy["_distance_km"] = round(dist_km, 1)
+                result.append(q_copy)
+        return result
+
+    # --- Process each alert ---
+    results = []
+    summary = {"total_alerts": 0, "high": 0, "medium": 0, "low": 0}
+
+    for feat in features:
+        props = feat.get("properties", {})
+        geom = feat.get("geometry", {})
+        alert_id = props.get("id", "")
+
+        lon, lat = _centroid(geom)
+
+        # Soil: round to ~1 km grid to reduce API calls
+        grid_key = f"{round(lon, 2)},{round(lat, 2)}"
+        if offline or not grid_key:
+            soil_info = None
+        elif grid_key not in soil_cache:
+            if not offline:
+                from .remediation.soilgrids import fetch_soil
+                soil_info = fetch_soil(lon, lat)
+            else:
+                soil_info = None
+            soil_cache[grid_key] = soil_info
+        else:
+            soil_info = soil_cache[grid_key]
+
+        # Merge exposure into props
+        exp_data = exposure_by_id.get(alert_id, {})
+        merged_props = {**props, **{
+            "cropland_ha": exp_data.get("cropland_ha", props.get("cropland_ha")),
+        }}
+
+        risk = compute_risk_for_alert(
+            merged_props,
+            soil_info=soil_info,
+            slope_deg=slope_by_id.get(alert_id),
+            fires_nearby=_fires_near(lon, lat),
+            quakes_nearby=_quakes_near(lon, lat),
+            rain_mm_7d=rain_7d,
+            soil_moisture=None,  # SME2 not yet ingested; placeholder
+        )
+
+        # Attach geometry for GeoJSON output
+        risk["geometry"] = geom
+        results.append(risk)
+
+        summary["total_alerts"] += 1
+        if risk["level"] == "alto":
+            summary["high"] += 1
+        elif risk["level"] == "medio":
+            summary["medium"] += 1
+        else:
+            summary["low"] += 1
+
+    # --- Publish ---
+    output_dir = S.DATA_DIR / "04_published" / "remediation"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_path = output_dir / f"{aoi_id}.json"
+
+    output = {
+        "aoi_id": aoi_id,
+        "period": period,
+        "generated_at": datetime.now(tz=UTC).isoformat(),
+        "nisar_revisit_days": 12,
+        "soil_moisture_available": False,
+        "note": (
+            "NISAR SME2 (humedad del suelo) no disponible aún; factor excluido del índice. "
+            "El índice se apoya en caída HV, pendiente, focos y lluvia."
+        ),
+        "disclaimer": (
+            "Aviso de monitoreo. No reemplaza a INDECI ni a la autoridad local. "
+            "Verificar en campo. NISAR revisita cada ~12 días; no es tiempo real."
+        ),
+        "summary": summary,
+        "alerts": results,
+    }
+
+    output_path.write_text(json.dumps(output, ensure_ascii=False, indent=2), encoding="utf-8")
+    logger.info("Publicado: %s", output_path)
+    return {"output_path": str(output_path), "summary": summary}

@@ -66,6 +66,107 @@ export type Exposure = {
   nearby_places?: { name: string; distance_m: number; url?: string }[] | null;
   sources?: (ExposureSource | string)[] | Record<string, ExposureSource>; note?: string; issues?: string[];
 };
+export type RemediationBudget = {
+  intervention_id: string;
+  name: string;
+  description: string;
+  priority: number;
+  timing: string;
+  notes: string;
+  unit: string;
+  cost_mid?: number | null;
+  cost_min?: number | null;
+  cost_max?: number | null;
+  cost_total_soles?: number | null;
+  cost_label: string;
+  minka_discount_pct?: number | null;
+  source?: string | null;
+  source_note?: string | null;
+  retrieved_date?: string | null;
+  status: string;
+};
+
+export type RemediationSoil = {
+  wrb_code: string;
+  wrb_name: string;
+  clay_pct?: number | null;
+  sand_pct?: number | null;
+  soc_pct?: number | null;
+  species: { name: string; scientific: string; function: string; altitude_m: [number, number]; source: string }[];
+  source?: string | null;
+  source_date?: string | null;
+  license?: string | null;
+};
+
+export type RemediationRecipe = {
+  risk_id: string;
+  risk_name: string;
+  condition: string;
+  disclaimer: string;
+  executor: string[];
+  species_primary: string[];
+  source: string;
+};
+
+export type RemediationAlert = {
+  alert_id: string;
+  aoi_id: string;
+  area_ha: number;
+  risk_id: string;
+  risk_name: string;
+  risk_description: string;
+  level: "alto" | "medio" | "bajo";
+  color_hex: string;
+  index: number;
+  factors: {
+    hv_drop_db: number;
+    hv_score: number;
+    slope_deg?: number | null;
+    slope_score: number;
+    heat_score: number;
+    quake_score: number;
+    rain_score: number;
+    rain_mm_7d?: number | null;
+    soil_moisture_m3m3?: number | null;
+    soil_moisture_score: number;
+    crop_ha?: number | null;
+    crop_score: number;
+    index_total: number;
+  };
+  factor_details: string[];
+  soil: RemediationSoil;
+  recipe?: RemediationRecipe | null;
+  budget: RemediationBudget[];
+  sources_nisar: {
+    source: string;
+    product: string;
+    granules: string[];
+    dates: string[];
+    url: string;
+  };
+  sources_complementary: {
+    source: string;
+    url?: string;
+    date?: string;
+    license?: string;
+  }[];
+  soil_moisture_available: boolean;
+  disclaimer: string;
+  generated_at: string;
+};
+
+export type RemediationData = {
+  aoi_id: string;
+  period: string;
+  generated_at: string;
+  nisar_revisit_days: number;
+  soil_moisture_available: boolean;
+  note: string;
+  disclaimer: string;
+  summary: { total_alerts: number; high: number; medium: number; low: number };
+  alerts: RemediationAlert[];
+};
+
 export type AlertFeature = {
   type: "Feature"; id?: string;
   geometry: { type: string; coordinates: unknown };
@@ -77,6 +178,7 @@ export type AlertFeature = {
     comparison_summary?: { loss_area_ha: number; mapped_loss_area_ha: number; alerts: number } | null;
     metrics: { magnitude?: number; magnitude_type?: string; depth_km?: number; frp_mw?: number; area_ha?: number | null; count?: number };
     exposure?: Exposure | null;
+    remediation?: RemediationAlert | null;
   };
 };
 export type FeedStatus = { source: string; status: string; last_updated: string | null; stale: boolean; message?: string; latency: string; coverage_days?: number };
@@ -166,6 +268,8 @@ export const api = {
   polarizations: (aoi: string) => get<PolarizationSummary[]>(`/polarizations?aoi=${encodeURIComponent(aoi)}&active_only=true`),
   story: (aoi: string) => get<Story>(`/stories/${encodeURIComponent(aoi)}`),
   timeseries: (aoi: string) => get<TimeSeries>(`/timeseries?aoi=${encodeURIComponent(aoi)}&allow_empty=true`),
+  remediation: (aoi: string, signal?: AbortSignal) => get<RemediationData | null>(`/remediation/${encodeURIComponent(aoi)}`, signal),
+  remediationZone: (aoi: string, zoneId: string, signal?: AbortSignal) => get<RemediationAlert | null>(`/remediation/${encodeURIComponent(aoi)}/${encodeURIComponent(zoneId)}`, signal),
   /** Teselas por identificador de capa publicada. */
   tileUrl: (m: LayerManifest, stage: "change" | "before" | "after" = "change", rgb = false) =>
     `${BASE}/tiles/${encodeURIComponent(m.id)}/${stage}/{z}/{x}/{y}.png${rgb ? "?palette=rgb" : ""}`,

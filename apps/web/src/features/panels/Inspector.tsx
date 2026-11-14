@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { useReducedMotion } from "../../lib/useMotionPreference";
 import type { AOI, AlertFeature, AlertKind, Audience, Catalog, ContextLayer, FeedStatus, GlobeStatus, Health, LayerManifest, PolarizationSummary, Rainfall, Story, TimeSeries, Trend, Validation } from "../../lib/api";
@@ -100,6 +101,142 @@ function OperaValidation({ result }: { result?: Validation }) {
   </details>;
 }
 
+function ActionPanel({
+  alerts,
+  selected,
+  onSelect,
+  onClear,
+  onResources,
+}: {
+  alerts: AlertFeature[];
+  selected?: AlertFeature;
+  onSelect: (a: AlertFeature) => void;
+  onClear: () => void;
+  onResources: () => void;
+}) {
+  const [levelFilter, setLevelFilter] = useState<string>("all");
+  const [riskFilter, setRiskFilter] = useState<string>("all");
+
+  if (selected) {
+    return <AlertDetails feature={selected} onBack={onClear} onResources={onResources} />;
+  }
+
+  const nisarAlerts = alerts.filter(a => a.properties.kind === "surface_change" && a.properties.source === "NISAR");
+  const remediationAlerts = nisarAlerts.filter(a => {
+    const rem = a.properties.remediation;
+    if (levelFilter !== "all" && (rem?.level ?? a.properties.level) !== levelFilter) return false;
+    if (riskFilter !== "all" && rem?.risk_id !== riskFilter) return false;
+    return true;
+  });
+
+  const counts = {
+    total: nisarAlerts.length,
+    high: nisarAlerts.filter(a => (a.properties.remediation?.level ?? a.properties.level) === "alto").length,
+    medium: nisarAlerts.filter(a => (a.properties.remediation?.level ?? a.properties.level) === "medio").length,
+    low: nisarAlerts.filter(a => (a.properties.remediation?.level ?? a.properties.level) === "bajo").length,
+  };
+
+  return (
+    <div className="action-panel">
+      <div className="panel-subheading">
+        <p>Motor de riesgo y recetas naturales (SbN)</p>
+      </div>
+      <p className="panel-introduction">
+        GAIA traduce la caída de señal radar de NISAR y datos de suelo, relieve y calor en acciones de restauración y bioingeniería con especies nativas.
+      </p>
+
+      <div className="observation-metrics" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", margin: "12px 0" }}>
+        <div style={{ textAlign: "center", padding: "8px", background: "var(--surface-subtle, #1a1a1a)", borderRadius: "6px" }}>
+          <dt style={{ fontSize: "0.75rem", color: "#F44336" }}>Riesgo Alto</dt>
+          <dd style={{ fontSize: "1.25rem", fontWeight: "bold" }}>{counts.high}</dd>
+        </div>
+        <div style={{ textAlign: "center", padding: "8px", background: "var(--surface-subtle, #1a1a1a)", borderRadius: "6px" }}>
+          <dt style={{ fontSize: "0.75rem", color: "#FF9800" }}>Riesgo Medio</dt>
+          <dd style={{ fontSize: "1.25rem", fontWeight: "bold" }}>{counts.medium}</dd>
+        </div>
+        <div style={{ textAlign: "center", padding: "8px", background: "var(--surface-subtle, #1a1a1a)", borderRadius: "6px" }}>
+          <dt style={{ fontSize: "0.75rem", color: "#4CAF50" }}>Riesgo Bajo</dt>
+          <dd style={{ fontSize: "1.25rem", fontWeight: "bold" }}>{counts.low}</dd>
+        </div>
+      </div>
+
+      <div className="alert-filters">
+        <label>
+          Nivel de riesgo
+          <select value={levelFilter} onChange={e => setLevelFilter(e.target.value)}>
+            <option value="all">Todos los niveles ({counts.total})</option>
+            <option value="alto">Alto ({counts.high})</option>
+            <option value="medio">Medio ({counts.medium})</option>
+            <option value="bajo">Bajo ({counts.low})</option>
+          </select>
+        </label>
+        <label>
+          Diagnóstico SbN
+          <select value={riskFilter} onChange={e => setRiskFilter(e.target.value)}>
+            <option value="all">Todos los diagnósticos</option>
+            <option value="incendio_sequia">Incendio o sequía</option>
+            <option value="erosion_huaico">Erosión o huaico</option>
+            <option value="ladera_inestable_sismo">Ladera inestable tras sismo</option>
+            <option value="estres_hidrico_agricola">Estrés hídrico agrícola</option>
+          </select>
+        </label>
+      </div>
+
+      <div className="case-list" style={{ marginTop: "1rem" }}>
+        {remediationAlerts.map(feature => {
+          const p = feature.properties;
+          const rem = p.remediation;
+          const levelColor = rem?.color_hex ?? (p.level === "alto" ? "#F44336" : p.level === "medio" ? "#FF9800" : "#4CAF50");
+          return (
+            <button
+              key={p.id}
+              type="button"
+              className="case"
+              style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", textAlign: "left", gap: "4px" }}
+              onClick={() => onSelect(feature)}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", width: "100%", alignItems: "center" }}>
+                <strong style={{ fontSize: "0.95rem" }}>{rem?.risk_name ?? p.title}</strong>
+                <span
+                  className="alert-level"
+                  data-level={rem?.level ?? p.level}
+                  style={{ borderColor: levelColor, color: levelColor }}
+                >
+                  {rem?.level ?? p.level}
+                </span>
+              </div>
+              <small className="muted">
+                {p.place} · {p.metrics.area_ha != null ? `${number(p.metrics.area_ha)} ha` : ""}
+                {rem ? ` · Índice ${(rem.index * 100).toFixed(0)}%` : ""}
+              </small>
+              {rem?.recipe && (
+                <small style={{ color: "var(--accent, #64b5f6)" }}>
+                  Receta: {rem.recipe.species_primary?.slice(0, 2).join(", ")}
+                </small>
+              )}
+              {rem?.budget?.[0] && (
+                <small className="muted">
+                  Presupuesto: {rem.budget[0].cost_label}
+                </small>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {!remediationAlerts.length && (
+        <EmptyState title="Sin manchas para este filtro">
+          Ajusta los filtros o selecciona otra zona configurada para explorar recetas.
+        </EmptyState>
+      )}
+
+      <p className="status-message" style={{ marginTop: "1.5rem" }}>
+        Aviso de monitoreo. No reemplaza a INDECI ni a la autoridad local. Verificar en campo. NISAR revisita cada ~12 días; dato no es tiempo real.
+      </p>
+    </div>
+  );
+}
+
 export function Inspector(p: Props) {
   const reduce = useReducedMotion();
   const { tab, layer, story } = p;
@@ -156,6 +293,16 @@ export function Inspector(p: Props) {
           </div>)}
         </details>
       </>}
+
+      {tab === "action" && (
+        <ActionPanel
+          alerts={p.alerts}
+          selected={p.selected}
+          onSelect={p.onSelectAlert}
+          onClear={p.onClearAlert}
+          onResources={p.onResources}
+        />
+      )}
 
       {tab === "story" && (!story || !storyStep ? <EmptyState title="Elige un territorio">Abre Lugares para comenzar la historia de Ayacucho, Sabancaya, Chosica o Madre de Dios.</EmptyState> : <>
         <div className="audience-switch" role="group" aria-label="Nivel de detalle">{(["publico", "tecnico"] as Audience[]).map(value =>

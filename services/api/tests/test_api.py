@@ -39,3 +39,36 @@ def test_story_and_timeseries(tmp_path, monkeypatch):
     d = tmp_path / "zona-x" / "gcov"; d.mkdir(parents=True)
     (d / "timeseries.json").write_text(json.dumps({"samples": [1, 2]}))
     assert c.get("/api/timeseries?aoi=zona-x").json()["samples"] == [1, 2]
+
+
+def test_remediation_endpoints(tmp_path, monkeypatch):
+    c = TestClient(main.app)
+    assert c.get("/api/remediation/invalid_aoi!").status_code == 422
+    assert c.get("/api/remediation/no-such-aoi").status_code == 404
+
+    # Mock published directory with synthetic remediation data
+    published = tmp_path / "04_published" / "remediation"
+    published.mkdir(parents=True)
+    fake_remediation = {
+        "aoi_id": "test-zone",
+        "summary": {"total_alerts": 1, "high": 0, "medium": 0, "low": 1},
+        "alerts": [
+            {
+                "alert_id": "alr_001",
+                "risk_id": "incendio_sequia",
+                "level": "bajo",
+                "index": 0.25,
+            }
+        ],
+    }
+    (published / "test-zone.json").write_text(json.dumps(fake_remediation), encoding="utf-8")
+    monkeypatch.setattr(main, "PROCESSED", tmp_path / "03_processed")
+    assert c.get("/api/remediation/test-zone").status_code == 200
+    res = c.get("/api/remediation/test-zone").json()
+    assert res["summary"]["total_alerts"] == 1
+
+    # Single zone detail
+    assert c.get("/api/remediation/test-zone/alr_001").status_code == 200
+    detail = c.get("/api/remediation/test-zone/alr_001").json()
+    assert detail["risk_id"] == "incendio_sequia"
+    assert c.get("/api/remediation/test-zone/non-existent").status_code == 404

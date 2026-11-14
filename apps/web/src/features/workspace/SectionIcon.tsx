@@ -2,6 +2,7 @@ import type { TabId } from "../../config/tabs";
 
 const paths: Record<TabId, string> = {
   alerts: "M12 3 2.5 20h19L12 3ZM12 9v5m0 3v.1",
+  action: "M12 22v-8m0 0a5 5 0 0 1 5-5h2a7 7 0 0 1-7 7m0-2a5 5 0 0 0-5-5H5a7 7 0 0 0 7 7",
   cases: "M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0ZM15 10a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z",
   story: "M4 4h6a3 3 0 0 1 3 3v14a4 4 0 0 0-4-3H4V4Zm16 0h-4a3 3 0 0 0-3 3m0 14a4 4 0 0 1 4-3h3V4Z",
   changes: "M4 4h16v16H4V4Zm8 0v16M8 8l-2 4 2 4m8-8 2 4-2 4",

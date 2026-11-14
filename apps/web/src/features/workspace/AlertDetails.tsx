@@ -87,6 +87,142 @@ export function AlertDetails({ feature, onBack, onResources }: { feature: AlertF
       </> : <p className="empty-inline">La exposición aún no está calculada. Se necesitan capas de población, cobertura del suelo y centros poblados para estimar personas y cultivos.</p>}
     </section>
 
+    {p.remediation && (
+      <section className="remediation-section">
+        <div className="source-row">
+          <span className="source-label">Solución basada en la naturaleza (SbN)</span>
+          <span className="alert-level" data-level={p.remediation.level} style={{ borderColor: p.remediation.color_hex, color: p.remediation.color_hex }}>
+            Riesgo {p.remediation.level} · {(p.remediation.index * 100).toFixed(0)}%
+          </span>
+        </div>
+        <h4>Qué pasa y diagnóstico</h4>
+        <p><strong>{p.remediation.risk_name}</strong></p>
+        <p className="observation-note">{p.remediation.risk_description}</p>
+
+        <h4>Por qué · factores ponderados</h4>
+        <ul className="source-list">
+          {p.remediation.factor_details.map((factor, i) => (
+            <li key={i}>{factor}</li>
+          ))}
+        </ul>
+
+        {p.remediation.recipe && (
+          <div className="remediation-recipe">
+            <h4>Receta recomendada</h4>
+            <p className="muted">Condición física: <code>{p.remediation.recipe.condition}</code></p>
+            {p.remediation.recipe.disclaimer && (
+              <p className="status-message">{p.remediation.recipe.disclaimer}</p>
+            )}
+            {p.remediation.recipe.species_primary?.length > 0 && (
+              <div>
+                <strong>Especies nativas recomendadas:</strong>
+                <ul className="source-list">
+                  {p.remediation.recipe.species_primary.map((sp, idx) => (
+                    <li key={idx}>{sp}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {p.remediation.soil?.wrb_name && (
+              <p className="muted">
+                Suelo (SoilGrids): {p.remediation.soil.wrb_name}
+                {p.remediation.soil.clay_pct != null && ` · Arcilla: ${p.remediation.soil.clay_pct}%`}
+                {p.remediation.soil.sand_pct != null && ` · Arena: ${p.remediation.soil.sand_pct}%`}
+              </p>
+            )}
+          </div>
+        )}
+
+        <h4>Presupuesto estimado de intervención</h4>
+        {p.remediation.budget?.length > 0 ? (
+          <div className="budget-table-wrap">
+            <table className="budget-table" style={{ width: "100%", fontSize: "0.85rem", borderCollapse: "collapse", marginTop: "0.5rem" }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid var(--border, #333)", textAlign: "left" }}>
+                  <th style={{ padding: "4px" }}>Técnica</th>
+                  <th style={{ padding: "4px" }}>Temporada</th>
+                  <th style={{ padding: "4px" }}>Unidad</th>
+                  <th style={{ padding: "4px" }}>Presupuesto</th>
+                </tr>
+              </thead>
+              <tbody>
+                {p.remediation.budget.map((b) => (
+                  <tr key={b.intervention_id} style={{ borderBottom: "1px solid var(--border-subtle, #222)" }}>
+                    <td style={{ padding: "6px 4px" }}>
+                      <strong>{b.name}</strong>
+                      <br />
+                      <small className="muted">{b.notes}</small>
+                      {b.source && (
+                        <div>
+                          <small className="muted">Fuente: {b.source}</small>
+                        </div>
+                      )}
+                      {b.minka_discount_pct && (
+                        <div>
+                          <small className="badge-provisional">
+                            Minka comunal: hasta {b.minka_discount_pct}% menos en efectivo
+                          </small>
+                        </div>
+                      )}
+                    </td>
+                    <td style={{ padding: "6px 4px" }}><small>{b.timing}</small></td>
+                    <td style={{ padding: "6px 4px" }}><small>{b.unit}</small></td>
+                    <td style={{ padding: "6px 4px" }}>
+                      <strong>{b.cost_label}</strong>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="empty-inline">Sin intervenciones presupuestadas.</p>
+        )}
+
+        <details className="technical-details">
+          <summary>Procedencia y fuentes de remediación</summary>
+          <ul className="source-list">
+            <li>
+              <strong>NISAR (fuente principal):</strong> {p.remediation.sources_nisar.product}
+              <br />
+              <small className="muted">
+                Fechas: {p.remediation.sources_nisar.dates?.join(" → ")}
+              </small>
+            </li>
+            {p.remediation.sources_complementary?.map((s, idx) => (
+              <li key={idx}>
+                <strong>Complementario:</strong> {s.source}
+                {s.license && ` · ${s.license}`}
+                {s.url && (
+                  <a href={s.url} target="_blank" rel="noopener noreferrer" className="source-link">
+                    ↗
+                  </a>
+                )}
+              </li>
+            ))}
+          </ul>
+        </details>
+
+        <p className="status-message" style={{ marginTop: "1rem" }}>
+          {p.remediation.disclaimer}
+        </p>
+
+        <div className="printable-qr" style={{ marginTop: "1rem", display: "flex", alignItems: "center", gap: "1rem" }}>
+          <img
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=96x96&data=${encodeURIComponent(shareUrl.href)}`}
+            alt="Código QR de la ficha"
+            width="96"
+            height="96"
+            style={{ borderRadius: "4px", background: "#fff", padding: "4px" }}
+          />
+          <div>
+            <p style={{ margin: 0, fontWeight: "bold" }}>Acceso digital a la ficha</p>
+            <p className="muted" style={{ margin: 0, fontSize: "0.8rem" }}>Escanea el código QR para consultar las coordenadas y las capas de monitoreo en vivo.</p>
+          </div>
+        </div>
+      </section>
+    )}
+
     {!!p.granules?.length && <details className="technical-details"><summary>Gránulos de origen</summary><ul className="granule-list">{p.granules.map(granule => <li key={granule}>{granule}</li>)}</ul></details>}
     <div className="detail-actions">
       <a className="primary-action" href={`https://wa.me/?text=${encodeURIComponent(message)}`} target="_blank" rel="noopener noreferrer">Compartir alerta</a>

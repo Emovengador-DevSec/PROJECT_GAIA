@@ -78,6 +78,17 @@ def main(argv: list[str] | None = None) -> int:
     fires = sub.add_parser("fire-history", help="Publica el archivo histórico completo de focos MODIS")
     fires.add_argument("--aoi", required=True)
 
+    rem = sub.add_parser(
+        "remediation",
+        help="Calcula índice de riesgo ponderado y recetas SbN por mancha NISAR HV",
+    )
+    rem.add_argument("--aoi", required=True, help="Zona configurada en config/aois/")
+    rem.add_argument(
+        "--offline",
+        action="store_true",
+        help="No consulta SoilGrids ni APIs externas; usa valores neutros",
+    )
+
     a = ap.parse_args(argv)
     if a.cmd == "fire-history":
         from .fire_history import publish
@@ -175,6 +186,18 @@ def main(argv: list[str] | None = None) -> int:
         except (ValueError, OSError) as exc:
             ap.error(str(exc))
         print(json.dumps(result, ensure_ascii=False, indent=2))
+    elif a.cmd == "remediation":
+        from .workflows import run_remediation
+        try:
+            result = run_remediation(a.aoi, offline=getattr(a, "offline", False))
+        except (ValueError, OSError, FileNotFoundError) as exc:
+            ap.error(str(exc))
+        summary = result.get("summary", {})
+        print(
+            f"Remediacion publicada: {summary.get('total_alerts', 0)} manchas · "
+            f"alto={summary.get('high', 0)} medio={summary.get('medium', 0)} bajo={summary.get('low', 0)}\n"
+            f"-> {result.get('output_path')}"
+        )
     return 0
 
 

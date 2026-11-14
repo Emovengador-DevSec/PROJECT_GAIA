@@ -117,6 +117,52 @@ export function Community({ onLocate, reports, reportError, reportLayer, onRepor
           <p>En el área estudiada, {number(index?.region.cropland_ha)} ha de cultivo coinciden con manchas HV. La cosecha y la preparación del terreno podrían explicar parte de la caída de señal.</p>
           <p className="muted">Contrasta esa hipótesis con el calendario de siembra, registros locales y observaciones ópticas. Lluvia, humedad e incendios también pueden modificar el eco radar.</p>
         </section>}
+
+        <section className="community-block">
+          <div className="source-row">
+            <span className="source-label">Soluciones basadas en la naturaleza (SbN)</span>
+            <span className="badge-provisional">Acción comunal</span>
+          </div>
+          <h4>Recetas naturales recomendadas para {detail.name}</h4>
+          <p className="muted">
+            Soluciones ancestrales y de bioingeniería con especies nativas para mitigar riesgos en cultivos y laderas.
+          </p>
+          <div className="case-list" style={{ marginTop: "0.5rem" }}>
+            <div className="case" style={{ flexDirection: "column", alignItems: "flex-start", gap: "6px" }}>
+              <strong>Cortafuegos vivos y zanjas de infiltración</strong>
+              <small className="muted">Especies: Molle, Tara, Maguey y Tuna · Temporada seca (abril–agosto)</small>
+              <small>Presupuesto unitario: S/ 4,750 a 11,500 por km · <span className="badge-provisional">costo por confirmar (SERFOR / Sierra Azul)</span></small>
+              <small className="muted">Minka comunal: hasta 40% de reducción en efectivo con trabajo comunitario.</small>
+            </div>
+            <div className="case" style={{ flexDirection: "column", alignItems: "flex-start", gap: "6px" }}>
+              <strong>Bioingeniería con ichu y restauración de andenes</strong>
+              <small className="muted">Especies: Ichu, Queñua, Quishuar · Temporada de lluvias (octubre–noviembre)</small>
+              <small>Presupuesto unitario: S/ 3,750 a 14,000 por ha · <span className="badge-provisional">costo por confirmar (AGRORURAL)</span></small>
+            </div>
+          </div>
+
+          <div className="printable-qr" style={{ marginTop: "1rem", display: "flex", alignItems: "center", gap: "1rem" }}>
+            <img
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=96x96&data=${encodeURIComponent(window.location.href)}`}
+              alt="Código QR de la ficha comunitaria"
+              width="96"
+              height="96"
+              style={{ borderRadius: "4px", background: "#fff", padding: "4px" }}
+            />
+            <div>
+              <p style={{ margin: 0, fontWeight: "bold" }}>Ficha comunitaria digital</p>
+              <p className="muted" style={{ margin: 0, fontSize: "0.8rem" }}>
+                Escanea para consultar la ficha en vivo en GAIA Alerta.
+              </p>
+              <button type="button" className="secondary-action" style={{ marginTop: "6px" }} onClick={() => window.print()}>
+                Imprimir ficha comunitaria
+              </button>
+            </div>
+          </div>
+          <p className="status-message" style={{ marginTop: "0.75rem" }}>
+            Aviso de monitoreo. No reemplaza a INDECI ni a la autoridad local. Verificar en campo.
+          </p>
+        </section>
       </>}
       <CitizenReports reports={reports} error={reportError} active={reportLayer} onLayer={onReportLayer}
         picking={picking} onPick={onPick} point={point} onLocate={onLocateReport} />
