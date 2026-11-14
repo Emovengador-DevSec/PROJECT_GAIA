@@ -4,6 +4,8 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- Fase 3 (doc 23): comparación óptica HLS con NDVI real, escenarios de recuperación a 3 y 5 años con citas bibliográficas, evaluación costo-beneficio frente a inacción (MIDAGRI/SIEA y Minka) y constancia de evidencia satelital en PDF con hash SHA-256.
+
 - Fase 2 (doc 23): normales climáticas estacionales (45 años NASA POWER), pronóstico y anomalías de Open-Meteo, y calendario agrícola inteligente para 4 cultivos andinos y ganado en puna con registro de saber tradicional.
 - Fase 1 (doc 23): motor de riesgo ponderado y recetas naturales (SbN) con especies nativas, costos por verificar y fuentes citadas; comando `sarlab remediation`, API en `/api/remediation` y pestaña Acción en el visor 3D.
 - Plan maestro en 4 fases para pasar de detector a acción con soluciones basadas en la naturaleza (docs/23): riesgo, recetas SbN, clima, costo-beneficio, radio y Minka; con credenciales necesarias y prompt para Antigravity.

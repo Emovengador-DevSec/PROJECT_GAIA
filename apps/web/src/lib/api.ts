@@ -108,6 +108,56 @@ export type RemediationRecipe = {
   source: string;
 };
 
+export type RemediationCostBenefit = {
+  currency: string;
+  currency_symbol: string;
+  crop_ha_evaluated: number;
+  effective_ha: number;
+  production_value_per_ha_pen: number;
+  valuation_source: string;
+  loss_avoided_annual_pen: number;
+  loss_avoided_3yr_pen: number;
+  loss_avoided_5yr_pen: number;
+  intervention_cost_total_pen: number;
+  cost_with_minka_pen: number;
+  benefit_cost_ratio_3yr: number;
+  benefit_cost_ratio_5yr: number;
+  benefit_cost_ratio_minka_5yr: number;
+  assumptions: string[];
+  disclaimer: string;
+};
+
+export type RemediationRecoveryScenario = {
+  mandatory_label: string;
+  risk_id: string;
+  risk_name: string;
+  baseline_ndvi: number;
+  projected: {
+    year_1: { ndvi: number; gain_ndvi: number; description: string };
+    year_3: { ndvi: number; gain_ndvi: number; description: string };
+    year_5: { ndvi: number; gain_ndvi: number; description: string };
+  };
+  annual_rate_label: string;
+  citation: string;
+  citation_url?: string;
+  limiting_factors: string[];
+};
+
+export type RemediationOpticalContext = {
+  product: string;
+  source: string;
+  dates: { before: string; after: string };
+  scenes: string[];
+  ndvi_observed_approx: {
+    before: number;
+    after: number;
+    drop: number;
+    interpretation: string;
+  };
+  image_urls: { before: string; after: string };
+  terrain_3d_available: boolean;
+};
+
 export type RemediationAlert = {
   alert_id: string;
   aoi_id: string;
@@ -137,6 +187,9 @@ export type RemediationAlert = {
   soil: RemediationSoil;
   recipe?: RemediationRecipe | null;
   budget: RemediationBudget[];
+  cost_benefit?: RemediationCostBenefit | null;
+  recovery_scenario?: RemediationRecoveryScenario | null;
+  optical_context?: RemediationOpticalContext | null;
   sources_nisar: {
     source: string;
     product: string;

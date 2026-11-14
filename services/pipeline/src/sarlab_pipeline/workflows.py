@@ -163,7 +163,6 @@ def run_remediation(aoi_id: str, *, offline: bool = False) -> dict:
     aois = load_aois()
     if aoi_id not in aois:
         raise ValueError(f"Zona desconocida: {aoi_id}. Disponibles: {', '.join(aois)}")
-    aoi = aois[aoi_id]
 
     # --- Load active alerts ---
     active_path = S.PROCESSED / aoi_id / "gcov" / "active-comparison.json"
@@ -187,20 +186,34 @@ def run_remediation(aoi_id: str, *, offline: bool = False) -> dict:
         exp = json.loads(exposure_path.read_text(encoding="utf-8"))
         exposure_by_id = exp.get("alerts", {})
 
-    # --- Load slope from agriculture.py output ---
+    # --- Load slope and crops from agriculture.py output ---
     agr_path = S.DATA_DIR / "04_published" / "agriculture" / f"{aoi_id}.json"
     slope_by_id: dict[str, float] = {}
+    crops_by_id: dict[str, float] = {}
     if agr_path.exists():
         agr = json.loads(agr_path.read_text(encoding="utf-8"))
-        # agriculture output has alerts list or dict keyed by alert id
         agr_alerts = agr.get("alerts", {})
         if isinstance(agr_alerts, dict):
             for aid, v in agr_alerts.items():
-                slope_by_id[aid] = v.get("slope_mean_deg") or v.get("slope_deg")
+                if v.get("slope_mean_deg") is not None:
+                    slope_by_id[aid] = float(v["slope_mean_deg"])
+                elif v.get("slope_deg") is not None:
+                    slope_by_id[aid] = float(v["slope_deg"])
+                elif v.get("cropland_steep_ha", 0) > 0:
+                    slope_by_id[aid] = 22.0  # Ladera pronunciada > 15°
+                elif v.get("cropland_low_slope_ha", 0) > 0:
+                    slope_by_id[aid] = 10.0  # Ladera suave <= 15°
+                c_ha = (v.get("cropland_low_slope_ha") or 0.0) + (v.get("cropland_steep_ha") or 0.0)
+                if c_ha > 0:
+                    crops_by_id[aid] = c_ha
         elif isinstance(agr_alerts, list):
             for v in agr_alerts:
                 if "id" in v:
-                    slope_by_id[v["id"]] = v.get("slope_mean_deg") or v.get("slope_deg")
+                    aid = v["id"]
+                    slope_by_id[aid] = v.get("slope_mean_deg") or v.get("slope_deg") or 12.0
+                    c_ha = (v.get("cropland_low_slope_ha") or 0.0) + (v.get("cropland_steep_ha") or 0.0)
+                    if c_ha > 0:
+                        crops_by_id[aid] = c_ha
 
     # --- Load live fires from catalog cache ---
     fires_cache = S.DATA_DIR / "catalog" / "live" / "fires.json"
@@ -317,10 +330,19 @@ def run_remediation(aoi_id: str, *, offline: bool = False) -> dict:
         else:
             soil_info = soil_cache[grid_key]
 
-        # Merge exposure into props
-        exp_data = exposure_by_id.get(alert_id, {})
+        # Merge exposure and crop data into props
+        exp_data = exposure_by_id.get(alert_id)
+        if not exp_data:
+            suffix = alert_id.split("_")[-1]
+            for k, v in exposure_by_id.items():
+                if k.endswith(f"_{suffix}"):
+                    exp_data = v
+                    break
+        exp_data = exp_data or {}
+        cropland_val = crops_by_id.get(alert_id) or exp_data.get("cropland_ha") or props.get("cropland_ha")
         merged_props = {**props, **{
-            "cropland_ha": exp_data.get("cropland_ha", props.get("cropland_ha")),
+            "cropland_ha": cropland_val,
+            "exposure": exp_data,
         }}
 
         risk = compute_risk_for_alert(

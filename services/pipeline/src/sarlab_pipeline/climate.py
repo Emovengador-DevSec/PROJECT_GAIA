@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import calendar
 import json
+import logging
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -14,6 +15,8 @@ from scipy.stats import theilslopes
 
 from . import settings as S
 from .config import load_aois
+
+logger = logging.getLogger(__name__)
 
 URL = "https://power.larc.nasa.gov/api/temporal/daily/point"
 REFERENCE = "https://power.larc.nasa.gov/docs/referencing/"
@@ -184,7 +187,8 @@ def summarize(payload: dict) -> dict:
         },
         "description": (
             f"Temperatura típica de {cur_sn['name']}: {cur_sn['tmax_mean']:.1f} °C de máxima, "
-            f"{cur_sn['tmin_mean']:.1f} °C de mínima y {cur_sn['rain_mean_monthly_mm']:.0f} mm de lluvia mensual."
+            f"{cur_sn['tmin_mean']:.1f} °C de mínima y "
+            f"{cur_sn['rain_mean_monthly_mm']:.0f} mm de lluvia mensual."
         ),
     }
 
@@ -252,10 +256,54 @@ def publish(aoi_id: str, local: Path | None = None, *, offline: bool = False) ->
     # Si el JSON existente no tenía los campos calculados de la Fase 2, proveer valores calculados
     if "seasonal_normals" not in result or "typical_season" not in result:
         result["seasonal_normals"] = {
-            "DEF": {"name": "Verano (diciembre–febrero)", "tmax_mean": 19.5, "tmax_p10": 17.2, "tmax_p90": 21.8, "tmin_mean": 7.4, "tmin_p10": 5.1, "tmin_p90": 9.2, "rain_daily_mean": 3.1, "rain_daily_p90": 8.5, "rain_mean_monthly_mm": 94.2},
-            "MAM": {"name": "Otoño (marzo–mayo)", "tmax_mean": 20.1, "tmax_p10": 18.0, "tmax_p90": 22.3, "tmin_mean": 5.2, "tmin_p10": 2.8, "tmin_p90": 7.5, "rain_daily_mean": 1.2, "rain_daily_p90": 3.8, "rain_mean_monthly_mm": 36.5},
-            "JJA": {"name": "Invierno (junio–agosto)", "tmax_mean": 20.6, "tmax_p10": 18.5, "tmax_p90": 22.9, "tmin_mean": 2.1, "tmin_p10": -0.5, "tmin_p90": 4.8, "rain_daily_mean": 0.25, "rain_daily_p90": 0.8, "rain_mean_monthly_mm": 7.6},
-            "SON": {"name": "Primavera (septiembre–noviembre)", "tmax_mean": 21.2, "tmax_p10": 18.8, "tmax_p90": 23.5, "tmin_mean": 5.5, "tmin_p10": 3.0, "tmin_p90": 7.9, "rain_daily_mean": 1.6, "rain_daily_p90": 5.2, "rain_mean_monthly_mm": 48.6},
+            "DEF": {
+                "name": "Verano (diciembre–febrero)",
+                "tmax_mean": 19.5,
+                "tmax_p10": 17.2,
+                "tmax_p90": 21.8,
+                "tmin_mean": 7.4,
+                "tmin_p10": 5.1,
+                "tmin_p90": 9.2,
+                "rain_daily_mean": 3.1,
+                "rain_daily_p90": 8.5,
+                "rain_mean_monthly_mm": 94.2,
+            },
+            "MAM": {
+                "name": "Otoño (marzo–mayo)",
+                "tmax_mean": 20.1,
+                "tmax_p10": 18.0,
+                "tmax_p90": 22.3,
+                "tmin_mean": 5.2,
+                "tmin_p10": 2.8,
+                "tmin_p90": 7.5,
+                "rain_daily_mean": 1.2,
+                "rain_daily_p90": 3.8,
+                "rain_mean_monthly_mm": 36.5,
+            },
+            "JJA": {
+                "name": "Invierno (junio–agosto)",
+                "tmax_mean": 20.6,
+                "tmax_p10": 18.5,
+                "tmax_p90": 22.9,
+                "tmin_mean": 2.1,
+                "tmin_p10": -0.5,
+                "tmin_p90": 4.8,
+                "rain_daily_mean": 0.25,
+                "rain_daily_p90": 0.8,
+                "rain_mean_monthly_mm": 7.6,
+            },
+            "SON": {
+                "name": "Primavera (septiembre–noviembre)",
+                "tmax_mean": 21.2,
+                "tmax_p10": 18.8,
+                "tmax_p90": 23.5,
+                "tmin_mean": 5.5,
+                "tmin_p10": 3.0,
+                "tmin_p90": 7.9,
+                "rain_daily_mean": 1.6,
+                "rain_daily_p90": 5.2,
+                "rain_mean_monthly_mm": 48.6,
+            },
         }
         result["typical_season"] = {
             "season_code": "SON",
@@ -267,7 +315,10 @@ def publish(aoi_id: str, local: Path | None = None, *, offline: bool = False) ->
             "p90_tmax_c": 23.5,
             "p90_rain_daily_mm": 5.2,
             "units": {"temperature": "°C", "rainfall": "mm"},
-            "description": "Temperatura típica de Primavera (septiembre–noviembre): 21.2 °C de máxima, 5.5 °C de mínima y 49 mm de lluvia mensual.",
+            "description": (
+                "Temperatura típica de Primavera (septiembre–noviembre): "
+                "21.2 °C de máxima, 5.5 °C de mínima y 49 mm de lluvia mensual."
+            ),
         }
 
     # --- Fase 2.2 y 2.3: Pronóstico Open-Meteo, anomalías y calendario agrícola ---

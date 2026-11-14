@@ -663,10 +663,9 @@ def remediation(aoi: str):
     if not re.fullmatch(AOI_PATTERN, aoi):
         raise HTTPException(422, "Identificador de zona inválido.")
     path = PROCESSED.parent / "04_published" / "remediation" / f"{aoi}.json"
+    msg = "No hay datos de remediación para esta zona. Ejecuta `sarlab remediation --aoi <zona>`."
     if not path.is_file():
-        raise HTTPException(
-            404, detail="No hay datos de remediación para esta zona. Ejecuta `sarlab remediation --aoi <zona>`."
-        )
+        raise HTTPException(404, detail=msg)
     return json.loads(path.read_text(encoding="utf-8"))
 
 
@@ -675,15 +674,70 @@ def remediation_zone(aoi: str, zone_id: str):
     if not re.fullmatch(AOI_PATTERN, aoi):
         raise HTTPException(422, "Identificador de zona inválido.")
     path = PROCESSED.parent / "04_published" / "remediation" / f"{aoi}.json"
+    msg = "No hay datos de remediación para esta zona. Ejecuta `sarlab remediation --aoi <zona>`."
     if not path.is_file():
-        raise HTTPException(
-            404, detail="No hay datos de remediación para esta zona. Ejecuta `sarlab remediation --aoi <zona>`."
-        )
+        raise HTTPException(404, detail=msg)
     data = json.loads(path.read_text(encoding="utf-8"))
     for alert in data.get("alerts", []):
         if alert.get("alert_id") == zone_id:
             return alert
     raise HTTPException(404, detail="Mancha no encontrada en los datos de remediación.")
+
+
+@app.get("/api/remediation/{aoi}/{zone_id}/certificate.pdf")
+def remediation_certificate_pdf(aoi: str, zone_id: str):
+    if not re.fullmatch(AOI_PATTERN, aoi):
+        raise HTTPException(422, "Identificador de zona inválido.")
+    path = PROCESSED.parent / "04_published" / "remediation" / f"{aoi}.json"
+    msg = "No hay datos de remediación para esta zona. Ejecuta `sarlab remediation --aoi <zona>`."
+    if not path.is_file():
+        raise HTTPException(404, detail=msg)
+    data = json.loads(path.read_text(encoding="utf-8"))
+    target_alert = None
+    for alert in data.get("alerts", []):
+        if alert.get("alert_id") == zone_id:
+            target_alert = alert
+            break
+    if not target_alert:
+        raise HTTPException(404, detail="Mancha no encontrada en los datos de remediación.")
+
+    feature = {
+        "id": zone_id,
+        "properties": {
+            "id": zone_id,
+            "title": f"Mancha radar {zone_id}",
+            "place": f"Zona {aoi}",
+            "date": target_alert.get("sources_nisar", {}).get("dates", ["2026-10-10"])[-1],
+            "level": target_alert.get("level", "medio"),
+            "metrics": {"area_ha": target_alert.get("area_ha", 1.0)},
+            "remediation": target_alert,
+            "exposure": {
+                "crop_ha": target_alert.get("factors", {}).get("crop_ha"),
+            },
+        },
+    }
+
+    gcov = PROCESSED / aoi / "gcov"
+    if gcov.is_dir():
+        for gj in gcov.glob("*/*/alerts_hvhv.geojson"):
+            try:
+                fc = json.loads(gj.read_text(encoding="utf-8"))
+                for feat in fc.get("features", []):
+                    if feat.get("properties", {}).get("id") == zone_id:
+                        feature["properties"].update(feat.get("properties", {}))
+                        feature["properties"]["remediation"] = target_alert
+                        feature["geometry"] = feat.get("geometry")
+                        break
+            except Exception:
+                pass
+
+    from sarlab_pipeline.remediation.certificate_pdf import generate_certificate_pdf
+    pdf_bytes = generate_certificate_pdf(feature, target_alert, aoi_id=aoi)
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="constancia_{aoi}_{zone_id}.pdf"'},
+    )
 
 
 WEB_DIST = ROOT / "apps" / "web" / "dist"

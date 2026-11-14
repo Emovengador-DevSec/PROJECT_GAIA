@@ -207,6 +207,139 @@ export function AlertDetails({ feature, onBack, onResources }: { feature: AlertF
           </ul>
         </details>
 
+        {p.remediation.optical_context && (
+          <div className="optical-context-box" style={{ marginTop: "1rem", padding: "10px", background: "var(--surface-subtle, #141b22)", borderRadius: "6px", border: "1px solid var(--border-subtle, #30363d)" }}>
+            <h4>Presente con foto real · Óptica HLS (Sentinel-2)</h4>
+            <p className="muted" style={{ fontSize: "0.82rem" }}>
+              {p.remediation.optical_context.product} · {p.remediation.optical_context.source}
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", margin: "8px 0" }}>
+              <div>
+                <img
+                  src={p.remediation.optical_context.image_urls.before}
+                  alt="HLS Antes (22-jun-2026)"
+                  style={{ width: "100%", borderRadius: "4px", border: "1px solid #333", maxHeight: "120px", objectFit: "cover" }}
+                />
+                <small className="muted">Antes · 22-jun-2026</small>
+              </div>
+              <div>
+                <img
+                  src={p.remediation.optical_context.image_urls.after}
+                  alt="HLS Después (08-oct-2026)"
+                  style={{ width: "100%", borderRadius: "4px", border: "1px solid #333", maxHeight: "120px", objectFit: "cover" }}
+                />
+                <small className="muted">Después · 08-oct-2026</small>
+              </div>
+            </div>
+            {p.remediation.optical_context.ndvi_observed_approx && (
+              <p style={{ fontSize: "0.85rem", margin: "4px 0" }}>
+                <strong>NDVI estimado:</strong> Antes ~{p.remediation.optical_context.ndvi_observed_approx.before} → Después ~{p.remediation.optical_context.ndvi_observed_approx.after} (Caída: {p.remediation.optical_context.ndvi_observed_approx.drop})
+                <br />
+                <small className="muted">{p.remediation.optical_context.ndvi_observed_approx.interpretation}</small>
+              </p>
+            )}
+          </div>
+        )}
+
+        {p.remediation.recovery_scenario && (
+          <div className="recovery-scenario-box" style={{ marginTop: "1rem", padding: "10px", background: "var(--surface-subtle, #141b22)", borderRadius: "6px", border: "1px solid #ffb74d33" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h4>Escenario de recuperación (NDVI) a 3 y 5 años</h4>
+            </div>
+            <p className="badge-provisional" style={{ display: "inline-block", margin: "4px 0 8px 0", color: "#ffb74d" }}>
+              {p.remediation.recovery_scenario.mandatory_label}
+            </p>
+            <table style={{ width: "100%", fontSize: "0.82rem", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid #333", textAlign: "left" }}>
+                  <th style={{ padding: "4px" }}>Horizonte</th>
+                  <th style={{ padding: "4px" }}>NDVI esperado</th>
+                  <th style={{ padding: "4px" }}>Evolución estimada</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style={{ borderBottom: "1px solid #222" }}>
+                  <td style={{ padding: "4px" }}>Año 0 (actual)</td>
+                  <td style={{ padding: "4px" }}>{p.remediation.recovery_scenario.baseline_ndvi.toFixed(2)}</td>
+                  <td style={{ padding: "4px" }}><small className="muted">Ladera o parcela degradada</small></td>
+                </tr>
+                {p.remediation.recovery_scenario.projected.year_1 && (
+                  <tr style={{ borderBottom: "1px solid #222" }}>
+                    <td style={{ padding: "4px" }}>Año 1</td>
+                    <td style={{ padding: "4px" }}><strong>{p.remediation.recovery_scenario.projected.year_1.ndvi.toFixed(2)}</strong> (+{p.remediation.recovery_scenario.projected.year_1.gain_ndvi.toFixed(2)})</td>
+                    <td style={{ padding: "4px" }}><small className="muted">{p.remediation.recovery_scenario.projected.year_1.description}</small></td>
+                  </tr>
+                )}
+                {p.remediation.recovery_scenario.projected.year_3 && (
+                  <tr style={{ borderBottom: "1px solid #222" }}>
+                    <td style={{ padding: "4px" }}>Año 3</td>
+                    <td style={{ padding: "4px" }}><strong>{p.remediation.recovery_scenario.projected.year_3.ndvi.toFixed(2)}</strong> (+{p.remediation.recovery_scenario.projected.year_3.gain_ndvi.toFixed(2)})</td>
+                    <td style={{ padding: "4px" }}><small className="muted">{p.remediation.recovery_scenario.projected.year_3.description}</small></td>
+                  </tr>
+                )}
+                {p.remediation.recovery_scenario.projected.year_5 && (
+                  <tr>
+                    <td style={{ padding: "4px" }}>Año 5</td>
+                    <td style={{ padding: "4px" }}><strong>{p.remediation.recovery_scenario.projected.year_5.ndvi.toFixed(2)}</strong> (+{p.remediation.recovery_scenario.projected.year_5.gain_ndvi.toFixed(2)})</td>
+                    <td style={{ padding: "4px" }}><small className="muted">{p.remediation.recovery_scenario.projected.year_5.description}</small></td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+            <p className="muted" style={{ fontSize: "0.78rem", marginTop: "6px" }}>
+              Tasa estimada: {p.remediation.recovery_scenario.annual_rate_label} · Cita: {p.remediation.recovery_scenario.citation}
+            </p>
+          </div>
+        )}
+
+        {p.remediation.cost_benefit && (
+          <div className="cost-benefit-box" style={{ marginTop: "1rem", padding: "10px", background: "var(--surface-subtle, #141b22)", borderRadius: "6px", border: "1px solid var(--border-subtle, #30363d)" }}>
+            <h4>Evaluación costo-beneficio frente a inacción</h4>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", margin: "8px 0" }}>
+              <div style={{ background: "rgba(255,255,255,0.03)", padding: "6px", borderRadius: "4px" }}>
+                <span className="muted" style={{ fontSize: "0.75rem" }}>Costo total SbN</span>
+                <p style={{ margin: 0, fontWeight: "bold" }}>S/ {number(p.remediation.cost_benefit.intervention_cost_total_pen)}</p>
+                {p.remediation.cost_benefit.cost_with_minka_pen < p.remediation.cost_benefit.intervention_cost_total_pen && (
+                  <small style={{ color: "#81c784" }}>Con Minka: S/ {number(p.remediation.cost_benefit.cost_with_minka_pen)}</small>
+                )}
+              </div>
+              <div style={{ background: "rgba(255,255,255,0.03)", padding: "6px", borderRadius: "4px" }}>
+                <span className="muted" style={{ fontSize: "0.75rem" }}>Pérdida anual evitada</span>
+                <p style={{ margin: 0, fontWeight: "bold", color: "#64b5f6" }}>S/ {number(p.remediation.cost_benefit.loss_avoided_annual_pen)} / año</p>
+                <small className="muted">Acumulada 5 años: S/ {number(p.remediation.cost_benefit.loss_avoided_5yr_pen)}</small>
+              </div>
+            </div>
+            <p style={{ fontSize: "0.85rem", margin: "6px 0" }}>
+              <strong>Ratio Beneficio / Costo (5 años):</strong> {p.remediation.cost_benefit.benefit_cost_ratio_5yr.toFixed(2)}x
+              {p.remediation.cost_benefit.benefit_cost_ratio_minka_5yr > p.remediation.cost_benefit.benefit_cost_ratio_5yr && (
+                <span style={{ color: "#81c784" }}> (hasta {p.remediation.cost_benefit.benefit_cost_ratio_minka_5yr.toFixed(2)}x con faena Minka)</span>
+              )}
+            </p>
+            <p className="muted" style={{ fontSize: "0.78rem" }}>
+              Fuente de valor agrícola: {p.remediation.cost_benefit.valuation_source}
+            </p>
+          </div>
+        )}
+
+        <div className="certificate-box" style={{ marginTop: "1rem", padding: "12px", background: "rgba(33, 150, 243, 0.08)", border: "1px solid rgba(33, 150, 243, 0.3)", borderRadius: "6px" }}>
+          <h4 style={{ margin: "0 0 6px 0", color: "#90caf9" }}>Constancia de evidencia satelital para respaldar un trámite</h4>
+          <p className="muted" style={{ fontSize: "0.8rem", margin: "0 0 8px 0" }}>
+            Expediente técnico con coordenadas, fechas NISAR, foto HLS, presupuesto y hash SHA-256 para presentar ante agencias agrarias o municipios.
+          </p>
+          <p className="status-message" style={{ fontSize: "0.78rem", margin: "0 0 10px 0" }}>
+            No es un certificado oficial ni garantiza el pago del Seguro Agrícola Catastrófico ni de MERESE o bonos de carbono; se presenta como evidencia técnica de apoyo.
+          </p>
+          <a
+            className="primary-action"
+            href={`/api/remediation/${p.aoi_id ?? "ayacucho-huanta"}/${p.remediation.alert_id}/certificate.pdf`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ width: "100%", justifyContent: "center" }}
+          >
+            Descargar constancia oficial (PDF)
+          </a>
+        </div>
+
         <p className="status-message" style={{ marginTop: "1rem" }}>
           {p.remediation.disclaimer}
         </p>

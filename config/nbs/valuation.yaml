@@ -1,0 +1,62 @@
+# Configuración de valoración económica y cálculo costo-beneficio (Fase 3.3)
+# Fuentes oficiales peruanas: MIDAGRI (SIEA), SERFOR, MINAM.
+
+currency: "PEN"
+currency_symbol: "S/"
+
+# Valores brutos de producción agropecuaria anual por hectárea
+crops:
+  papa:
+    name: "Papa (variedades nativas y comerciales)"
+    gross_production_value_pen_ha: 12500
+    yield_t_ha: 14.5
+    price_farmgate_pen_kg: 0.86
+    source: "MIDAGRI - SIEA (2024) Sistema Integrado de Estadísticas Agrarias, Anuario Agrícola Ayacucho"
+    source_url: "https://siea.midagri.gob.pe/"
+  maiz:
+    name: "Maíz (amiláceo y choclo)"
+    gross_production_value_pen_ha: 7200
+    yield_t_ha: 3.2
+    source: "MIDAGRI - SIEA (2024) Boletín Estadístico Mensual de la Producción Agrícola"
+    source_url: "https://siea.midagri.gob.pe/"
+  quinua:
+    name: "Quinua andina"
+    gross_production_value_pen_ha: 6800
+    yield_t_ha: 1.5
+    price_farmgate_pen_kg: 4.53
+    source: "MIDAGRI - SIEA (2024) Monitoreo de Cultivos Andinos"
+    source_url: "https://siea.midagri.gob.pe/"
+  habas:
+    name: "Habas (grano verde y seco)"
+    gross_production_value_pen_ha: 5400
+    yield_t_ha: 4.0
+    source: "MIDAGRI - SIEA (2024) Series Históricas de Producción Agraria"
+    source_url: "https://siea.midagri.gob.pe/"
+  cropland_average:
+    name: "Promedio ponderado de cultivos en laderas andinas de Ayacucho"
+    gross_production_value_pen_ha: 8500
+    source: "MIDAGRI - SIEA (2024) Valor Bruto de la Producción Agrícola Regional Ayacucho"
+    source_url: "https://siea.midagri.gob.pe/"
+  grassland_average:
+    name: "Pastizal altoandino / forraje para camélidos y ovinos"
+    gross_production_value_pen_ha: 1200
+    source: "MINAM / SERFOR (2023) Guía de Valoración Económica del Patrimonio Natural en Ecosistemas Altoandinos"
+    source_url: "https://www.gob.pe/minam"
+  default_rural:
+    name: "Valor referencial de suelo rural andino en ladera"
+    gross_production_value_pen_ha: 3500
+    source: "Agro Rural / PRONAMACHCS (2022) Parámetros de evaluación económica de proyectos de conservación de suelos"
+    source_url: "https://www.gob.pe/agrorural"
+
+# Supuestos de proyección temporal de pérdida evitada
+projections:
+  time_horizons_years: [1, 3, 5]
+  default_horizon_years: 3
+  # Factores de pérdida evitada acumulada (asumiendo recuperación progresiva sin intervención vs daño recurrente)
+  assumptions:
+    - "La pérdida evitada anual considera: Hectáreas expuestas × Valor bruto de producción/ha × Probabilidad (Índice de riesgo)."
+    - "Sin intervención (inacción), el deterioro del suelo y la pérdida de rendimiento se acumula año a año."
+    - "Con la intervención SbN, se protege la capacidad productiva del suelo y se reduce la vulnerabilidad a futuros eventos hidrometeorológicos."
+    - "El financiamiento con Minka comunal reduce la necesidad de efectivo en hasta un 40% mediante faenas comunales tradicionales."
+
+disclaimer: "Estimación orientativa de costo-beneficio basada en promedios estadísticos regionales de MIDAGRI/SIEA. No constituye una tasación pericial ni un compromiso de seguro o indemnización."

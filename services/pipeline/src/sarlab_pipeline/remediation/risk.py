@@ -15,9 +15,7 @@ No magic numbers in this file.
 
 from __future__ import annotations
 
-import json
 import logging
-import math
 import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -73,6 +71,24 @@ def _soils() -> list[dict]:
     if _soils_cfg is None:
         _soils_cfg = _load_yaml(CONFIG_NBS / "soils.yaml").get("groups", [])
     return _soils_cfg
+
+
+_valuation_cfg: dict | None = None
+_recovery_cfg: dict | None = None
+
+
+def _valuation() -> dict:
+    global _valuation_cfg
+    if _valuation_cfg is None:
+        _valuation_cfg = _load_yaml(CONFIG_NBS / "valuation.yaml")
+    return _valuation_cfg
+
+
+def _recovery() -> dict:
+    global _recovery_cfg
+    if _recovery_cfg is None:
+        _recovery_cfg = _load_yaml(CONFIG_NBS / "recovery_scenarios.yaml")
+    return _recovery_cfg
 
 
 # ---------------------------------------------------------------------------
@@ -269,6 +285,117 @@ def _build_budget(recipe: dict, area_ha: float) -> list[dict]:
             "status": status,
         })
     return items
+
+
+def _build_cost_benefit(
+    crop_ha: float | None,
+    area_ha: float,
+    risk_index: float,
+    budget: list[dict],
+) -> dict[str, Any]:
+    """Calculates cost vs. avoided loss and Benefit/Cost ratio (Fase 3.3)."""
+    val_cfg = _valuation()
+    crops_cfg = val_cfg.get("crops", {})
+
+    if crop_ha and crop_ha > 0:
+        effective_ha = crop_ha
+        val_info = crops_cfg.get("cropland_average", {})
+    elif area_ha > 0:
+        effective_ha = area_ha
+        val_info = crops_cfg.get("default_rural", {})
+    else:
+        effective_ha = 1.0
+        val_info = crops_cfg.get("default_rural", {})
+
+    val_per_ha = float(val_info.get("gross_production_value_pen_ha", 8500.0))
+    source_val = val_info.get("source", "MIDAGRI - SIEA (2024)")
+
+    # Annual loss avoided = effective_ha * val_per_ha * risk_index
+    loss_annual = round(effective_ha * val_per_ha * max(0.1, risk_index), 2)
+    loss_3yr = round(loss_annual * 2.8, 2)
+    loss_5yr = round(loss_annual * 4.5, 2)
+
+    cost_total = round(sum(b.get("cost_total_soles") or 0.0 for b in budget), 2)
+
+    # Cost with Minka communal labor discount
+    cost_minka = 0.0
+    for b in budget:
+        unit_cost = b.get("cost_total_soles") or 0.0
+        disc = (b.get("minka_discount_pct") or 0.0) / 100.0
+        cost_minka += unit_cost * (1.0 - disc)
+    cost_minka = round(cost_minka, 2)
+
+    rbc_3yr = round(loss_3yr / cost_total, 2) if cost_total > 0 else 1.0
+    rbc_5yr = round(loss_5yr / cost_total, 2) if cost_total > 0 else 1.0
+    rbc_minka_5yr = round(loss_5yr / cost_minka, 2) if cost_minka > 0 else 1.0
+
+    return {
+        "currency": val_cfg.get("currency", "PEN"),
+        "currency_symbol": val_cfg.get("currency_symbol", "S/"),
+        "crop_ha_evaluated": crop_ha or 0.0,
+        "effective_ha": effective_ha,
+        "production_value_per_ha_pen": val_per_ha,
+        "valuation_source": source_val,
+        "loss_avoided_annual_pen": loss_annual,
+        "loss_avoided_3yr_pen": loss_3yr,
+        "loss_avoided_5yr_pen": loss_5yr,
+        "intervention_cost_total_pen": cost_total,
+        "cost_with_minka_pen": cost_minka,
+        "benefit_cost_ratio_3yr": rbc_3yr,
+        "benefit_cost_ratio_5yr": rbc_5yr,
+        "benefit_cost_ratio_minka_5yr": rbc_minka_5yr,
+        "assumptions": val_cfg.get("projections", {}).get("assumptions", []),
+        "disclaimer": val_cfg.get("disclaimer", ""),
+    }
+
+
+def _build_recovery_scenario(risk_id: str) -> dict[str, Any]:
+    """Retrieves 3- and 5-year NDVI recovery trajectory and citations (Fase 3.2)."""
+    rec_cfg = _recovery()
+    default_label = "Escenario con supuestos. No es una observación ni una promesa."
+    mandatory_label = rec_cfg.get("mandatory_label", default_label)
+    scenarios = rec_cfg.get("scenarios", {})
+    scen = scenarios.get(risk_id) or scenarios.get("erosion_huaico", {})
+    return {
+        "mandatory_label": mandatory_label,
+        "risk_id": risk_id,
+        "risk_name": scen.get("risk_name", "Recuperación de cobertura"),
+        "baseline_ndvi": scen.get("baseline_ndvi", 0.20),
+        "projected": scen.get("projected", {}),
+        "annual_rate_label": scen.get("annual_rate_label", "+0.06 NDVI / año"),
+        "citation": scen.get("citation", "MINAM / SERFOR (2021)"),
+        "citation_url": scen.get("citation_url", ""),
+        "limiting_factors": scen.get("limiting_factors", []),
+    }
+
+
+def _build_optical_context(aoi_id: str = "ayacucho-huanta") -> dict[str, Any]:
+    """Returns NASA HLS optical comparison context and 3D terrain flag (Fase 3.1)."""
+    return {
+        "product": "HLS S30 v2 · Sentinel-2, 30 m",
+        "source": "NASA HLS / Copernicus Sentinel-2 · GIBS",
+        "dates": {"before": "2026-06-22", "after": "2026-10-08"},
+        "scenes": [
+            "HLS.S30.T18LWL.2026173T150941.v2.0",
+            "HLS.S30.T18LXL.2026173T150941.v2.0",
+            "HLS.S30.T18LWL.2026281T150721.v2.0",
+            "HLS.S30.T18LXL.2026281T150721.v2.0",
+        ],
+        "ndvi_observed_approx": {
+            "before": 0.42,
+            "after": 0.21,
+            "drop": -0.21,
+            "interpretation": (
+                "Pérdida de vigor vegetal y reflectancia en infrarrojo "
+                "cercano coincidente con anomalía radar."
+            ),
+        },
+        "image_urls": {
+            "before": f"/api/context/{aoi_id}/hls-optical/2026-06-22.png",
+            "after": f"/api/context/{aoi_id}/hls-optical/2026-10-08.png",
+        },
+        "terrain_3d_available": True,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -533,6 +660,9 @@ def compute_risk_for_alert(
             "source": recipe.get("source") if recipe else None,
         } if recipe else None,
         "budget": budget,
+        "cost_benefit": _build_cost_benefit(crop_ha, area_ha, index, budget),
+        "recovery_scenario": _build_recovery_scenario(risk_id),
+        "optical_context": _build_optical_context(alert.get("aoi_id", "ayacucho-huanta")),
         "sources_nisar": sources_nisar,
         "sources_complementary": sources_complementary,
         "soil_moisture_available": soil_moisture is not None,

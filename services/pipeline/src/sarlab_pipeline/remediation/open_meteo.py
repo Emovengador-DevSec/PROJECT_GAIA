@@ -136,7 +136,9 @@ def detect_climate_anomalies(
             })
 
         # 2. Frost risk (tmin < 0 °C or tmin < P10)
-        elif tmin is not None and (tmin < thresholds.get("frost_puna", {}).get("temp_min_c", 0.0) or tmin < p10_tmin):
+        elif tmin is not None and (
+            tmin < thresholds.get("frost_puna", {}).get("temp_min_c", 0.0) or tmin < p10_tmin
+        ):
             anomalies.append({
                 "id": f"clm_frost_{day_str}",
                 "kind": "climate_anomaly",
@@ -246,7 +248,6 @@ def evaluate_agricultural_calendar(
         sowing_months = crop.get("sowing_months", [])
         is_sowing_season = current_month in sowing_months
         min_temp = crop.get("min_temp_c", 4.0)
-        max_temp = crop.get("max_temp_c", 22.0)
         frost_sensitive = crop.get("frost_sensitive", True)
         min_moisture = crop.get("min_soil_moisture", 0.15)
         guidance = crop.get("guidance", {})

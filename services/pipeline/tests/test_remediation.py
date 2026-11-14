@@ -6,21 +6,17 @@ Synthetic data is confined to this test file.
 
 from __future__ import annotations
 
-import pytest
-
 from sarlab_pipeline.remediation.risk import (
-    _clamp,
     _dominant_risk,
     _normalize_crop_exposure,
     _normalize_heat,
     _normalize_hv_drop,
+    _normalize_quake,
     _normalize_rainfall,
     _normalize_slope,
     _normalize_soil_moisture,
-    _normalize_quake,
     compute_risk_for_alert,
 )
-
 
 # ---------------------------------------------------------------------------
 # Unit tests for normalizers
@@ -89,7 +85,6 @@ class TestNormalizerHeat:
         assert _normalize_heat([], cfg) == 0.0
 
     def test_many_fires_gives_high_score(self):
-        from datetime import UTC, datetime
         fires = [{"acq_date": "2026-11-14"} for _ in range(10)]
         cfg = {
             "days_recent": 7, "weight_recent": 0.7, "weight_history": 0.3,
