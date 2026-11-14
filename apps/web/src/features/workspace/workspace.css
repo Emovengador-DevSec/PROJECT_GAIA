@@ -34,6 +34,23 @@
 .place-search button { min-width: 40px; min-height: 34px; border: none; border-radius: 5px; color: #d9f9fd; background: #1d3039; }
 .search-feedback { position: absolute; left: 0; right: 0; top: 100%; padding: 12px; margin: 6px 0 0; border-radius: 8px; background: #17212c; color: #f4f7fb; font-size: var(--workspace-text); }
 .workspace-action { flex: none; padding: 10px 15px; min-height: 44px; border: 1px solid #53616e; background: rgb(10 15 21 / 72%); color: #f4f7fb; border-radius: 8px; font-size: var(--workspace-text); }
+.workspace-light {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  color: #bdcbd6;
+  font-size: var(--workspace-text);
+}
+.workspace-light select {
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid #53616e;
+  border-radius: 8px;
+  background: #0c131a;
+  color: #f4f7fb;
+  font: inherit;
+}
 .map-context { position: absolute; left: 28px; top: 99px; display: grid; gap: 4px; max-width: min(32vw, 360px); color: #f4f7fb; text-shadow: 0 2px 9px #000; }
 .map-context > span { font: 520 18px/1.25 var(--font-display); }
 .live-totals { display: flex; gap: clamp(15px, 2vw, 34px); margin-top: 22px; pointer-events: auto; }
@@ -299,7 +316,10 @@
   .workspace-brand > span { font-size: 22px; }
   .workspace-brand > svg { width: 27px; height: 27px; }
   .workspace-action { font-size: var(--workspace-text); min-height: 40px; padding: 8px 11px; }
-  .place-search { order: 1; grid-column: 1 / -1; width: 100%; min-height: 43px; }
+  .place-search { grid-column: 1; grid-row: 2; width: 100%; min-width: 0; min-height: 43px; }
+  .workspace-action { grid-column: 2; grid-row: 1; justify-self: end; }
+  .workspace-light { grid-column: 2; grid-row: 2; }
+  .workspace-light > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   .map-context { top: 139px; left: 17px; gap: 4px; max-width: calc(100% - 34px); }
   .map-context > span { font-size: var(--workspace-text); }
   .map-context small { font-size: var(--workspace-text); }

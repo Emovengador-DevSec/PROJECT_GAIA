@@ -4,6 +4,8 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- G4 añade Siempre de día y Hora real en el globo, conserva las luces nocturnas y ajusta el control a pantallas pequeñas.
+
 - G1 activa el par GCOV de trayectoria 147 del 24 de junio y el 10 de octubre, con 99,91 % de cobertura válida, publicación completa por período y consulta de archivos históricos.
 
 - Añadida la fase G9 al plan 13: publicar como sitio estático con foto fija de los datos (Cloudflare Pages o Vercel), sin servidor ni secretos, para que el jurado abra un enlace al instante.

@@ -47,6 +47,7 @@ export function App() {
   const [alertsError, setAlertsError] = useState<string>();
   const [health, setHealth] = useState<Health>();
   const [mapStatus, setMapStatus] = useState<GlobeStatus>({ terrain: "loading", imagery: "Cargando imagen satelital" });
+  const [realTimeLighting, setRealTimeLighting] = useState(false);
   const [compare, setCompare] = useState(false);
   const [falseColor, setFalseColor] = useState(false);
   const [split, setSplit] = useState(50);
@@ -259,13 +260,13 @@ export function App() {
       ?? fireCells.find(feature => feature.properties.id === linkedAlert.current);
     if (match) { linkedAlert.current = null; pickAlert(match); }
   }, [alerts, fireCells, pickAlert]);
-  const chooseTab = (id: TabId) => { setTab(id); setPanelOpen(true); };
+  const chooseTab = (id: TabId) => { setTab(id); setSelected(undefined); setPanelOpen(true); };
 
   return <div className="shell" data-workspace={ready || undefined}
     data-panel-open={panelOpen || undefined} data-comparison={comparison || undefined} data-sequence={!comparison || undefined}>
     {warm && <Suspense fallback={null}>
       <Globe aoi={current} active={ready} exaggeration={exaggeration} camera={activeContext ? "zone" : storyStep?.camera ?? "oblique"}
-        offline={health?.offline} radarBounds={radarBounds}
+        offline={health?.offline} radarBounds={radarBounds} realTimeLighting={realTimeLighting}
         tileUrl={health?.tiles && layer && showRadar && !comparison && !activeContext ? api.tileUrl(layer) : undefined}
         beforeUrl={layer && showRadar && radarComparison ? api.tileUrl(layer, "before", rgb) : undefined}
         afterUrl={layer && showRadar && radarComparison ? api.tileUrl(layer, "after", rgb) : undefined}
@@ -297,6 +298,13 @@ export function App() {
           <button type="submit" aria-label="Ir al lugar">Ir</button>
           {searchMessage && <p className="search-feedback" role="status">{searchMessage}</p>}
         </form>
+        <label className="workspace-light">
+          <span>Luz</span>
+          <select value={realTimeLighting ? "real" : "day"} onChange={event => setRealTimeLighting(event.target.value === "real")}>
+            <option value="day">Siempre de día</option>
+            <option value="real">Hora real</option>
+          </select>
+        </label>
         <button type="button" className="workspace-action" onClick={() => { setCurrent(undefined); setSelected(undefined); setTab("alerts"); setPanelOpen(true); }}>Sudamérica</button>
       </header>
 

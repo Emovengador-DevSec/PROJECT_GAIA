@@ -18,6 +18,7 @@ type Props = {
   cutoff?: number;
   orbitData?: OrbitData; orbitVisible: boolean; satelliteFocus: number;
   offline?: boolean;
+  realTimeLighting: boolean;
   onSelect: (alert: AlertFeature) => void; onStatus: (status: GlobeStatus) => void;
 };
 const REDUCED = "(prefers-reduced-motion: reduce)";
@@ -34,13 +35,11 @@ function marker(kind: string, color: string): string {
 }
 
 export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, radarBounds, contextOverlay, split, exaggeration, camera = "oblique",
-  alerts, fireCells, active, cutoff, orbitData, orbitVisible, satelliteFocus, selected, onSelect, onStatus, offline = false }: Props) {
+  alerts, fireCells, active, cutoff, orbitData, orbitVisible, satelliteFocus, selected, onSelect, onStatus, offline = false,
+  realTimeLighting }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
   const viewer = useRef<Cesium.Viewer | null>(null);
-  const nightLayer = useRef<Cesium.ImageryLayer | undefined>(undefined);
-  const radarInspection = useRef(false);
-  radarInspection.current = !!radarBounds;
   const selectRef = useRef(onSelect);
   const statusRef = useRef(onStatus);
   const lastInput = useRef(performance.now());
@@ -141,9 +140,7 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, radarBounds, contextO
       }
       const night = await Cesium.SingleTileImageryProvider.fromUrl("/globe/earth-night.jpg", { credit: "NASA Black Marble 2016" });
       if (!v.isDestroyed()) {
-        const lighting = new Cesium.ImageryLayer(night, { dayAlpha: 0, nightAlpha: 1, show: !radarInspection.current });
-        v.imageryLayers.add(lighting, nightIndex);
-        nightLayer.current = lighting;
+        v.imageryLayers.add(new Cesium.ImageryLayer(night, { dayAlpha: 0, nightAlpha: 1 }), nightIndex);
       }
     };
     addBase().catch(() => {
@@ -152,7 +149,8 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, radarBounds, contextO
     const localTerrain = () => loadAyacuchoTerrain().then(provider => {
       if (!v.isDestroyed()) { v.terrainProvider = provider; terrain = "regional"; publish(); }
     }).catch(() => { if (!v.isDestroyed()) { terrain = "unavailable"; publish(); } });
-    if (token) Cesium.createWorldTerrainAsync({ requestVertexNormals: true }).then(provider => {
+    // Cesium's globe shader blends day and night imagery on terrain without vertex normals.
+    if (token) Cesium.createWorldTerrainAsync({ requestVertexNormals: false }).then(provider => {
       if (!v.isDestroyed()) { v.terrainProvider = provider; terrain = "ready"; publish(); }
     }).catch(localTerrain);
     else localTerrain();
@@ -261,7 +259,7 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, radarBounds, contextO
     return () => {
       window.removeEventListener("resize", resize);
       v.scene.canvas.removeEventListener("mouseleave", leave);
-      clicks.destroy(); v.destroy(); viewer.current = null; nightLayer.current = undefined;
+      clicks.destroy(); v.destroy(); viewer.current = null;
     };
   }, [offline]);
 
@@ -269,10 +267,17 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, radarBounds, contextO
   useEffect(() => {
     const v = viewer.current;
     if (!v) return;
-    // Inspection uses the daytime base so that nighttime shadows don't dim the radar colours.
-    v.scene.globe.enableLighting = !radarBounds;
-    if (nightLayer.current) nightLayer.current.show = !radarBounds;
-  }, [radarBounds, offline]);
+    if (v.scene.sun) v.scene.sun.show = realTimeLighting;
+    if (realTimeLighting) {
+      v.scene.light = new Cesium.SunLight();
+      return;
+    }
+    // Aim light at the study area without changing the clock used for the orbit and observations.
+    const [west, south, east, north] = aoi?.bbox ?? [-66, -17, -66, -17];
+    const surface = Cesium.Cartesian3.fromDegrees((west + east) / 2, (south + north) / 2);
+    const towardSurface = Cesium.Cartesian3.negate(surface, surface);
+    v.scene.light = new Cesium.DirectionalLight({ direction: towardSurface, intensity: 2 });
+  }, [aoi, realTimeLighting, offline]);
   useEffect(() => {
     const v = viewer.current;
     if (!v || !active) return;
