@@ -148,7 +148,7 @@ export function Resources({ sources, health }: { sources: FeedStatus[]; health?:
     { name: "USGS · Sismos", href: "https://earthquake.usgs.gov/earthquakes/search/", status: feedLabel(usgs),
       use: usgs?.last_updated ? `Última consulta · ${formatDate(usgs.last_updated)}.` : "Registro de sismos observados." },
     { name: "NASA FIRMS · Focos de calor", href: "https://firms.modaps.eosdis.nasa.gov/", status: feedLabel(firms),
-      use: firms?.last_updated ? `Última consulta · ${formatDate(firms.last_updated)}. ${firms.coverage_days ? `${firms.coverage_days} días de observaciones guardadas.` : health?.credentials.firms ? "" : "Archivo público de 24 h."}`.trim()
+      use: firms?.last_updated ? `Última consulta · ${formatDate(firms.last_updated)}. ${health?.credentials.firms ? "" : "Archivo público de 24 h."}`.trim()
         : "Detecciones térmicas VIIRS para examinar actividad de fuego." },
     { ...opera, use: "Consultar perturbaciones de vegetación en Ayacucho y Madre de Dios.", status: "Capa en las historias" },
     { ...gpm, use: "Consultar la intensidad de precipitación durante el episodio de Chosica.", status: "Capa en la historia" },

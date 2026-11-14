@@ -22,6 +22,7 @@ from shapely.prepared import prep
 CACHE = Path(os.environ.get("DATA_DIR", Path(__file__).resolve().parents[3] / "data")) / "catalog" / "live"
 LOCKS = {name: threading.Lock() for name in ("quakes", "fires")}
 FAILURES: dict[str, tuple[float, str]] = {}
+MEMORY: dict[Path, dict] = {}
 TTL_SECONDS = 600
 MAX_BYTES = 20_000_000
 USGS = "https://earthquake.usgs.gov/fdsnws/event/1/query"
@@ -212,7 +213,7 @@ def collection(provider: str) -> dict:
         raise ValueError("Fuente no válida")
     with LOCKS[provider]:
         path = CACHE / f"{provider}.json"
-        cached = _read(path)
+        cached = MEMORY.get(path) or _read(path)
         if os.environ.get("SARLAB_OFFLINE") == "1":
             if cached:
                 return {**cached, "stale": True, "status": "cached",
@@ -254,6 +255,7 @@ def collection(provider: str) -> dict:
                     "coverage_days": 30 if provider == "quakes" else 7,
                 }
                 _save(path, payload)
+                MEMORY[path] = payload
                 FAILURES.pop(provider, None)
                 return payload
             except (httpx.HTTPError, OSError, ValueError, KeyError, TypeError):
@@ -273,3 +275,17 @@ def collection(provider: str) -> dict:
             "message": message,
             "latency": "Minutos" if provider == "quakes" else "Horas",
         }
+
+
+def start_refresh() -> threading.Event:
+    """Warm and refresh both sources without delaying server startup."""
+    stop = threading.Event()
+
+    def refresh(provider: str) -> None:
+        while not stop.is_set():
+            feed = collection(provider)
+            stop.wait(TTL_SECONDS if feed["status"] == "ok" else 60)
+
+    for provider in LOCKS:
+        threading.Thread(target=refresh, args=(provider,), daemon=True).start()
+    return stop

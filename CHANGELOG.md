@@ -4,6 +4,15 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- Validación de publicación: fecha UTC del gránulo, recuento HV y superficies verificadas, relato corregido, compresión y precarga de fuentes, y contenedor con las teselas NISAR reales.
+
+- Añadida la validación previa a publicar (docs/16): pruebas, compilación, recorrido real y secretos en orden; quedan 12 correcciones de cifras, rendimiento y presentación.
+- Eliminadas grabaciones intermedias, capturas de prueba y una textura sin uso. Se conservaron los recursos de la app y la evidencia de entrega.
+
+- Retirada la web estática de G9. La aplicación usa FastAPI para consultar los datos reales y generar las teselas NISAR.
+
+- Añadida la fase G10 al plan 13: publicar la app completa y en vivo en un solo contenedor Docker (API, web y datos).
+
 - G9 genera una foto estática fechada con JSON y teselas NISAR, agrega el modo static con mapas locales y prepara la publicación en Pages con verificación sin API y control de secretos.
 
 - G8 prepara el texto y los pendientes de entrega, actualiza Vitest a 4.1.12 para resolver los avisos de seguridad y cierra doctor, pruebas y verificación de la demo con cero vulnerabilidades conocidas.

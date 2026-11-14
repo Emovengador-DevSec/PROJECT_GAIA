@@ -8,7 +8,7 @@ import { SectionIcon } from "../features/workspace/SectionIcon";
 import { LiveSummary } from "../features/workspace/LiveSummary";
 import { EventTimeline } from "../features/workspace/EventTimeline";
 import { OrbitCard } from "../features/workspace/OrbitCard";
-import { api, isStaticData, type SnapshotManifest, type AOI, type AlertFeature, type AlertKind, type Audience, type Catalog,
+import { api, type AOI, type AlertFeature, type AlertKind, type Audience, type Catalog,
   type ContextLayer, type FeedStatus, type GlobeStatus, type Health, type LayerManifest, type OrbitData, type PolarizationSummary, type Rainfall, type Story, type TimeSeries, type Trend, type Validation } from "../lib/api";
 import { TABS, type TabId } from "../config/tabs";
 import "../features/workspace/workspace.css";
@@ -46,14 +46,6 @@ export function App() {
   const [alertsLoading, setAlertsLoading] = useState(false);
   const [alertsError, setAlertsError] = useState<string>();
   const [health, setHealth] = useState<Health>();
-  const [snapshot, setSnapshot] = useState<SnapshotManifest>();
-  const [snapshotError, setSnapshotError] = useState(false);
-  const snapshotLabel = useMemo(() => snapshot
-    ? `Datos actualizados al ${new Intl.DateTimeFormat("es-PE", {
-      dateStyle: "medium", timeStyle: "short", timeZone: "America/Lima",
-    }).format(new Date(snapshot.generated_at))} (Perú) · foto estática`
-    : snapshotError ? "Foto estática no disponible. Vuelve a generar la copia de datos."
-      : "Foto estática · cargando fecha de actualización…", [snapshot, snapshotError]);
   const [mapStatus, setMapStatus] = useState<GlobeStatus>({ terrain: "loading", imagery: "Cargando imagen satelital" });
   const [realTimeLighting, setRealTimeLighting] = useState(false);
   const [compare, setCompare] = useState(false);
@@ -85,7 +77,6 @@ export function App() {
   useEffect(() => {
     if (!entered) return;
     refreshOrbit();
-    if (isStaticData) return;
     const interval = window.setInterval(refreshOrbit, 3_600_000);
     return () => clearInterval(interval);
   }, [entered, refreshOrbit]);
@@ -95,8 +86,6 @@ export function App() {
     api.aois().then(result => { if (active) setAois(result); })
       .catch(() => { if (active) setError("No se pudieron cargar los lugares. Revisa la conexión con el servidor y vuelve a intentarlo."); });
     api.health().then(result => { if (active) setHealth(result); }).catch(() => undefined);
-    api.snapshot().then(result => { if (active) setSnapshot(result); })
-      .catch(() => { if (active) setSnapshotError(true); });
     return () => { active = false; };
   }, []);
 
@@ -121,7 +110,6 @@ export function App() {
   useEffect(() => {
     if (!entered) return;
     refreshAlerts();
-    if (isStaticData) return () => { requestId.current++; };
     const timer = window.setInterval(refreshAlerts, 600_000);
     return () => { clearInterval(timer); requestId.current++; };
   }, [entered, refreshAlerts]);
@@ -275,12 +263,10 @@ export function App() {
   const chooseTab = (id: TabId) => { setTab(id); setSelected(undefined); setPanelOpen(true); };
 
   return <div className="shell" data-workspace={ready || undefined}
-    data-panel-open={panelOpen || undefined} data-comparison={comparison || undefined} data-sequence={!comparison || undefined}
-    data-snapshot={isStaticData || undefined}>
+    data-panel-open={panelOpen || undefined} data-comparison={comparison || undefined} data-sequence={!comparison || undefined}>
     {warm && <Suspense fallback={null}>
       <Globe aoi={current} active={ready} exaggeration={exaggeration} camera={activeContext ? "zone" : storyStep?.camera ?? "oblique"}
-        offline={isStaticData || health?.offline} radarBounds={radarBounds} realTimeLighting={realTimeLighting}
-        tileLevels={snapshot?.tiles}
+        offline={health?.offline} radarBounds={radarBounds} realTimeLighting={realTimeLighting}
         tileUrl={health?.tiles && layer && showRadar && !comparison && !activeContext ? api.tileUrl(layer) : undefined}
         beforeUrl={layer && showRadar && radarComparison ? api.tileUrl(layer, "before", rgb) : undefined}
         afterUrl={layer && showRadar && radarComparison ? api.tileUrl(layer, "after", rgb) : undefined}
@@ -320,11 +306,10 @@ export function App() {
           </select>
         </label>
         <button type="button" className="workspace-action" onClick={() => { setCurrent(undefined); setSelected(undefined); setTab("alerts"); setPanelOpen(true); }}>Sudamérica</button>
-        {isStaticData && <p className="snapshot-status" role="status">{snapshotLabel}</p>}
       </header>
 
       <div className="map-context" aria-live="polite">
-        <span>{current?.name ?? "Sudamérica"}</span>
+        <span className="map-zone">{current?.name ?? "Sudamérica"}</span>
         <small>{current?.id === "ayacucho-huanta" ? mapStatus.regionalImagery ?? mapStatus.imagery : mapStatus.imagery}</small>
         {activeContext && <small className="map-context-source">{activeContext.product} · {activeContext.date} · {preview ? "Vista visual NISAR" : "Complementario"}</small>}
         {mapStatus.terrain === "unavailable" && <button type="button" onClick={() => chooseTab("terrain")}>Relieve sin activar</button>}
@@ -345,7 +330,6 @@ export function App() {
         polarizationSummary={polarizations.length === 1 ? polarizations[0] : undefined}
         step={step} setStep={value => { setStep(value); setContextChoice(undefined); }} audience={audience} setAudience={setAudience} pol={pol} setPol={setPol}
         context={context} activeContext={activeContext} validation={validation}
-        snapshotLabel={isStaticData ? snapshotLabel : undefined}
         onContext={id => { cancelSweep(); setSplit(50); setCompare(false); setContextChoice(id); }} moistureCatalog={moistureCatalog} rainfall={rainfall}
         error={error} contextLoading={contextLoading} onPick={pick} exaggeration={exaggeration} setExaggeration={setExaggeration}
         alerts={timelineAlerts} alertsLoading={alertsLoading} alertsError={alertsError} sources={sources} selected={selected}
@@ -365,7 +349,7 @@ export function App() {
           onPointerDown={cancelSweep} onKeyDown={cancelSweep} onChange={event => { cancelSweep(); setSplit(Number(event.target.value)); }} />
       </div>}
       {comparison && <div className="comparison-divider" data-sweeping={sweeping || undefined} style={{ left: `${split}%` }} aria-hidden="true" />}
-      {!comparison && <EventTimeline alerts={filteredAlerts} sources={sources} cutoff={cutoff} referenceTime={snapshot?.generated_at}
+      {!comparison && <EventTimeline alerts={filteredAlerts} sources={sources} cutoff={cutoff}
         onChange={value => { setCutoff(value); setSelected(undefined); }} />}
 
       <div className="map-legend" aria-label="Fuentes del mapa">

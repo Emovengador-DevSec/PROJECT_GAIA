@@ -214,5 +214,6 @@ def test_active_comparison_keeps_archived_periods_available(data_dirs, monkeypat
         return read_text(path, *args, **kwargs)
 
     monkeypatch.setattr(Path, "read_text", tracked_read)
-    assert len(client.get("/api/alerts?aoi=test").json()["features"]) == 2
+    assert len(client.get("/api/alerts?aoi=test").json()["features"]) == 1
     assert len(reads) == 1
+    assert len(client.get("/api/alerts?aoi=test&active_only=false").json()["features"]) == 2

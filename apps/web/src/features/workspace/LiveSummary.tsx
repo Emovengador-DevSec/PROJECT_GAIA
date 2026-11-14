@@ -5,7 +5,8 @@ export function LiveSummary({ alerts, sources, onKind }: { alerts: AlertFeature[
   const items = [
     { kind: "quake" as const, label: "Sismos USGS", count: alerts.filter(item => item.properties.kind === "quake").length },
     { kind: "fire" as const, label: "Focos FIRMS", count: alerts.filter(item => item.properties.kind === "fire").length },
-    { kind: "surface_change" as const, label: "Cambios NISAR", count: alerts.filter(item => item.properties.source_kind === "primary").length },
+    { kind: "surface_change" as const, label: "Zonas NISAR (HV)", count: alerts.filter(({ properties }) =>
+      properties.source_kind === "primary" && properties.polarization === "HVHV").length },
   ];
   return <div className="live-totals" aria-label="Observaciones disponibles">
     {items.map(item => <button key={item.kind} type="button" data-kind={item.kind} onClick={() => onKind(item.kind)}>

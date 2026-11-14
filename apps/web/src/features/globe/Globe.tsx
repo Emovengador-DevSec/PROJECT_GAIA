@@ -6,6 +6,7 @@ import type { AOI, AlertFeature, CameraMode, GlobeStatus, OrbitData } from "../.
 import { loadAyacuchoTerrain } from "./localTerrain";
 import { observationMetric } from "../workspace/AlertFeed";
 import { formatDate } from "../../lib/formatDate";
+import { formatNumber } from "../../lib/formatNumber";
 import { addNisarOrbit } from "./nisarOrbit";
 
 type Props = {
@@ -18,12 +19,11 @@ type Props = {
   cutoff?: number;
   orbitData?: OrbitData; orbitVisible: boolean; satelliteFocus: number;
   offline?: boolean;
-  tileLevels?: { minimum_level: number; maximum_level: number };
   realTimeLighting: boolean;
   onSelect: (alert: AlertFeature) => void; onStatus: (status: GlobeStatus) => void;
 };
 const REDUCED = "(prefers-reduced-motion: reduce)";
-const COLORS = { quake: "#fbbf24", fire: "#ff3b3b", surface_change: "#ff8a00", deformation: "#a855f7" };
+const COLORS = { quake: "#fbbf24", fire: "#ff3b3b", surface_change: "#c69aff", deformation: "#a855f7" };
 
 function marker(kind: string, color: string): string {
   const shapes: Record<string, string> = {
@@ -36,7 +36,7 @@ function marker(kind: string, color: string): string {
 }
 
 export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, radarBounds, contextOverlay, split, exaggeration, camera = "oblique",
-  alerts, fireCells, active, cutoff, orbitData, orbitVisible, satelliteFocus, selected, onSelect, onStatus, offline = false, tileLevels,
+  alerts, fireCells, active, cutoff, orbitData, orbitVisible, satelliteFocus, selected, onSelect, onStatus, offline = false,
   realTimeLighting }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
@@ -68,8 +68,7 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, radarBounds, contextO
 
   useEffect(() => {
     if (!host.current) return;
-    const token = import.meta.env.VITE_DATA_MODE === "static" || offline
-      ? undefined : import.meta.env.VITE_CESIUM_ION_TOKEN as string | undefined;
+    const token = offline ? undefined : import.meta.env.VITE_CESIUM_ION_TOKEN as string | undefined;
     if (token) Cesium.Ion.defaultAccessToken = token;
     const v = new Cesium.Viewer(host.current, {
       animation: false, timeline: false, baseLayerPicker: false, geocoder: false,
@@ -367,15 +366,14 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, radarBounds, contextO
       ? [[beforeUrl, Cesium.SplitDirection.LEFT], [afterUrl, Cesium.SplitDirection.RIGHT]]
       : [[tileUrl, Cesium.SplitDirection.NONE]];
     for (const [url, direction] of sources) if (url) {
-      const layer = v.imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({ url,
-        minimumLevel: tileLevels?.minimum_level ?? 0, maximumLevel: tileLevels?.maximum_level ?? 16,
+      const layer = v.imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({ url, maximumLevel: 16,
         rectangle: aoi ? Cesium.Rectangle.fromDegrees(...aoi.bbox) : undefined }));
       layer.alpha = .9;
       layer.splitDirection = direction;
       overlays.push(layer);
     }
     return () => { if (!v.isDestroyed()) for (const layer of overlays) v.imageryLayers.remove(layer); };
-  }, [tileUrl, beforeUrl, afterUrl, aoi, offline, tileLevels]);
+  }, [tileUrl, beforeUrl, afterUrl, aoi, offline]);
   useEffect(() => { if (viewer.current) viewer.current.scene.splitPosition = split / 100; }, [split, offline]);
 
   const contextUrl = contextOverlay?.url;
@@ -559,15 +557,15 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, radarBounds, contextO
     let cancelled = false;
     if (primary.length) Cesium.GeoJsonDataSource.load({
       type: "FeatureCollection", features: primary.map(item => ({ ...item, id: item.properties.id })),
-    }, { clampToGround: true, fill: Cesium.Color.fromCssColorString("#ff8a00").withAlpha(.22),
-      stroke: Cesium.Color.fromCssColorString("#ffad4f"), strokeWidth: 3 }).then(source => {
+    }, { clampToGround: true, fill: Cesium.Color.fromCssColorString(COLORS.surface_change).withAlpha(.22),
+      stroke: Cesium.Color.fromCssColorString(COLORS.surface_change), strokeWidth: 3 }).then(source => {
       if (cancelled || v.isDestroyed()) return;
       polygons = source;
       for (const entity of source.entities.values) {
         const feature = primary.find(item => item.properties.id === entity.id);
         entity.properties = new Cesium.PropertyBag({ alert: feature });
         if (entity.polygon && !reduce) entity.polygon.material = new Cesium.ColorMaterialProperty(
-          new Cesium.CallbackProperty((_time, result) => Cesium.Color.fromCssColorString("#ff8a00").withAlpha(.18 + .08 * Math.sin(phase() * Math.PI), result), false),
+          new Cesium.CallbackProperty((_time, result) => Cesium.Color.fromCssColorString(COLORS.surface_change).withAlpha(.18 + .08 * Math.sin(phase() * Math.PI), result), false),
         );
       }
       v.dataSources.add(source);
@@ -639,7 +637,7 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, radarBounds, contextO
       <small>{hover.feature.properties.source} · {hover.feature.properties.source_kind === "primary" ? "NISAR" : "complementario"}</small>
       <strong>{hover.feature.properties.title}</strong>
       <span>{hover.feature.properties.place}</span>
-      <b>{metric.value == null ? "Cifra sin publicar" : new Intl.NumberFormat("es-PE", { maximumFractionDigits: metric.decimals }).format(metric.value)} <small>{metric.unit}</small></b>
+      <b>{metric.value == null ? "Cifra sin publicar" : formatNumber(metric.value, metric.decimals)} <small>{metric.unit}</small></b>
       <time dateTime={hover.feature.properties.date}>{formatDate(hover.feature.properties.date)}</time>
     </div>}
   </>;

@@ -1,6 +1,6 @@
 aoi: ayacucho-huanta
-title: Ayacucho, las huellas que deja el fuego
-question: ¿Qué cambios de vegetación muestran las observaciones radar en Huanta y La Mar durante 2026?
+title: "Ayacucho: qué cambió entre junio y octubre"
+question: ¿Qué cambios de señal muestran las observaciones radar en Huanta y La Mar entre junio y octubre de 2026?
 audience_summary:
   publico: Comparamos observaciones NISAR de la misma zona para localizar cambios en el territorio. Los focos de calor de NASA FIRMS ayudan a investigar si esos cambios coinciden con incendios.
   tecnico: Comparación GCOV HH/HV de la trayectoria 147 ascendente, marco 171, el 24 de junio y el 10 de octubre de 2026. La cobertura válida común es del 99,91 %. HV registra 3.607 ha con caída de señal, de las cuales 938,28 ha forman 498 manchas delimitadas. OPERA coincide con el 2,25 % de esas manchas. La atribución a incendios continúa por verificar.
@@ -26,10 +26,10 @@ steps:
     layer: none
     camera: overview
     text: Ayacucho forma parte de un territorio donde los procesos naturales y la actividad humana dejan huellas observables desde el espacio.
-  - title: El contexto del fuego
+  - title: El fuego como hipótesis
     layer: none
     camera: zone
-    text: Los focos de calor disponibles proceden de NASA FIRMS y conservan su fecha y confianza. Una detección de calor requiere contexto para atribuirla a un incendio.
+    text: Una hipótesis es que algunos cambios se relacionen con incendios. Para evaluarla, hay que contrastar su lugar y fecha con focos históricos de NASA FIRMS y con observaciones independientes. Los focos recientes aportan contexto actual.
   - title: Cómo se obtienen las observaciones
     layer: none
     camera: zone

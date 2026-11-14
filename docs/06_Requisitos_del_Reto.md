@@ -4,11 +4,6 @@ Texto de referencia del reto *Dancing with the SARs* (NASA Space Apps 2026). Rev
 
 La demo abre el globo con imagen satelital, sismos de USGS y focos de NASA FIRMS. El par activo de Ayacucho corresponde al 24 de junio y el 10 de octubre de 2026, trayectoria 147 ascendente. La cobertura válida común es del 99,91 % de la caja de estudio. OPERA contrasta la misma cobertura con sus rásteres originales.
 
-G9 añade una compilación estática con los mismos datos, procedencia y calidad. La barra
-y Calidad identifican la fecha de la foto. Las observaciones conservan su propio
-tiempo de adquisición y la línea de tiempo termina en la fecha de la copia. La demo
-local mantiene el modo de consulta de fuentes del servidor.
-
 ## Objetivo principal
 
 | Lo que pide el reto | Cómo lo cumple | Dónde | Estado |

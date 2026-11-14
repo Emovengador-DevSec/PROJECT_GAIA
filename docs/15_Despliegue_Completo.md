@@ -1,0 +1,26 @@
+# Despliegue de GAIA Alerta con la API en vivo
+
+La imagen sirve React y FastAPI en el mismo dominio. FastAPI genera las teselas a partir de los COG NISAR y actualiza USGS y FIRMS. La caché muestra la fecha de observación cuando falla una fuente externa.
+
+## Construcción y prueba local
+
+Desde la raíz del proyecto, con Docker Desktop en modo Linux y el par activo ya procesado:
+
+```powershell
+uv run python tools/deploy/collect_runtime_data.py
+docker build -t gaia-alerta .
+docker run --rm --name gaia-alerta -p 127.0.0.1:7860:7860 --env-file .env gaia-alerta
+```
+
+El exportador genera `deploy/data/` con el par activo, la exposición, la validación, las capas visuales y los catálogos que consulta la API. El paquete probado ocupa 259,37 MB. El destino debe estar vacío y se crea con cada exportación. Para repetir el proceso se puede usar `--output deploy/otro-destino` y sustituir la copia local `deploy/data/` antes de compilar. Los HDF5 y el período de la trayectoria 75 permanecen en el archivo de trabajo.
+
+Abre [la aplicación local](http://127.0.0.1:7860/) y [el estado de la API](http://127.0.0.1:7860/api/health). Entra a Ayacucho, abre Cambios, mueve la cortina y consulta la ficha de exposición. En Observaciones revisa las fechas de USGS y FIRMS. Si añades Cesium en local, autoriza esa URL en un token de desarrollo.
+
+## Publicación
+
+1. El propietario crea un repositorio para el código y un servicio Docker que sirva el puerto `7860` o que proporcione `PORT`. Si el servicio compila desde Git, el contexto del servicio debe incluir `deploy/data/` como artefacto de despliegue. Como alternativa, el servicio puede ejecutar la imagen ya construida desde un registro. `deploy/` está excluido de Git en el repositorio de código.
+2. Añade `FIRMS_MAP_KEY` y `EARTHDATA_TOKEN` en los secretos de ejecución del servicio. Las imágenes procesadas se sirven desde los COG incluidos. La clave de Earthdata se usa para el acceso a productos originales.
+3. Crea un token de Cesium ion de solo lectura para los recursos del mapa y añade el dominio HTTPS exacto en **Selected URLs**. En Hugging Face usa el dominio final `https://<space>.hf.space`. El token de Cesium se entrega al navegador. En una compilación local, configura `VITE_CESIUM_ION_TOKEN` en la sesión y ejecuta `docker build --secret id=VITE_CESIUM_ION_TOKEN,env=VITE_CESIUM_ION_TOKEN -t gaia-alerta .`. [Restricciones de Cesium ion](https://cesium.com/learn/ion/cesium-ion-access-tokens/#url-restrictions)
+4. Verifica la URL pública desde escritorio y móvil. Comprueba la portada, el globo, los orígenes de las alertas y la comparación NISAR. En el servidor, el arranque en paralelo de USGS y FIRMS está activado y las teselas tienen un límite de 360 peticiones por minuto por cliente. Para aplicar ese límite por visitante detrás de un proxy propio, configura `FORWARDED_ALLOW_IPS` solo con las direcciones de tus proxies de confianza.
+
+Hugging Face exige un plan de pago para crear Spaces Docker. CPU Basic tiene 2 vCPU, 16 GB de RAM y 50 GB de disco efímero. Un Space Docker necesita `sdk: docker` y `app_port: 7860` en el encabezado YAML de su README y acepta secretos para la compilación y la ejecución. En CPU Basic se suspende tras 48 horas de inactividad. Render permite un servicio web Docker gratuito de 512 MB y lo suspende tras 15 minutos sin tráfico. Se requiere medir el arranque y la memoria con el proveedor elegido. [Hugging Face Spaces](https://huggingface.co/docs/hub/spaces-overview) · [Docker Spaces](https://huggingface.co/docs/hub/spaces-sdks-docker) · [Suspensión de Spaces](https://huggingface.co/docs/hub/spaces-gpus) · [Planes de Render](https://render.com/docs/compute-plans) · [Suspensión en Render](https://render.com/docs/free)

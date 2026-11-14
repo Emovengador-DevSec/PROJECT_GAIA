@@ -107,7 +107,7 @@ La versión 3 conserva las cámaras y los tiempos de la versión 2. El haz ilust
 
 En horizontal, el astronauta giraba el casco, levantaba la mano derecha hacia el visor y volvía al mando. El reposo en el cuadro 181 y el alcance en el 331 se conservan en `art/render/v3/gaia.blend`. La cámara vertical reservaba el encuadre para NISAR y Sudamérica. Los PNG de `art/render/v3/{h,v}` son los originales de esa versión.
 
-El título elegido es «Gaia» en Bricolage Grotesque, con «Project» en una línea pequeña. La propuesta en Instrument Serif sigue disponible en `/?portada=editorial`. Las capturas `art/verificacion/titulo_*.png` permiten comparar ambas sobre el mismo fotograma. Las fuentes se sirven con el proyecto.
+En esa versión se eligió «Gaia» en Bricolage Grotesque, con «Project» en una línea pequeña. También se evaluó una variante editorial en Instrument Serif. La portada actual usa el botón «PROJECT GAIA».
 
 La codificación usa CRF 19 para H.264 y CRF 26 para VP9. El bucle horizontal pesa 11,94 MB en MP4 y 10,71 MB en WebM. La comparación del cuadro 331 contra el PNG original dio SSIM 0,990 en horizontal y 0,992 en vertical para VP9.
 

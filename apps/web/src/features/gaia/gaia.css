@@ -29,7 +29,7 @@
   pointer-events: none;
   background: #030609 center / cover no-repeat;
 }
-.gaia-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.gaia-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center top; }
 .gaia[data-portrait] .gaia-backdrop {
   background-position: 22% center;
 }
@@ -39,7 +39,7 @@
   position: absolute;
   isolation: isolate;
   top: max(clamp(28px, 4vh, 60px), env(safe-area-inset-top));
-  left: max(clamp(22px, 7.2vw, 190px), env(safe-area-inset-left));
+  left: max(clamp(22px, 5.2vw, 140px), env(safe-area-inset-left));
   width: clamp(280px, 25vw, 420px);
   max-width: calc(100% - 2 * var(--gaia-gutter));
   margin: 0;
@@ -51,9 +51,9 @@
   content: "";
   position: absolute;
   z-index: -1;
-  inset: -20px -28px -28px;
-  background: rgb(3 6 9 / 94%);
-  mask-image: radial-gradient(ellipse closest-side, #000 45%, transparent 100%);
+  inset: -24px -52px -34px -24px;
+  background: linear-gradient(90deg, rgb(3 6 9 / 96%) 0%, rgb(3 6 9 / 78%) 74%, transparent 100%);
+  mask-image: linear-gradient(transparent, #000 12%, #000 77%, transparent);
   pointer-events: none;
 }
 .gaia-purpose h2 {

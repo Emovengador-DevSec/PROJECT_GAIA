@@ -59,4 +59,4 @@ Falta una credencial, una descarga supera 5 GB, no hay datos para la zona, dos d
 La portada PROJECT GAIA tiene trabajo pendiente: lee `docs/09_Relevo_Portada_Gaia.md` antes de tocar `apps/web/src/features/gaia/`, `art/` o `tools/blender/`.
 
 ## Plan principal para el hackathon
-Antes de cualquier fase, lee `docs/10_Plan_GAIA_Alerta_Codex.md` (manda sobre `docs/05_Plan_MVP_72h.md`).
+Antes de cualquier fase, lee `docs/13_Plan_Final_Codex.md` (plan vigente) y luego `docs/10_Plan_GAIA_Alerta_Codex.md` como contexto.

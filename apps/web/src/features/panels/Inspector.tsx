@@ -3,6 +3,7 @@ import { useReducedMotion } from "../../lib/useMotionPreference";
 import type { AOI, AlertFeature, AlertKind, Audience, Catalog, ContextLayer, FeedStatus, GlobeStatus, Health, LayerManifest, PolarizationSummary, Rainfall, Story, TimeSeries, Trend, Validation } from "../../lib/api";
 import { TABS, type TabId } from "../../config/tabs";
 import { formatDate } from "../../lib/formatDate";
+import { formatNumber as number } from "../../lib/formatNumber";
 import { AlertDetails } from "../workspace/AlertDetails";
 import { ApplicationReference, LearnMore, Resources, nisarGuide, training, uavsarPostcards } from "../workspace/Resources";
 import { RadarGlossary, vertexGranule } from "../workspace/RadarGlossary";
@@ -25,7 +26,6 @@ type Props = {
   context: ContextLayer[]; activeContext?: ContextLayer; onContext: (id: string | null) => void; moistureCatalog?: Catalog;
   validation?: Validation;
   rainfall?: Rainfall;
-  snapshotLabel?: string;
   onClose: () => void; onResources: () => void;
 };
 
@@ -42,7 +42,7 @@ function CatalogSummary({ catalog }: { catalog?: Catalog }) {
     <p>Disponibles para seleccionar y procesar. Una observación catalogada aún no equivale a una capa analizada.</p>
     <details><summary>Consultar fechas y trayectorias</summary><ul className="catalog-list">{catalog.granules.map(granule =>
       <li key={granule.name}><span>{granule.start?.slice(0, 10)}</span><small>Trayectoria {granule.track} · {granule.direction} · {granule.polarizations?.join(" / ")}</small>
-        <details><summary>Identificador y tamaño</summary><p className="granule-id">{granule.name}</p><p>{granule.size_mb === null ? "Tamaño sin informar" : `${(granule.size_mb / 1000).toFixed(2)} GB`}</p>
+        <details><summary>Identificador y tamaño</summary><p className="granule-id">{granule.name}</p><p>{granule.size_mb === null ? "Tamaño sin informar" : `${number(granule.size_mb / 1000)} GB`}</p>
           <a className="source-link" href={vertexGranule(granule.name)} target="_blank" rel="noopener noreferrer">Consultar en Vertex ↗</a>
         </details></li>)}</ul></details>
     {catalog.queried_at && <small>Consulta · {formatDate(catalog.queried_at)}</small>}
@@ -75,7 +75,6 @@ function ContextLayers({ items, active, onSelect, title = "Observaciones complem
 }
 
 function OperaValidation({ result }: { result?: Validation }) {
-  const number = (value: number) => new Intl.NumberFormat("es-PE", { maximumFractionDigits: 2 }).format(value);
   return <details className="technical-details"><summary>Contraste cuantitativo con OPERA</summary>
     {result ? <>
       <p>{result.source} · <time dateTime={result.date}>{result.date}</time></p>
@@ -175,8 +174,8 @@ export function Inspector(p: Props) {
           <summary>Lluvia acumulada de tres días</summary>
           {p.rainfall ? <>
             <p>{p.rainfall.dates[0]} → {p.rainfall.dates.at(-1)}</p>
-            <p>{p.rainfall.mean_mm === null ? "Sin píxeles válidos en los tres días" : `${p.rainfall.mean_mm.toFixed(1)} mm de media en el área de estudio`}</p>
-            <p className="muted">Cobertura común · {p.rainfall.valid_area_pct.toFixed(1)} %</p>
+            <p>{p.rainfall.mean_mm === null ? "Sin píxeles válidos en los tres días" : `${number(p.rainfall.mean_mm, 1)} mm de media en el área de estudio`}</p>
+            <p className="muted">Cobertura común · {number(p.rainfall.valid_area_pct, 1)} %</p>
             <p className="muted">{p.rainfall.note}</p>
             <ul className="granule-list">{p.rainfall.granules.map(granule => <li key={granule}>{granule}</li>)}</ul>
           </> : <p className="empty-inline">Para calcular el acumulado se necesitan los tres productos diarios IMERG originales del 22 al 24 de febrero de 2026. El acceso exige una cuenta Earthdata.</p>}
@@ -201,8 +200,8 @@ export function Inspector(p: Props) {
               {polarizations.map(value => <option key={value} value={value}>{value === "HVHV" ? "HV · vegetación" : value === "HHHH" ? "HH · superficie y agua" : value}</option>)}
             </select></label>
             {layer && <><h3>{layer.title}</h3><p className="date-comparison"><time>{layer.dates.a}</time><span aria-hidden="true">→</span><time>{layer.dates.b}</time></p>
-              {!p.compare && <div className="data-legend"><span>{layer.range.min?.toFixed(1) ?? "—"} {layer.unit}</span><div className="color-scale" /><span>{layer.range.max?.toFixed(1) ?? "—"} {layer.unit}</span></div>}
-              <p className="muted">Cobertura válida en ambas fechas · {layer.quality.valid_area_pct.toLocaleString("es-PE", { maximumFractionDigits: 2 })} % de la zona de estudio</p>
+              {!p.compare && <div className="data-legend"><span>{number(layer.range.min, 1)} {layer.unit}</span><div className="color-scale" /><span>{number(layer.range.max, 1)} {layer.unit}</span></div>}
+              <p className="muted">Cobertura válida en ambas fechas · {number(layer.quality.valid_area_pct)} % de la zona de estudio</p>
               {layer.kind === "backscatter_diff_db" && <RadarGlossary terms={["hh", "hv", "retrodispersion"]} />}
               {p.polarizationSummary?.strongest && p.polarizationSummary.HHHH && p.polarizationSummary.HVHV &&
                 <p className="muted">Mayor área con caída de señal en {p.polarizationSummary.strongest.slice(0, 2)} dentro de la cobertura común.
@@ -240,10 +239,9 @@ export function Inspector(p: Props) {
       </>}
 
       {tab === "quality" && <>
-        {p.snapshotLabel && <p className="snapshot-quality">{p.snapshotLabel}</p>}
         {layer ? <><p className="source-label">NISAR · fuente principal</p><h3>{layer.title}</h3>
           <p className="date-comparison"><span>{layer.dates.a}</span><span>→</span><span>{layer.dates.b}</span></p>
-          <dl className="quality-facts"><div><dt>Unidad</dt><dd>{layer.unit}</dd></div><div><dt>Área válida</dt><dd>{layer.quality.valid_area_pct.toFixed(1)} %</dd></div><div><dt>Polarización</dt><dd>{String(layer.provenance.layer ?? "Sin informar")}</dd></div><div><dt>Umbral de cambio</dt><dd>{typeof layer.provenance.threshold_db === "number" ? `${layer.provenance.threshold_db.toFixed(2)} dB` : "Sin informar"}</dd></div></dl>
+          <dl className="quality-facts"><div><dt>Unidad</dt><dd>{layer.unit}</dd></div><div><dt>Área válida</dt><dd>{number(layer.quality.valid_area_pct)} %</dd></div><div><dt>Polarización</dt><dd>{String(layer.provenance.layer ?? "Sin informar")}</dd></div><div><dt>Umbral de cambio</dt><dd>{typeof layer.provenance.threshold_db === "number" ? `${number(layer.provenance.threshold_db)} dB` : "Sin informar"}</dd></div></dl>
           <p className="muted">Método · {String(layer.provenance.method ?? "Sin informar")}</p>
           {layer.quality.provisional && <p className="badge-provisional">Producto provisional. Las mediciones pueden revisarse.
             {" "}<a href={`${nisarGuide}products-overview/#nisar-maturity-levels`} target="_blank" rel="noopener noreferrer">Niveles de madurez de ASF ↗</a></p>}

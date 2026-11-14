@@ -6,14 +6,20 @@ import json
 import os
 import re
 from base64 import b64decode
+from collections import OrderedDict
+from contextlib import asynccontextmanager
+from datetime import UTC, datetime
 from functools import cache
 from pathlib import Path
+from threading import Lock
+from time import monotonic
 from typing import Literal
 
 import yaml
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 
@@ -27,7 +33,30 @@ TRANSPARENT_PNG = b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII="
 )
 
-app = FastAPI(title="Bailando con los SARs API", version="0.3.0")
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    stop = None
+    if os.environ.get("SARLAB_OFFLINE") != "1" and os.environ.get("SARLAB_WARM_FEEDS") == "1":
+        stop = live.start_refresh()
+    try:
+        yield
+    finally:
+        if stop:
+            stop.set()
+
+
+class TextCompression(GZipMiddleware):
+    async def __call__(self, scope, receive, send):
+        path = scope.get("path", "")
+        text_api = path.startswith("/api/") and not path.endswith(".png")
+        if text_api or path.endswith((".js", ".css", ".json", ".geojson")):
+            await super().__call__(scope, receive, send)
+        else:
+            await self.app(scope, receive, send)
+
+
+app = FastAPI(title="Bailando con los SARs API", version="0.3.0", lifespan=lifespan)
+app.add_middleware(TextCompression, minimum_size=1024, compresslevel=5)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[os.environ.get("ALLOWED_ORIGIN", "http://localhost:5173")],
@@ -112,7 +141,7 @@ def layer(layer_id: str):
 def _local_cog(path_value: str | None) -> Path:
     if not path_value:
         raise HTTPException(404, "No existe esa observación en el manifiesto.")
-    path = Path(path_value).resolve()
+    path = (PROCESSED / path_value).resolve()
     if not path.is_relative_to(PROCESSED.resolve()) or not path.is_file():
         raise HTTPException(404, "El archivo procesado no está disponible localmente.")
     return path
@@ -144,15 +173,43 @@ def _rgb_tile(manifest: dict, stage: str, x: int, y: int, z: int) -> bytes:
     return render(rgb, mask, img_format="PNG")
 
 
+TILE_REQUESTS_PER_MINUTE = int(os.environ.get("SARLAB_TILE_REQUESTS_PER_MINUTE", "0"))
+TILE_REQUESTS: OrderedDict[str, tuple[float, int]] = OrderedDict()
+TILE_LOCK = Lock()
+
+
+def _check_tile_rate(request: Request) -> None:
+    if TILE_REQUESTS_PER_MINUTE <= 0 or request.client is None:
+        return
+    now = monotonic()
+    host = request.client.host
+    with TILE_LOCK:
+        while TILE_REQUESTS and next(iter(TILE_REQUESTS.values()))[0] + 60 <= now:
+            TILE_REQUESTS.popitem(last=False)
+        if host not in TILE_REQUESTS and len(TILE_REQUESTS) >= 8192:
+            raise HTTPException(
+                429, "El servidor alcanzó el límite de solicitudes.", headers={"Retry-After": "60"},
+            )
+        start, count = TILE_REQUESTS.get(host, (now, 0))
+        if count >= TILE_REQUESTS_PER_MINUTE:
+            raise HTTPException(
+                429, "Demasiadas solicitudes de teselas.",
+                headers={"Retry-After": str(int(start + 61 - now))},
+            )
+        TILE_REQUESTS[host] = start, count + 1
+
+
 @app.get("/api/tiles/{layer_id}/{stage}/{z}/{x}/{y}.png")
 def tile(
     layer_id: str, stage: Literal["change", "before", "after"], z: int, x: int, y: int,
-    palette: Literal["default", "rgb"] = "default",
+    palette: Literal["default", "rgb"] = "default", *, request: Request = None,
 ):
     if not TILES:
         raise HTTPException(503, "Instala las dependencias del servidor para servir capas radar.")
     if not 0 <= z <= 18 or not 0 <= x < 2**z or not 0 <= y < 2**z:
         raise HTTPException(422, "Coordenadas de tesela inválidas.")
+    if request is not None:
+        _check_tile_rate(request)
     manifest = layer(layer_id)
     from rio_tiler.errors import TileOutsideBounds
 
@@ -218,9 +275,21 @@ def catalog(
     return result
 
 
+def _observation_date(day: str | None, granules: list[str]) -> str | None:
+    if day:
+        for granule in granules:
+            match = re.search(r"_(\d{8}T\d{6})_\d{8}T\d{6}_", granule)
+            if match and match[1][:8] == day.replace("-", ""):
+                try:
+                    return datetime.strptime(match[1], "%Y%m%dT%H%M%S").replace(tzinfo=UTC).isoformat()
+                except ValueError:
+                    continue
+    return day
+
+
 @app.get("/api/alerts")
 def alerts(aoi: str | None = Query(None, pattern=r"^[a-z0-9-]+$"), include_live: bool = False,
-           active_only: bool = False):
+           active_only: bool = True):
     active = cache(_active_gcov)
 
     @cache
@@ -228,10 +297,7 @@ def alerts(aoi: str | None = Query(None, pattern=r"^[a-z0-9-]+$"), include_live:
         path = PROCESSED.parent / "04_published" / "exposure" / f"{zone}.json"
         return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
 
-    comparisons = {
-        manifest["id"]: manifest["change_summary"] for manifest in _manifests()
-        if manifest.get("provenance", {}).get("layer") == "HVHV" and "change_summary" in manifest
-    }
+    manifests = {manifest["id"]: manifest for manifest in _manifests()}
     feats = []
     pattern = f"{aoi}/*/*/alerts*.geojson" if aoi else "*/*/*/alerts*.geojson"
     for p in sorted(PROCESSED.glob(pattern)):
@@ -243,10 +309,15 @@ def alerts(aoi: str | None = Query(None, pattern=r"^[a-z0-9-]+$"), include_live:
             props = feature.get("properties", {})
             geometry = feature.get("geometry")
             epsg = props.get("epsg", payload.get("crs_epsg", 4326))
-            if geometry and epsg != 4326:
+            if geometry:
                 from rasterio.warp import transform_geom
 
-                geometry = transform_geom(f"EPSG:{epsg}", "EPSG:4326", geometry)
+                geometry = transform_geom(f"EPSG:{epsg}", "EPSG:4326", geometry, precision=5)
+            manifest = manifests.get(props.get("layer_id"), {})
+            provenance = manifest.get("provenance", {})
+            day = (props.get("date_range") or [None])[-1]
+            granules = props.get("granules") or provenance.get("granules", [])
+            polarization = provenance.get("layer")
             props = {
                 **props,
                 "kind": props.get("kind", "surface_change"),
@@ -255,14 +326,16 @@ def alerts(aoi: str | None = Query(None, pattern=r"^[a-z0-9-]+$"), include_live:
                 "aoi_id": zone,
                 "title": "Cambio de retrodispersión NISAR",
                 "place": props.get("place", zone),
-                "date": (props.get("date_range") or [None])[-1],
+                "date": _observation_date(day, granules),
+                "granules": granules,
+                "polarization": polarization,
                 "level": props.get("level", "medio"),
                 "confidence": "por verificar",
                 "note": "Cambio de señal radar. La causa requiere contraste con observaciones de campo.",
                 "source_url": "https://nisar.jpl.nasa.gov/",
                 "provisional": True,
                 "metrics": {"area_ha": props.get("area_ha")},
-                "comparison_summary": comparisons.get(props.get("layer_id")),
+                "comparison_summary": manifest.get("change_summary") if polarization == "HVHV" else None,
                 "exposure": None,
             }
             item = exposure_for(zone).get("alerts", {}).get(props.get("id"))
@@ -278,7 +351,7 @@ def alerts(aoi: str | None = Query(None, pattern=r"^[a-z0-9-]+$"), include_live:
         for provider in ("quakes", "fires"):
             feed = live.collection(provider)
             sources.append({k: v for k, v in feed.items() if k != "features"})
-            feats.extend(feed["features"])
+            feats.extend({**feature, "properties": {**feature["properties"]}} for feature in feed["features"])
     from .fire_cells import aggregate, region_name
 
     for feature in feats:

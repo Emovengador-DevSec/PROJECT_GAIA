@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { AlertFeature, AlertKind } from "../../lib/api";
 import { formatDate } from "../../lib/formatDate";
+import { formatNumber } from "../../lib/formatNumber";
 import { CountUp } from "./CountUp";
 
 export const kindLabels: Record<AlertKind, string> = {
@@ -79,7 +80,7 @@ export function AlertFeed({ alerts, onSelect }: { alerts: AlertFeature[]; onSele
         return <button key={a.id} type="button" className="featured-observation" data-kind={a.kind} onClick={() => onSelect(feature)}>
           <span className="featured-source"><span className="alert-symbol"><AlertSymbol kind={a.kind} /></span>{a.source}</span>
           <span className="featured-metric">{metric.value == null ? "—" : <CountUp value={metric.value} decimals={metric.decimals} />}<small>{metric.unit}</small></span>
-          {summary && <><span>Caída de señal HV</span><span>{summary.alerts} zonas delimitadas · {summary.mapped_loss_area_ha.toLocaleString("es-PE")} ha</span></>}
+          {summary && <><span>Área total con caída de señal HV</span><span>{formatNumber(summary.mapped_loss_area_ha)} ha agrupadas en {formatNumber(summary.alerts, 0)} zonas delimitadas</span></>}
           <strong>{a.place}</strong><time dateTime={a.date}>{formatDate(a.date)}</time>
         </button>;
       })}

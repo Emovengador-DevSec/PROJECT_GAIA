@@ -4,16 +4,15 @@ import type { AlertFeature, FeedStatus } from "../../lib/api";
 
 const DAY = 86_400_000;
 const stamp = (value: number) => new Intl.DateTimeFormat("es-PE", {
-  day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "UTC",
+  day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "UTC", hourCycle: "h23",
 }).format(value) + " UTC";
 
-export function EventTimeline({ alerts, sources, cutoff, referenceTime, onChange }: {
-  alerts: AlertFeature[]; sources: FeedStatus[]; cutoff?: number; referenceTime?: string;
-  onChange: (value?: number) => void;
+export function EventTimeline({ alerts, sources, cutoff, onChange }: {
+  alerts: AlertFeature[]; sources: FeedStatus[]; cutoff?: number; onChange: (value?: number) => void;
 }) {
   const reduce = useReducedMotion();
   const [playing, setPlaying] = useState(false);
-  const end = useMemo(() => referenceTime ? Date.parse(referenceTime) : Date.now(), [alerts, referenceTime]);
+  const end = useMemo(() => Date.now(), [alerts]);
   const start = end - 30 * DAY;
   const cursor = cutoff ?? end;
   const cursorRef = useRef(cursor);

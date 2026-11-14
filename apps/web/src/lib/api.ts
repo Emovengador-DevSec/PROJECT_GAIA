@@ -1,36 +1,6 @@
 const BASE = import.meta.env.VITE_API_BASE ?? "/api";
 import type { OMMJsonObject } from "satellite.js";
 
-export const isStaticData = import.meta.env.VITE_DATA_MODE === "static";
-export type SnapshotManifest = {
-  schema_version: 1; generated_at: string; responses: Record<string, string>;
-  tiles: { minimum_level: number; maximum_level: number; tile_size: number };
-  files: { path: string; size_bytes: number; sha256: string }[]; total_bytes: number;
-};
-
-let snapshotPromise: Promise<SnapshotManifest> | undefined;
-
-function snapshot(): Promise<SnapshotManifest | undefined> {
-  if (!isStaticData) return Promise.resolve(undefined);
-  snapshotPromise ??= fetch("/snapshot/manifest.json", { cache: "no-cache" }).then(async response => {
-    if (!response.ok) throw new Error("La foto estática no está publicada. Genera snapshot antes de compilar.");
-    const manifest = await response.json() as SnapshotManifest;
-    if (manifest.schema_version !== 1 || !Number.isFinite(Date.parse(manifest.generated_at))
-      || !manifest.responses || !Number.isInteger(manifest.tiles?.maximum_level)
-      || manifest.tiles.maximum_level < 0 || manifest.tiles.maximum_level > 18) {
-      throw new Error("El manifiesto de la foto estática requiere volver a generarse.");
-    }
-    return manifest;
-  }).catch(error => { snapshotPromise = undefined; throw error; });
-  return snapshotPromise;
-}
-
-function snapshotRoute(path: string) {
-  const url = new URL(path, "https://snapshot.invalid");
-  url.searchParams.sort();
-  return url.pathname + url.search;
-}
-
 export type OrbitData = { status: string; source_url: string; message: string;
   fetched_at?: string; elements?: OMMJsonObject };
 
@@ -101,7 +71,7 @@ export type AlertFeature = {
   properties: {
     id: string; kind: AlertKind; source: string; source_kind: "primary" | "complementary";
     title: string; place: string; date: string; level: "alto" | "medio" | "bajo"; confidence: string;
-    note: string; source_url: string; aoi_id?: string; granules?: string[]; provisional?: boolean;
+    note: string; source_url: string; aoi_id?: string; granules?: string[]; provisional?: boolean; polarization?: string | null;
     center?: [number, number]; members?: { id: string; date: string }[]; first_date?: string;
     comparison_summary?: { loss_area_ha: number; mapped_loss_area_ha: number; alerts: number } | null;
     metrics: { magnitude?: number; magnitude_type?: string; depth_km?: number; frp_mw?: number; area_ha?: number | null; count?: number };
@@ -124,22 +94,12 @@ export type PolarizationSummary = {
 };
 
 async function get<T>(path: string): Promise<T> {
-  let url = `${BASE}${path}`;
-  if (isStaticData) {
-    const manifest = await snapshot();
-    const file = manifest?.responses[snapshotRoute(path)];
-    if (!file || !/^[A-Za-z0-9_./-]+$/.test(file) || file.startsWith("/") || file.split("/").includes("..")) {
-      throw new Error("La foto estática no contiene esta consulta. Vuelve a generar snapshot.");
-    }
-    url = `/snapshot/${file}`;
-  }
-  const r = await fetch(url);
+  const r = await fetch(`${BASE}${path}`);
   if (!r.ok) throw new Error(`La API respondió ${r.status} en ${path}`);
   return r.json() as Promise<T>;
 }
 
 export const api = {
-  snapshot,
   orbit: () => get<OrbitData>("/orbit"),
   aois: () => get<AOI[]>("/aois"),
   health: () => get<Health>("/health"),
@@ -147,7 +107,7 @@ export const api = {
     get<Catalog>(`/catalog?aoi=${encodeURIComponent(aoi)}&product=${encodeURIComponent(product)}`),
   context: (aoi: string) => get<ContextLayer[]>(`/context/${encodeURIComponent(aoi)}`),
   contextImage: (aoi: string, item: ContextLayer, date = item.date) =>
-    `${isStaticData ? "/snapshot" : BASE}/context/${encodeURIComponent(aoi)}/${encodeURIComponent(item.id)}/${encodeURIComponent(date)}.png`,
+    `${BASE}/context/${encodeURIComponent(aoi)}/${encodeURIComponent(item.id)}/${encodeURIComponent(date)}.png`,
   validation: (id: string) => get<Validation | null>(`/validation/${encodeURIComponent(id)}`),
   rainfall: (aoi: string) => get<Rainfall | null>(`/rainfall/${encodeURIComponent(aoi)}`),
   alerts: () => get<AlertCollection>("/alerts?include_live=true&active_only=true"),
@@ -158,7 +118,5 @@ export const api = {
   timeseries: (aoi: string) => get<TimeSeries>(`/timeseries?aoi=${encodeURIComponent(aoi)}&allow_empty=true`),
   /** Teselas por identificador de capa publicada. */
   tileUrl: (m: LayerManifest, stage: "change" | "before" | "after" = "change", rgb = false) =>
-    isStaticData
-      ? `/snapshot/tiles/${encodeURIComponent(m.id)}/${stage}/${rgb ? "rgb" : "default"}/{z}/{x}/{y}.png`
-      : `${BASE}/tiles/${encodeURIComponent(m.id)}/${stage}/{z}/{x}/{y}.png${rgb ? "?palette=rgb" : ""}`,
+    `${BASE}/tiles/${encodeURIComponent(m.id)}/${stage}/{z}/{x}/{y}.png${rgb ? "?palette=rgb" : ""}`,
 };

@@ -1,14 +1,14 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
-import { mkdir, unlink, writeFile } from "node:fs/promises";
+import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const require = createRequire(new URL("../../art/render/v3/qa/package.json", import.meta.url));
 const puppeteer = require("puppeteer-core");
 const base = process.env.GAIA_VERIFY_URL ?? "http://127.0.0.1:8093";
 const record = process.argv.includes("--record");
-const output = path.resolve("art/verificacion/final");
+const output = path.resolve(process.env.GAIA_VERIFY_OUTPUT ?? "art/verificacion/final");
 await mkdir(output, { recursive: true });
 const api = async route => {
   const response = await fetch(base + "/api" + route);
@@ -24,12 +24,16 @@ assert(layers.every(layer => layer.quality.valid_area_pct >= 80
   && layer.dates.a === "2026-06-24" && layer.dates.b === "2026-10-10"));
 assert.equal(series.samples.length, 2);
 const hv = layers.find(layer => layer.provenance.layer === "HVHV");
+const manifest = JSON.parse(await readFile("data/03_processed/ayacucho-huanta/gcov/2026-06-24__2026-10-10/manifest_hvhv.json", "utf8"));
+assert.deepEqual(hv.change_summary, manifest.change_summary);
 const validation = await api("/validation/" + hv.id);
 assert.equal(validation.nisar_confirmed_pct, 2.25);
 const primary = observations.features.filter(item => item.properties.source_kind === "primary");
-assert.equal(primary.length, 1106);
+const hvZones = primary.filter(item => item.properties.polarization === "HVHV");
+assert.equal(hvZones.length, manifest.change_summary.alerts);
+assert(hvZones.every(item => item.properties.comparison_summary?.alerts === manifest.change_summary.alerts));
 assert(primary.every(item => item.properties.exposure?.sources?.landcover));
-assert(primary.every(item => item.properties.date === "2026-10-10"));
+assert(primary.every(item => item.properties.date === "2026-10-10T10:41:47+00:00"));
 const results = { offline: health.offline, coverage: hv.quality.valid_area_pct,
   summary: hv.change_summary, agreement: validation.nisar_confirmed_pct, sizes: [] };
 const browser = await puppeteer.launch({
@@ -59,13 +63,24 @@ try {
     }) : undefined;
     try {
       await pause(recording ? 8000 : 400);
+      if (!recording) await page.screenshot({ path: path.join(output, `portada-${width}.jpg`), type: "jpeg", quality: 85 });
       await page.locator(".gaia-cta").click();
       if (width < 720) await page.locator(".panel-reopen").click();
       await page.waitForSelector('.featured-observation[data-kind="surface_change"]');
       await page.waitForFunction(() => !document.querySelector(".loading-state"));
       await pause(12000);
-      const number = new Intl.NumberFormat("es-PE", { maximumFractionDigits: 2 }).format(hv.change_summary.loss_area_ha);
-      assert((await page.$eval('.featured-observation[data-kind="surface_change"]', el => el.textContent)).includes(number));
+      const number = value => String(value).replace(".", ",");
+      const card = '.featured-observation[data-kind="surface_change"]';
+      const summary = '.live-totals button[data-kind="surface_change"]';
+      await page.waitForFunction((selector, expected) => document.querySelector(selector)?.textContent.trim() === expected,
+        {}, `${summary} strong`, number(manifest.change_summary.alerts));
+      const text = await page.$eval(card, el => el.textContent);
+      for (const value of [manifest.change_summary.loss_area_ha, manifest.change_summary.mapped_loss_area_ha, manifest.change_summary.alerts]) {
+        assert(text.includes(number(value)));
+      }
+      assert(text.includes("10:41 UTC"));
+      if (width < 720) await page.$eval(card, el => el.scrollIntoView({ block: "center" }));
+      await page.screenshot({ path: path.join(output, `observaciones-${width}.jpg`), type: "jpeg", quality: 85 });
       assert.equal(await page.$eval(".workspace-light select", el => el.value), "day");
       await page.select(".workspace-light select", "real");
       await pause(1000);
@@ -95,7 +110,7 @@ try {
       await new Promise(resolve => setTimeout(resolve, 3000));
       await page.screenshot({ path: path.join(output, `radar-${width}.jpg`), type: "jpeg", quality: 88 });
       await page.locator(".rail button:nth-child(5)").click();
-      await page.waitForFunction(() => document.querySelector(".quality-facts")?.textContent.includes("99.9"));
+      await page.waitForFunction(() => document.querySelector(".quality-facts")?.textContent.includes("99,91"));
       await page.evaluate(() => {
         for (const details of document.querySelectorAll("details")) {
           if (details.querySelector("summary")?.textContent.includes("Contraste cuantitativo")) details.open = true;
@@ -103,7 +118,7 @@ try {
         document.querySelector(".technical-details:last-of-type")?.scrollIntoView({ block: "center" });
       });
       await pause(15000);
-      assert((await page.$eval(".inspector", el => el.textContent)).includes("2.25"));
+      assert((await page.$eval(".inspector", el => el.textContent)).includes("2,25"));
       await page.screenshot({ path: path.join(output, `calidad-${width}.jpg`), type: "jpeg", quality: 88 });
       await page.locator(".rail button:nth-child(7)").click();
       await page.locator('.featured-observation[data-kind="surface_change"]').click();

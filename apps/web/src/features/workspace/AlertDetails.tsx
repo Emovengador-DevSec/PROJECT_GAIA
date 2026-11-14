@@ -1,10 +1,9 @@
 import type { AlertFeature } from "../../lib/api";
 import { formatDate } from "../../lib/formatDate";
+import { formatNumber as number } from "../../lib/formatNumber";
 import { ApplicationReference, LearnMore } from "./Resources";
 import { CountUp } from "./CountUp";
 
-const number = (value?: number | null) => typeof value === "number" && Number.isFinite(value)
-  ? new Intl.NumberFormat("es-PE", { maximumFractionDigits: 2 }).format(value) : "Sin dato";
 
 const httpsUrl = (value?: string) => value?.startsWith("https://") ? value : undefined;
 
