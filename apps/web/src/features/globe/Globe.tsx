@@ -9,6 +9,7 @@ import { formatDate } from "../../lib/formatDate";
 import { formatNumber } from "../../lib/formatNumber";
 import type { CitizenReport } from "../../lib/api";
 import { addNisarOrbit } from "./nisarOrbit";
+import { FIRE_AGE_ALPHA, FIRE_AGE_COLORS, fireAge } from "./fireAge";
 
 type Props = {
   aoi?: AOI; communityCenter?: [number, number]; tileUrl?: string; beforeUrl?: string; afterUrl?: string; split: number;
@@ -467,6 +468,8 @@ export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint
     const animated = new Set(latest.map(item => item.properties.id));
     const individualFires: Cesium.Entity[] = [];
     const columns: Cesium.Entity[] = [];
+    const fireColors = FIRE_AGE_COLORS.map(color => Cesium.Color.fromCssColorString(color));
+    const reference = () => cutoffRef.current ?? Date.now();
     const points = alerts.filter(item => item.properties.kind === "fire").length > 1000
       ? v.scene.primitives.add(new Cesium.PointPrimitiveCollection()) as Cesium.PointPrimitiveCollection : undefined;
     const firePoints: { point: Cesium.PointPrimitive; date: number; lon: number; lat: number }[] = [];
@@ -485,7 +488,7 @@ export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint
       if (points && p.kind === "fire") {
         const id = new Cesium.Entity({ id: p.id, properties: { alert: feature } });
         const point = points.add({ id, position: Cesium.Cartesian3.fromDegrees(lon, lat),
-          pixelSize: 7, color: Cesium.Color.fromCssColorString("#ff6c3d"),
+          pixelSize: 7, color: fireColors[fireAge(p.date, reference())],
           outlineColor: Cesium.Color.fromCssColorString("#ffd1ab"), outlineWidth: 1,
           disableDepthTestDistance: 0, show: false });
         firePoints.push({ point, date: Date.parse(p.date), lon, lat });
@@ -493,7 +496,8 @@ export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint
       }
       const entity = data.entities.add({ id: p.id, name: p.title,
         position: Cesium.Cartesian3.fromDegrees(lon, lat), properties: { alert: feature },
-        billboard: { image: marker(p.kind, COLORS[p.kind] ?? COLORS.surface_change), width: size, height: size,
+        billboard: { image: marker(p.kind, p.kind === "fire" ? FIRE_AGE_COLORS[fireAge(p.date, reference())]
+          : COLORS[p.kind] ?? COLORS.surface_change), width: size, height: size,
           heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
           disableDepthTestDistance: 0 },
       });
@@ -521,19 +525,25 @@ export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint
       const p = feature.properties;
       const ring = (feature.geometry.coordinates as number[][][])[0];
       const height = 2500 + Math.sqrt(p.metrics.count ?? 1) * 16_000;
-      const recent = Date.now() - Date.parse(p.date) < 43_200_000;
-      const color = Cesium.Color.fromCssColorString(recent ? "#ff5537" : "#ff9c43");
       const [lon, lat] = p.center!;
-      const cell = data.entities.add({
+      // The cell's date is its newest member up to the cutoff, so the colour follows the timeline.
+      const age = () => fireAge((cell.properties!.alert.getValue(v.clock.currentTime) as AlertFeature).properties.date, reference());
+      const flicker = () => .62 + .33 * Math.sin(phase(lat * 1000, 1400) * Math.PI) ** 2;
+      const tint = (alpha: (tier: 0 | 1 | 2) => number) => new Cesium.CallbackProperty((_time, result) => {
+        const tier = age();
+        return fireColors[tier].withAlpha(alpha(tier), result);
+      }, false);
+      const cell: Cesium.Entity = data.entities.add({
         id: p.id, name: p.title, properties: { alert: feature },
         position: Cesium.Cartesian3.fromDegrees(lon, lat, height),
         polygon: {
           hierarchy: Cesium.Cartesian3.fromDegreesArray(ring.flat()), height: 0,
-          extrudedHeight: height, material: color.withAlpha(.72), outline: true,
-          outlineColor: color.withAlpha(.95),
+          extrudedHeight: height, outline: true,
+          material: new Cesium.ColorMaterialProperty(tint(tier => tier === 0 && !reduce ? flicker() : FIRE_AGE_ALPHA[tier])),
+          outlineColor: tint(tier => tier === 2 ? .7 : .95),
         },
         point: { pixelSize: 5 + Math.min(6, Math.log2((p.metrics.count ?? 1) + 1)),
-          color, outlineColor: Cesium.Color.fromCssColorString("#fff0d8"), outlineWidth: 1 },
+          color: tint(() => 1), outlineColor: Cesium.Color.fromCssColorString("#fff0d8"), outlineWidth: 1 },
       });
       columns.push(cell);
     }
@@ -598,8 +608,9 @@ export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint
     const removeFlicker = v.scene.preRender.addEventListener(() => {
       if (reduce || !points || v.camera.positionCartographic.height >= 220_000 || performance.now() - lastFlicker < 250) return;
       lastFlicker = performance.now();
-      for (const { point, lat } of firePoints) if (point.show) {
-        point.color = Cesium.Color.fromCssColorString("#ff6c3d").withAlpha(.7 + .3 * Math.sin(phase(lat * 1000) * Math.PI) ** 2);
+      for (const { point, date, lat } of firePoints) if (point.show) {
+        const tier = fireAge(new Date(date).toISOString(), reference());
+        point.color = fireColors[tier].withAlpha(tier === 0 ? .7 + .3 * Math.sin(phase(lat * 1000) * Math.PI) ** 2 : FIRE_AGE_ALPHA[tier]);
       }
     });
     v.dataSources.add(data);

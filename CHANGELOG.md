@@ -4,6 +4,7 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- El fuego FIRMS usa una escala por antigüedad (rojo con brillo < 24 h, naranja 1–3 días, marrón 4–7 días) con su leyenda; antes solo era rojo con menos de 12 h y casi siempre se veía naranja.
 - Datos extra D1–D4: cruce de cultivos y pendiente, cortina óptica HLS, contexto agrícola oficial de Ayacucho y archivo histórico MODIS con cobertura diaria verificada y cuota persistente.
 
 - Revisión 19: lluvia excesiva en el semáforo, acumulado IMERG real de Chosica, vuelo y radar desde Mi comunidad, explicación del área fuera de las provincias y panel orbital legible.

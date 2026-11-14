@@ -406,6 +406,9 @@ export function App() {
         <span data-kind="surface_change"><i />NISAR · cambios</span>
         <span data-kind="quake"><i />USGS · sismos</span>
         <span data-kind="fire"><i />FIRMS · calor</span>
+        <span className="fire-age" aria-label="Antigüedad del foco de calor: rojo, menos de 24 horas; naranja, 1 a 3 días; marrón, 4 a 7 días">
+          <b data-age="0" />24 h<b data-age="1" />1–3 días<b data-age="2" />4–7 días
+        </span>
       </div>
     </>}
   </div>;
