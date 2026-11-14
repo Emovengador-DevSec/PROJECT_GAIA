@@ -1,0 +1,64 @@
+# Parámetros y formatos para la Minka Digital y Alertas Locales
+# Fase 4.2 y 4.3 del Plan Maestro (doc 23)
+
+minka:
+  discount_pct_cash: 40
+  legal_reference: "Ley N° 24656 (Ley General de Comunidades Campesinas) - Art. 19 Faenas Comunales"
+  defaults_by_intervention:
+    zanjas_infiltracion:
+      name: "Apertura de zanjas de infiltración"
+      workers_per_ha: 25
+      days_estimated: 3
+      recommended_tools:
+        - "Picos andinos y barretas"
+        - "Palas rectas y de cuchara"
+        - "Nivel en 'A' artesanal o manguera de nivel transparente"
+        - "Estacas de madera y cordel"
+      supplies:
+        - "Piedras locales para disipadores de energía"
+      traditional_support: "Olla común organizada por el comité de regantes o vaso de leche"
+    reforestacion_contencion:
+      name: "Instalación de plantones nativos y zanjas"
+      workers_per_ha: 20
+      days_estimated: 2
+      recommended_tools:
+        - "Picos y palas"
+        - "Baldes o tinajas para primer riego de prendimiento"
+      supplies:
+        - "500 a 800 plantones nativos por hectárea (queñua, colle, molle, aliso)"
+        - "Compost o tierra negra local"
+      traditional_support: "Chicha de jora y descanso tradicional de coca (akulliku)"
+    qochas_amunas:
+      name: "Siembra y cosecha de agua (Qocha / Amuna)"
+      workers_per_ha: 35
+      days_estimated: 5
+      recommended_tools:
+        - "Carretillas, palas y barretas pesadas"
+        - "Champa viva y piedras del sector"
+      supplies:
+        - "Material arcilloso compactable de la zona"
+      traditional_support: "Asamblea comunal previa y coordinación con presidente comunal"
+    cortafuego_verde:
+      name: "Establecimiento de faja cortafuegos verde"
+      workers_per_ha: 15
+      days_estimated: 2
+      recommended_tools:
+        - "Machetes, hoces y rastrillos metálicos"
+        - "Picos para despeje de combustible seco"
+      supplies:
+        - "Hijuelos de maguey / penca y pencas de tuna"
+      traditional_support: "Brigada comunal de defensa civil"
+
+sms:
+  verification_template: "GAIA Alerta ({zone}): Cambio radar detectado cerca de {place}. ¿Viste humo o derrumbe? Responde 1 para SI, 2 para NO. Aviso monitoreo verificar campo"
+  status_mode: "preview_only"  # Sin Twilio configurado, solo modo vista previa sin envíos reales
+  max_len_gsm7: 160
+
+roadmap_yachaq:
+  title: "Yachaq Digital (Canal de Voz en Quechua)"
+  status: "hoja_de_ruta"
+  target_deployment: "2027 · Red de Tambos PAIS Ayacucho"
+  description: >
+    Línea telefónica comunal donde el comunero llama y deja su reporte en audio en quechua chanka.
+    Para garantizar máxima precisión y evitar sesgos de ASR, las grabaciones son validadas
+    por un promotor bilingüe del Tambo PAIS antes de publicarse en el mapa.

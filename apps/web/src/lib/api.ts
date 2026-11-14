@@ -158,6 +158,85 @@ export type RemediationOpticalContext = {
   terrain_3d_available: boolean;
 };
 
+export type BulletinStation = {
+  id: string;
+  name: string;
+  frequency: string;
+  reach: string;
+  language: string;
+  contact?: string;
+};
+
+export type RemediationBulletin = {
+  alert_id: string;
+  aoi_id: string;
+  headline: string;
+  script_es: string;
+  script_qu: string;
+  duration_es_seconds: number;
+  duration_qu_seconds: number;
+  words_count_es: number;
+  words_count_qu: number;
+  primary_place: string;
+  nearby_places: string;
+  stations: BulletinStation[];
+  quechua_metadata: {
+    variant: string;
+    review_status: string;
+    disclaimer: string;
+  };
+  disclaimer_mandatory: string;
+};
+
+export type MinkaCommitment = {
+  id: string;
+  timestamp: string;
+  community: string;
+  volunteers: number;
+  tools: string;
+  contact_name?: string;
+};
+
+export type RemediationMinka = {
+  alert_id: string;
+  aoi_id: string;
+  title: string;
+  primary_place: string;
+  target_communities: string[];
+  needed_workers: number;
+  estimated_days: number;
+  recommended_tools: string[];
+  supplies: string[];
+  traditional_support: string;
+  savings_estimated_soles: number;
+  whatsapp: {
+    text: string;
+    url: string;
+  };
+  sms_verification: {
+    text: string;
+    char_count: number;
+    mode: string;
+    notice: string;
+  };
+};
+
+export type RemediationBulletinResponse = {
+  alert_id: string;
+  aoi_id: string;
+  bulletin: RemediationBulletin;
+  minka: RemediationMinka;
+  commitments: MinkaCommitment[];
+  audio_url_es: string;
+  audio_url_qu: string;
+  roadmap_yachaq: {
+    title: string;
+    status: string;
+    target_deployment: string;
+    description: string;
+  };
+};
+
 export type RemediationAlert = {
   alert_id: string;
   aoi_id: string;
@@ -371,6 +450,21 @@ export const api = {
   timeseries: (aoi: string) => get<TimeSeries>(`/timeseries?aoi=${encodeURIComponent(aoi)}&allow_empty=true`),
   remediation: (aoi: string, signal?: AbortSignal) => get<RemediationData | null>(`/remediation/${encodeURIComponent(aoi)}`, signal),
   remediationZone: (aoi: string, zoneId: string, signal?: AbortSignal) => get<RemediationAlert | null>(`/remediation/${encodeURIComponent(aoi)}/${encodeURIComponent(zoneId)}`, signal),
+  remediationBulletin: (aoi: string, zoneId: string, signal?: AbortSignal) =>
+    get<RemediationBulletinResponse>(`/remediation/${encodeURIComponent(aoi)}/${encodeURIComponent(zoneId)}/bulletin`, signal),
+  postMinkaCommitment: async (
+    aoi: string,
+    zoneId: string,
+    payload: { community: string; volunteers: number; tools: string; contact_name?: string }
+  ) => {
+    const res = await fetch(`${BASE}/remediation/${encodeURIComponent(aoi)}/${encodeURIComponent(zoneId)}/minka/commit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error("Error al registrar compromiso comunal");
+    return res.json() as Promise<MinkaCommitment>;
+  },
   /** Teselas por identificador de capa publicada. */
   tileUrl: (m: LayerManifest, stage: "change" | "before" | "after" = "change", rgb = false) =>
     `${BASE}/tiles/${encodeURIComponent(m.id)}/${stage}/{z}/{x}/{y}.png${rgb ? "?palette=rgb" : ""}`,

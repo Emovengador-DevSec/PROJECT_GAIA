@@ -4,6 +4,7 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- Fase 4 (doc 23): boletín radial comunitario «GAIA Voz» de 45 s en español y quechua chanka con voz sintetizada y audio descargable, convocatoria Minka Digital (Ley 24656) con enlace WhatsApp y registro de cuadrillas, vista previa SMS y hoja de ruta Yachaq para Tambos PAIS.
 - Fase 3 (doc 23): comparación óptica HLS con NDVI real, escenarios de recuperación a 3 y 5 años con citas bibliográficas, evaluación costo-beneficio frente a inacción (MIDAGRI/SIEA y Minka) y constancia de evidencia satelital en PDF con hash SHA-256.
 
 - Fase 2 (doc 23): normales climáticas estacionales (45 años NASA POWER), pronóstico y anomalías de Open-Meteo, y calendario agrícola inteligente para 4 cultivos andinos y ganado en puna con registro de saber tradicional.

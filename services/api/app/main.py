@@ -23,7 +23,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
-from pydantic import ValidationError
+from pydantic import BaseModel, Field, ValidationError
 
 from . import reports
 
@@ -738,6 +738,121 @@ def remediation_certificate_pdf(aoi: str, zone_id: str):
         media_type="application/pdf",
         headers={"Content-Disposition": f'inline; filename="constancia_{aoi}_{zone_id}.pdf"'},
     )
+
+
+class MinkaCommitmentRequest(BaseModel):
+    community: str = Field(..., max_length=120)
+    volunteers: int = Field(1, ge=1, le=200)
+    tools: str = Field("", max_length=200)
+    contact_name: str = Field("", max_length=120)
+
+
+@app.get("/api/remediation/{aoi}/{zone_id}/bulletin")
+def remediation_bulletin(aoi: str, zone_id: str):
+    if not re.fullmatch(AOI_PATTERN, aoi):
+        raise HTTPException(422, "Identificador de zona inválido.")
+    path = PROCESSED.parent / "04_published" / "remediation" / f"{aoi}.json"
+    if not path.is_file():
+        raise HTTPException(404, detail="No hay datos de remediación para esta zona.")
+    data = json.loads(path.read_text(encoding="utf-8"))
+    target_alert = None
+    for alert in data.get("alerts", []):
+        if alert.get("alert_id") == zone_id:
+            target_alert = alert
+            break
+    if not target_alert:
+        raise HTTPException(404, detail="Mancha no encontrada en los datos de remediación.")
+
+    from sarlab_pipeline.remediation.bulletin import (
+        generate_minka_call,
+        generate_radio_script,
+        get_commitments,
+        load_minka_config,
+    )
+
+    bulletin = generate_radio_script(target_alert, aoi_id=aoi)
+    minka = generate_minka_call(target_alert, aoi_id=aoi)
+    commitments = get_commitments(aoi, zone_id)
+    m_cfg = load_minka_config()
+    roadmap_yachaq = m_cfg.get("roadmap_yachaq", {})
+
+    return {
+        "alert_id": zone_id,
+        "aoi_id": aoi,
+        "bulletin": bulletin,
+        "minka": minka,
+        "commitments": commitments,
+        "audio_url_es": f"/api/remediation/{aoi}/{zone_id}/audio.wav?lang=es",
+        "audio_url_qu": "/audio/qu/boletin_quechua_intro.wav",
+        "roadmap_yachaq": roadmap_yachaq,
+    }
+
+
+@app.get("/api/remediation/{aoi}/{zone_id}/audio.wav")
+def remediation_audio_wav(aoi: str, zone_id: str, lang: Literal["es", "qu"] = "es"):
+    if not re.fullmatch(AOI_PATTERN, aoi):
+        raise HTTPException(422, "Identificador de zona inválido.")
+
+    if lang == "qu":
+        qu_file = ROOT / "apps" / "web" / "public" / "audio" / "qu" / "boletin_quechua_intro.wav"
+        if qu_file.is_file():
+            return Response(content=qu_file.read_bytes(), media_type="audio/wav")
+
+    path = PROCESSED.parent / "04_published" / "remediation" / f"{aoi}.json"
+    if not path.is_file():
+        raise HTTPException(404, detail="No hay datos de remediación para esta zona.")
+    data = json.loads(path.read_text(encoding="utf-8"))
+    target_alert = None
+    for alert in data.get("alerts", []):
+        if alert.get("alert_id") == zone_id:
+            target_alert = alert
+            break
+    if not target_alert:
+        raise HTTPException(404, detail="Mancha no encontrada en los datos de remediación.")
+
+    from sarlab_pipeline.remediation.bulletin import (
+        generate_radio_script,
+        synthesize_bulletin_audio_wav,
+    )
+
+    b_data = generate_radio_script(target_alert, aoi_id=aoi)
+    script_text = b_data["script_es"] if lang == "es" else b_data["script_qu"]
+
+    cache_path = (
+        PROCESSED.parent / "04_published" / "remediation" / "audio" / f"{aoi}_{zone_id}_{lang}.wav"
+    )
+    wav_bytes = synthesize_bulletin_audio_wav(script_text, cache_path=cache_path)
+    return Response(
+        content=wav_bytes,
+        media_type="audio/wav",
+        headers={"Content-Disposition": f'inline; filename="boletin_{aoi}_{zone_id}_{lang}.wav"'},
+    )
+
+
+@app.post("/api/remediation/{aoi}/{zone_id}/minka/commit")
+def remediation_minka_commit(aoi: str, zone_id: str, payload: MinkaCommitmentRequest):
+    if not re.fullmatch(AOI_PATTERN, aoi):
+        raise HTTPException(422, "Identificador de zona inválido.")
+    from sarlab_pipeline.remediation.bulletin import add_commitment
+
+    result = add_commitment(
+        aoi_id=aoi,
+        zone_id=zone_id,
+        community=payload.community,
+        volunteers=payload.volunteers,
+        tools=payload.tools,
+        contact_name=payload.contact_name,
+    )
+    return result
+
+
+@app.get("/api/remediation/{aoi}/{zone_id}/minka/commitments")
+def remediation_minka_commitments(aoi: str, zone_id: str):
+    if not re.fullmatch(AOI_PATTERN, aoi):
+        raise HTTPException(422, "Identificador de zona inválido.")
+    from sarlab_pipeline.remediation.bulletin import get_commitments
+
+    return get_commitments(aoi, zone_id)
 
 
 WEB_DIST = ROOT / "apps" / "web" / "dist"

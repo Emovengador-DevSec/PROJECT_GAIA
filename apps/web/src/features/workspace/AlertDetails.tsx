@@ -1,4 +1,5 @@
-import type { AlertFeature } from "../../lib/api";
+import { useEffect, useState } from "react";
+import { api, type AlertFeature, type RemediationBulletinResponse } from "../../lib/api";
 import { formatDate } from "../../lib/formatDate";
 import { formatNumber as number } from "../../lib/formatNumber";
 import { ApplicationReference, LearnMore } from "./Resources";
@@ -13,6 +14,81 @@ function ExposureMetric({ label, value, unit }: { label: string; value?: number 
 
 export function AlertDetails({ feature, onBack, onResources }: { feature: AlertFeature; onBack: () => void; onResources: () => void }) {
   const p = feature.properties;
+  const [bulletinData, setBulletinData] = useState<RemediationBulletinResponse | null>(null);
+  const [bulletinLang, setBulletinLang] = useState<"es" | "qu">("es");
+  const [copiedScript, setCopiedScript] = useState(false);
+  const [minkaCommunity, setMinkaCommunity] = useState("");
+  const [minkaVolunteers, setMinkaVolunteers] = useState(10);
+  const [minkaTools, setMinkaTools] = useState("Picos y palas");
+  const [minkaContact, setMinkaContact] = useState("");
+  const [commitSuccess, setCommitSuccess] = useState(false);
+  const [commitSubmitting, setCommitSubmitting] = useState(false);
+  const [offlineSaved, setOfflineSaved] = useState(false);
+
+  useEffect(() => {
+    if (!p.remediation) {
+      setBulletinData(null);
+      return;
+    }
+    const aoi = p.aoi_id ?? "ayacucho-huanta";
+    const zoneId = p.remediation.alert_id;
+    let active = true;
+    api.remediationBulletin(aoi, zoneId).then((data) => {
+      if (active) setBulletinData(data);
+    }).catch(() => {
+      // Graceful fallback
+    });
+    return () => {
+      active = false;
+    };
+  }, [p.remediation, p.aoi_id]);
+
+  const handleCommitmentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!p.remediation) return;
+    const aoi = p.aoi_id ?? "ayacucho-huanta";
+    const zoneId = p.remediation.alert_id;
+    setCommitSubmitting(true);
+    try {
+      const res = await api.postMinkaCommitment(aoi, zoneId, {
+        community: minkaCommunity || "Comunidad vecina",
+        volunteers: Number(minkaVolunteers) || 5,
+        tools: minkaTools || "Herramientas de labranza",
+        contact_name: minkaContact,
+      });
+      if (bulletinData) {
+        setBulletinData({
+          ...bulletinData,
+          commitments: [...bulletinData.commitments, res],
+        });
+      }
+      setCommitSuccess(true);
+      setMinkaCommunity("");
+      setMinkaContact("");
+      setTimeout(() => setCommitSuccess(false), 4000);
+    } catch {
+      // Error handling
+    } finally {
+      setCommitSubmitting(false);
+    }
+  };
+
+  const handleSaveOffline = () => {
+    try {
+      const key = `gaia_offline_${p.id}`;
+      const payload = {
+        saved_at: new Date().toISOString(),
+        alert: p,
+        bulletin: bulletinData,
+      };
+      localStorage.setItem(key, JSON.stringify(payload));
+      setOfflineSaved(true);
+      setTimeout(() => setOfflineSaved(false), 3000);
+    } catch {
+      // Ignore
+    }
+  };
+
   const source = p.source_kind === "primary" ? "NISAR · fuente principal" : `${p.source} · complementario`;
   const shareUrl = new URL(window.location.href);
   shareUrl.searchParams.set("alert", p.id);
@@ -339,6 +415,255 @@ export function AlertDetails({ feature, onBack, onResources }: { feature: AlertF
             Descargar constancia oficial (PDF)
           </a>
         </div>
+
+        {bulletinData && (
+          <div className="last-mile-section" style={{ marginTop: "1rem", borderTop: "1px solid var(--border-subtle, #30363d)", paddingTop: "1rem" }}>
+            <h4 style={{ margin: "0 0 6px 0", color: "#f9a825", display: "flex", alignItems: "center", gap: "6px" }}>
+              <span>📻</span> Boletín radial «GAIA Voz» y Minka comunal
+            </h4>
+            <p className="muted" style={{ fontSize: "0.8rem", margin: "0 0 10px 0" }}>
+              Último kilómetro: información que llega sin internet, por radioemisoras andinas y faena comunal minka.
+            </p>
+
+            {/* Selector de idioma */}
+            <div style={{ display: "flex", gap: "6px", marginBottom: "8px" }}>
+              <button
+                type="button"
+                className={bulletinLang === "es" ? "primary-action" : "secondary-action"}
+                style={{ fontSize: "0.78rem", padding: "4px 10px" }}
+                onClick={() => setBulletinLang("es")}
+              >
+                Español ({bulletinData.bulletin.duration_es_seconds} s)
+              </button>
+              <button
+                type="button"
+                className={bulletinLang === "qu" ? "primary-action" : "secondary-action"}
+                style={{ fontSize: "0.78rem", padding: "4px 10px" }}
+                onClick={() => setBulletinLang("qu")}
+              >
+                Quechua Chanka ({bulletinData.bulletin.duration_qu_seconds} s)
+              </button>
+            </div>
+
+            {/* Reproductor de audio */}
+            <div style={{ background: "rgba(0,0,0,0.3)", padding: "10px", borderRadius: "6px", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <audio
+                key={bulletinLang}
+                controls
+                preload="none"
+                style={{ width: "100%", height: "36px", outline: "none" }}
+              >
+                <source
+                  src={bulletinLang === "es" ? bulletinData.audio_url_es : bulletinData.audio_url_qu}
+                  type="audio/wav"
+                />
+                Tu navegador no soporta el reproductor de audio.
+              </audio>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "6px" }}>
+                <small className="muted" style={{ fontSize: "0.75rem" }}>
+                  {bulletinLang === "es"
+                    ? "Voz sintetizada SAPI sin conexión externa"
+                    : `${bulletinData.bulletin.quechua_metadata.variant} · ${bulletinData.bulletin.quechua_metadata.review_status}`}
+                </small>
+                <a
+                  href={bulletinLang === "es" ? bulletinData.audio_url_es : bulletinData.audio_url_qu}
+                  download={`boletin_${bulletinLang}_${p.remediation.alert_id}.wav`}
+                  className="text-button"
+                  style={{ fontSize: "0.75rem" }}
+                >
+                  Descargar audio WAV ⬇
+                </a>
+              </div>
+            </div>
+
+            {/* Guion para locutor */}
+            <div style={{ marginTop: "8px", padding: "8px", background: "rgba(255,255,255,0.03)", borderRadius: "4px", fontSize: "0.82rem", lineHeight: 1.45 }}>
+              <p style={{ margin: "0 0 6px 0", fontStyle: "italic" }}>
+                «{bulletinLang === "es" ? bulletinData.bulletin.script_es : bulletinData.bulletin.script_qu}»
+              </p>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "6px" }}>
+                <button
+                  type="button"
+                  className="text-button"
+                  style={{ fontSize: "0.75rem" }}
+                  onClick={() => {
+                    const txt = bulletinLang === "es" ? bulletinData.bulletin.script_es : bulletinData.bulletin.script_qu;
+                    navigator.clipboard?.writeText(txt);
+                    setCopiedScript(true);
+                    setTimeout(() => setCopiedScript(false), 2000);
+                  }}
+                >
+                  {copiedScript ? "✓ Guion copiado" : "Copiar guion para radio"}
+                </button>
+                <small className="muted" style={{ fontSize: "0.72rem" }}>
+                  {bulletinLang === "es" ? `${bulletinData.bulletin.words_count_es} palabras` : `${bulletinData.bulletin.words_count_qu} palabras`}
+                </small>
+              </div>
+            </div>
+
+            {/* Emisoras aliadas */}
+            <details style={{ marginTop: "8px", fontSize: "0.78rem" }}>
+              <summary style={{ cursor: "pointer", color: "var(--accent, #64b5f6)" }}>
+                Radios locales aliadas para emisión ({bulletinData.bulletin.stations.length})
+              </summary>
+              <ul style={{ margin: "6px 0 0 0", paddingLeft: "1.2rem" }}>
+                {bulletinData.bulletin.stations.map((st) => (
+                  <li key={st.id} style={{ marginBottom: "3px" }}>
+                    <strong>{st.name} ({st.frequency})</strong> · {st.reach}
+                  </li>
+                ))}
+              </ul>
+            </details>
+
+            {/* Minka comunal */}
+            <div className="minka-box" style={{ marginTop: "10px", padding: "10px", background: "rgba(76, 175, 80, 0.08)", border: "1px solid rgba(76, 175, 80, 0.3)", borderRadius: "6px" }}>
+              <h5 style={{ margin: "0 0 4px 0", color: "#81c784" }}>Minka Digital · Convocatoria comunal</h5>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", margin: "6px 0" }}>
+                <div style={{ background: "rgba(255,255,255,0.03)", padding: "6px", borderRadius: "4px" }}>
+                  <span className="muted" style={{ fontSize: "0.72rem" }}>Meta comunal</span>
+                  <p style={{ margin: 0, fontWeight: "bold", fontSize: "0.85rem" }}>{bulletinData.minka.needed_workers} comuneros</p>
+                  <small className="muted" style={{ fontSize: "0.7rem" }}>{bulletinData.minka.estimated_days} días de faena</small>
+                </div>
+                <div style={{ background: "rgba(255,255,255,0.03)", padding: "6px", borderRadius: "4px" }}>
+                  <span className="muted" style={{ fontSize: "0.72rem" }}>Ahorro Minka</span>
+                  <p style={{ margin: 0, fontWeight: "bold", fontSize: "0.85rem", color: "#81c784" }}>
+                    S/ {number(bulletinData.minka.savings_estimated_soles)}
+                  </p>
+                  <small className="muted" style={{ fontSize: "0.7rem" }}>Hasta 40% del costo total</small>
+                </div>
+              </div>
+
+              <p style={{ fontSize: "0.78rem", margin: "4px 0" }}>
+                <strong>Comunidades convocadas:</strong> {bulletinData.minka.target_communities.join(" · ")}
+              </p>
+              <p style={{ fontSize: "0.78rem", margin: "4px 0" }}>
+                <strong>Herramientas:</strong> {bulletinData.minka.recommended_tools.join(", ")}
+              </p>
+
+              <div style={{ marginTop: "8px", display: "flex", gap: "6px" }}>
+                <a
+                  className="primary-action"
+                  href={bulletinData.minka.whatsapp.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ flex: 1, justifyContent: "center", background: "#2e7d32", textDecoration: "none", fontSize: "0.78rem" }}
+                >
+                  Convocar por WhatsApp ↗
+                </a>
+              </div>
+
+              {/* Registro de compromiso */}
+              <details style={{ marginTop: "8px", fontSize: "0.78rem" }}>
+                <summary style={{ cursor: "pointer", color: "#81c784", fontWeight: "bold" }}>
+                  + Sumar cuadrilla o compromiso ({bulletinData.commitments.length})
+                </summary>
+                <form onSubmit={handleCommitmentSubmit} style={{ marginTop: "6px", display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.72rem" }} className="muted">Comunidad o sector:</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ej. Pallja"
+                      value={minkaCommunity}
+                      onChange={(e) => setMinkaCommunity(e.target.value)}
+                      style={{ width: "100%", padding: "4px 8px", background: "var(--surface, #1e242c)", color: "inherit", border: "1px solid var(--border-subtle, #333)", borderRadius: "4px", fontSize: "0.78rem" }}
+                    />
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.72rem" }} className="muted">Voluntarios:</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="100"
+                        value={minkaVolunteers}
+                        onChange={(e) => setMinkaVolunteers(Number(e.target.value))}
+                        style={{ width: "100%", padding: "4px 8px", background: "var(--surface, #1e242c)", color: "inherit", border: "1px solid var(--border-subtle, #333)", borderRadius: "4px", fontSize: "0.78rem" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.72rem" }} className="muted">Contacto / Líder:</label>
+                      <input
+                        type="text"
+                        placeholder="Opcional"
+                        value={minkaContact}
+                        onChange={(e) => setMinkaContact(e.target.value)}
+                        style={{ width: "100%", padding: "4px 8px", background: "var(--surface, #1e242c)", color: "inherit", border: "1px solid var(--border-subtle, #333)", borderRadius: "4px", fontSize: "0.78rem" }}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.72rem" }} className="muted">Herramientas comprometidas:</label>
+                    <input
+                      type="text"
+                      placeholder="Ej. Picos y palas"
+                      value={minkaTools}
+                      onChange={(e) => setMinkaTools(e.target.value)}
+                      style={{ width: "100%", padding: "4px 8px", background: "var(--surface, #1e242c)", color: "inherit", border: "1px solid var(--border-subtle, #333)", borderRadius: "4px", fontSize: "0.78rem" }}
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="secondary-action"
+                    disabled={commitSubmitting}
+                    style={{ justifyContent: "center", fontSize: "0.78rem", padding: "4px 8px" }}
+                  >
+                    {commitSubmitting ? "Registrando..." : "Guardar compromiso"}
+                  </button>
+                  {commitSuccess && <p style={{ color: "#81c784", margin: "2px 0" }}>✓ Compromiso registrado.</p>}
+                </form>
+
+                {bulletinData.commitments.length > 0 && (
+                  <ul style={{ marginTop: "6px", paddingLeft: "1.2rem" }}>
+                    {bulletinData.commitments.map((c) => (
+                      <li key={c.id} style={{ marginBottom: "2px" }}>
+                        <strong>{c.community}:</strong> {c.volunteers} comuneros con {c.tools}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </details>
+            </div>
+
+            {/* Celular básico SMS (Fase 4.2) */}
+            <div className="sms-box" style={{ marginTop: "10px", padding: "10px", background: "rgba(255, 152, 0, 0.08)", border: "1px solid rgba(255, 152, 0, 0.3)", borderRadius: "6px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <h5 style={{ margin: 0, color: "#ffb74d" }}>Celular básico · SMS de verificación</h5>
+                <small style={{ color: "#ffb74d", fontSize: "0.7rem" }}>
+                  {bulletinData.minka.sms_verification.char_count}/160 GSM
+                </small>
+              </div>
+              <p style={{ margin: "6px 0 0 0", fontFamily: "monospace", fontSize: "0.78rem", background: "rgba(0,0,0,0.3)", padding: "6px", borderRadius: "4px" }}>
+                {bulletinData.minka.sms_verification.text}
+              </p>
+              <p className="status-message" style={{ fontSize: "0.72rem", margin: "6px 0 0 0" }}>
+                {bulletinData.minka.sms_verification.notice}
+              </p>
+            </div>
+
+            {/* Yachaq Digital & Tambos PAIS */}
+            <div style={{ marginTop: "10px", padding: "8px", background: "var(--surface-subtle, #141b22)", borderRadius: "6px", border: "1px solid var(--border-subtle, #30363d)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <h6 style={{ margin: 0, color: "#90caf9", fontSize: "0.78rem" }}>{bulletinData.roadmap_yachaq.title}</h6>
+                <span className="badge-provisional" style={{ fontSize: "0.68rem", padding: "1px 5px" }}>Hoja de ruta</span>
+              </div>
+              <p className="muted" style={{ fontSize: "0.72rem", margin: "4px 0 0 0" }}>
+                {bulletinData.roadmap_yachaq.description}
+              </p>
+            </div>
+
+            <div style={{ marginTop: "8px" }}>
+              <button
+                type="button"
+                className="secondary-action"
+                onClick={handleSaveOffline}
+                style={{ width: "100%", justifyContent: "center", fontSize: "0.78rem", padding: "5px" }}
+              >
+                {offlineSaved ? "✓ Ficha guardada en caché local" : "Guardar ficha sin conexión (Tambos PAIS)"}
+              </button>
+            </div>
+          </div>
+        )}
 
         <p className="status-message" style={{ marginTop: "1rem" }}>
           {p.remediation.disclaimer}

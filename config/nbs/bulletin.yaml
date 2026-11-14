@@ -1,0 +1,51 @@
+# Configuración del Boletín Radial Comunitario «GAIA Voz»
+# Fase 4.1 del Plan Maestro (doc 23)
+
+stations:
+  - id: huanta_2000
+    name: Radio Huanta 2000
+    frequency: "104.5 FM"
+    reach: "Huanta, Luricocha, Santillana, Iguaín"
+    language: "Español y Quechua Chanka"
+    contact: "Cabina de prensa comunal"
+  - id: estacion_wari
+    name: Radio Estación Wari
+    frequency: "95.3 FM"
+    reach: "Huamanga, Huanta, San Miguel (La Mar)"
+    language: "Español y Quechua"
+    contact: "Red de comunicadores rurales"
+  - id: municipal_lamar
+    name: Radio Municipal San Miguel
+    frequency: "101.1 FM"
+    reach: "Valle de Torobamba, San Miguel, Tambo"
+    language: "Quechua y Español"
+    contact: "Gerencia de Desarrollo Social"
+
+formats:
+  radio_spot:
+    target_duration_seconds: 45
+    words_per_minute: 130
+  sms_compact:
+    max_characters: 160
+    encoding: "GSM-7"
+  whatsapp_share:
+    include_emojis: true
+    include_url: true
+
+quechua:
+  variant: "Quechua Chanka (Ayacucho)"
+  review_status: "borrador_revisado_chanka"
+  disclaimer: "Traducción al quechua chanka. Revisada técnicamente; sujeta a validación comunitaria continua."
+  vocabulary:
+    satelite: "satélite radar"
+    alerta: "qawapayana willakuy"
+    vegetacion: "chakarukunapa kawsaynin / qurakuna"
+    quebrada: "wayqu"
+    cultivos: "chakrakuna"
+    minka: "ayllu minka / llankay"
+    agua: "yaku amachay"
+
+disclaimers:
+  mandatory_monitor: "Aviso de monitoreo. No reemplaza a INDECI ni a la autoridad local. Verificar en campo."
+  quechua_mandatory_monitor: "Kayqa qawapayana willakuymi. Manam INDECIpa tukri willakuyninchu. Kikin allpapim qawakunan."
+  sar_revisit_notice: "Observación satelital NISAR cada ~12 días. No es tiempo real continuo."
