@@ -4,6 +4,8 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- C1 publica fichas de Mi comunidad con exposición HV por lugar, cultivos, población estimada y observaciones recientes de FIRMS y USGS.
+
 - Validación de publicación: fecha UTC del gránulo, recuento HV y superficies verificadas, relato corregido, compresión y precarga de fuentes, y contenedor con las teselas NISAR reales.
 
 - Añadida la validación previa a publicar (docs/16): pruebas, compilación, recorrido real y secretos en orden; quedan 12 correcciones de cifras, rendimiento y presentación.
