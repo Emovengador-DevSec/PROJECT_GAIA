@@ -85,7 +85,8 @@ def change_between(aoi_id: str, before: Path, after: Path, layer: str = "HVHV",
                   d, cog, aoi_id, {"a": _date(wa.source), "b": _date(wb.source)},
                   [wa.source, wb.source],
                   extra={"product": "GCOV", "layer": layer, "frequency": freq, "epsg": epsg,
-                         "threshold_db": res.threshold_db, "method": "robust_mad_k_sigma",
+                         "threshold_db": res.threshold_db, "median_change_db": res.median,
+                         "method": "robust_mad_k_sigma",
                          "mask": "GCOV subswath válido en ambas fechas, recortado al área de estudio"})
     pixel_area_m2 = abs(ref.transform.a * ref.transform.e)
     man["quality"]["valid_area_pct"] = round(min(100., 100 * common.sum() * pixel_area_m2 / study_area_m2), 2)
@@ -100,8 +101,6 @@ def change_between(aoi_id: str, before: Path, after: Path, layer: str = "HVHV",
         low, high = float(low) - .5, float(high) + .5
     man["comparison"] = {"before_cog_path": str(before_cog), "after_cog_path": str(after_cog),
                          "range": {"min": float(low), "max": float(high)}}
-    M.write(man, out / f"manifest_{layer.lower()}.json")
-
     alerts = polygons(res.loss, ref.transform, thr.min_alert_pixels)
     px_area_ha = abs(ref.transform.a * ref.transform.e) / 1e4
     for i, f in enumerate(alerts):
@@ -125,9 +124,15 @@ def change_between(aoi_id: str, before: Path, after: Path, layer: str = "HVHV",
                            "date_range": [man["dates"]["a"], man["dates"]["b"]]}
     (out / f"alerts_{layer.lower()}.geojson").write_text(json.dumps(
         {"type": "FeatureCollection", "crs_epsg": 4326, "features": alerts}), encoding="utf-8")
+    man["change_summary"] = {
+        "loss_area_ha": round(float(res.loss.sum()) * px_area_ha, 2),
+        "mapped_loss_area_ha": round(sum(f["properties"]["area_ha"] for f in alerts), 2),
+        "alerts": len(alerts),
+    }
+    M.write(man, out / f"manifest_{layer.lower()}.json")
     return {"manifest": man, "alerts": len(alerts),
-            "mapped_loss_area_ha": round(sum(f["properties"]["area_ha"] for f in alerts), 2),
-            "loss_area_ha": round(float(res.loss.sum()) * px_area_ha, 2), "out_dir": str(out)}
+            "mapped_loss_area_ha": man["change_summary"]["mapped_loss_area_ha"],
+            "loss_area_ha": man["change_summary"]["loss_area_ha"], "out_dir": str(out)}
 
 
 def _date(name: str) -> str:

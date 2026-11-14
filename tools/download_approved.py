@@ -17,7 +17,7 @@ from sarlab_pipeline.settings import CATALOG, INBOX, INTERIM, RAW, ROOT, earthda
 from sarlab_pipeline.sources.nisar import HDF5_SIGNATURE
 
 BLOCK = 8 * 1024 * 1024
-APPROVED = {"2026-06-19": 1_954_545_664, "2026-10-05": 1_908_408_320}
+APPROVED = {"2026-06-24": 2_084_569_088, "2026-10-10": 2_080_374_784}
 CATALOG_NAME = "nisar_ayacucho-huanta_gcov.json"
 
 
@@ -149,7 +149,8 @@ def main():
     granules = json.loads(catalog.read_text(encoding="utf-8"))["granules"]
     for date in APPROVED:
         matches = [entry for entry in granules if entry["start"][:10] == date
-                   and entry["track"] == 75 and entry["frame"] == 171 and entry["direction"] == "ASCENDING"]
+                   and entry["track"] == 147 and entry["frame"] == 171 and entry["direction"] == "ASCENDING"
+                   and {"HH", "HV"} <= set(entry["polarizations"])]
         if len(matches) != 1:
             raise RuntimeError(f"El catálogo no identifica un único GCOV aprobado para {date}.")
         download(matches[0], token)

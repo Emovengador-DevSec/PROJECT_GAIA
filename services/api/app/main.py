@@ -6,6 +6,7 @@ import json
 import os
 import re
 from base64 import b64decode
+from functools import cache
 from pathlib import Path
 from typing import Literal
 
@@ -50,6 +51,15 @@ def _manifests() -> list[dict]:
     return [json.loads(p.read_text(encoding="utf-8")) for p in sorted(PROCESSED.glob("*/*/*/manifest*.json"))]
 
 
+def _active_gcov(zone: str) -> str | None:
+    selection = PROCESSED / zone / "gcov" / "active-comparison.json"
+    if not selection.is_file():
+        return None
+    tag = json.loads(selection.read_text(encoding="utf-8")).get("period", "")
+    valid = isinstance(tag, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}__\d{4}-\d{2}-\d{2}", tag)
+    return tag if valid else None
+
+
 @app.get("/api/health")
 def health():
     return {
@@ -82,9 +92,13 @@ def aois():
 
 
 @app.get("/api/layers")
-def layers(aoi: str | None = Query(None, pattern=r"^[a-z0-9-]+$")):
+def layers(aoi: str | None = Query(None, pattern=r"^[a-z0-9-]+$"), active_only: bool = False):
+    active = cache(_active_gcov)
     ms = _manifests()
-    return [m for m in ms if aoi is None or m.get("aoi_id") == aoi]
+    return [m for m in ms if (aoi is None or m.get("aoi_id") == aoi)
+            and (not active_only or m.get("provenance", {}).get("product") != "GCOV"
+                 or not (tag := active(m["aoi_id"]))
+                 or f"{m['dates']['a']}__{m['dates']['b']}" == tag)]
 
 
 @app.get("/api/layers/{layer_id}")
@@ -205,10 +219,25 @@ def catalog(
 
 
 @app.get("/api/alerts")
-def alerts(aoi: str | None = Query(None, pattern=r"^[a-z0-9-]+$"), include_live: bool = False):
+def alerts(aoi: str | None = Query(None, pattern=r"^[a-z0-9-]+$"), include_live: bool = False,
+           active_only: bool = False):
+    active = cache(_active_gcov)
+
+    @cache
+    def exposure_for(zone: str) -> dict:
+        path = PROCESSED.parent / "04_published" / "exposure" / f"{zone}.json"
+        return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+
+    comparisons = {
+        manifest["id"]: manifest["change_summary"] for manifest in _manifests()
+        if manifest.get("provenance", {}).get("layer") == "HVHV" and "change_summary" in manifest
+    }
     feats = []
     pattern = f"{aoi}/*/*/alerts*.geojson" if aoi else "*/*/*/alerts*.geojson"
     for p in sorted(PROCESSED.glob(pattern)):
+        zone, product, period, _ = p.relative_to(PROCESSED).parts
+        if active_only and product == "gcov" and (tag := active(zone)) and tag != period:
+            continue
         payload = json.loads(p.read_text(encoding="utf-8"))
         for feature in payload.get("features", []):
             props = feature.get("properties", {})
@@ -218,7 +247,6 @@ def alerts(aoi: str | None = Query(None, pattern=r"^[a-z0-9-]+$"), include_live:
                 from rasterio.warp import transform_geom
 
                 geometry = transform_geom(f"EPSG:{epsg}", "EPSG:4326", geometry)
-            zone = p.relative_to(PROCESSED).parts[0]
             props = {
                 **props,
                 "kind": props.get("kind", "surface_change"),
@@ -234,18 +262,16 @@ def alerts(aoi: str | None = Query(None, pattern=r"^[a-z0-9-]+$"), include_live:
                 "source_url": "https://nisar.jpl.nasa.gov/",
                 "provisional": True,
                 "metrics": {"area_ha": props.get("area_ha")},
+                "comparison_summary": comparisons.get(props.get("layer_id")),
                 "exposure": None,
             }
-            exposure_path = PROCESSED.parent / "04_published" / "exposure" / f"{zone}.json"
-            if exposure_path.is_file():
-                exposure = json.loads(exposure_path.read_text(encoding="utf-8"))
-                item = exposure.get("alerts", {}).get(props.get("id"))
-                if item:
-                    props["exposure"] = {
-                        **item,
-                        "people": item.get("population"),
-                        "crop_ha": item.get("cropland_ha"),
-                    }
+            item = exposure_for(zone).get("alerts", {}).get(props.get("id"))
+            if item:
+                props["exposure"] = {
+                    **item,
+                    "people": item.get("population"),
+                    "crop_ha": item.get("cropland_ha"),
+                }
             feats.append({**feature, "geometry": geometry, "properties": props})
     sources = []
     if include_live:
@@ -345,7 +371,9 @@ def story(aoi: str):
 
 @app.get("/api/timeseries")
 def timeseries(aoi: str = Query(..., pattern=AOI_PATTERN), allow_empty: bool = False):
-    p = PROCESSED / aoi / "gcov" / "timeseries.json"
+    tag = _active_gcov(aoi)
+    directory = PROCESSED / aoi / "gcov"
+    p = (directory / tag if tag else directory) / "timeseries.json"
     if not p.exists():
         if allow_empty:
             return {"aoi_id": aoi, "samples": []}
@@ -361,10 +389,12 @@ def trend(aoi: str = Query(..., pattern=AOI_PATTERN), pol: Literal["HHHH", "HVHV
 
 
 @app.get("/api/polarizations")
-def polarizations(aoi: str = Query(..., pattern=AOI_PATTERN)):
+def polarizations(aoi: str = Query(..., pattern=AOI_PATTERN), active_only: bool = False):
+    tag = _active_gcov(aoi) if active_only else None
     return [
         json.loads(p.read_text(encoding="utf-8"))
         for p in sorted((PROCESSED / aoi).glob("*/*/polarizations.json"))
+        if not tag or p.parent.parent.name != "gcov" or p.parent.name == tag
     ]
 
 

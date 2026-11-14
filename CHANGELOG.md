@@ -4,6 +4,10 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- G1 activa el par GCOV de trayectoria 147 del 24 de junio y el 10 de octubre, con 99,91 % de cobertura válida, publicación completa por período y consulta de archivos históricos.
+
+- Añadida la fase G9 al plan 13: publicar como sitio estático con foto fija de los datos (Cloudflare Pages o Vercel), sin servidor ni secretos, para que el jurado abra un enlace al instante.
+
 - Procesados dos GCOV reales de Ayacucho con máscara de validez y cobertura común. Cambios abre el barrido en falso color sobre la franja observada y deja disponible la cortina manual.
 
 - Añadido un asistente local en CMD para introducir las tres credenciales con entrada oculta y guardar los archivos de configuración conservando otros ajustes.
@@ -81,3 +85,4 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 - «PROJECT GAIA» adopta la forma de cápsula del botón original, con fondo transparente, borde blanco y una flecha dentro. El botón y su nombre aparecen animados tras el amanecer.
 - Plan GAIA Alerta por fases para Codex en `docs/10_Plan_GAIA_Alerta_Codex.md`, con diagnóstico del globo y cobertura NISAR comprobada en Ayacucho y Sabancaya.
 - Diagnóstico de interactividad y momentos W1–W8 para Codex en `docs/11_Experiencia_Interactiva_Codex.md`.
+- Plan final G1–G8 en `docs/13_Plan_Final_Codex.md`: corrige la cobertura NISAR de Ayacucho (trayectoria 147, 100 %), exposición, luz de demo y entrega.

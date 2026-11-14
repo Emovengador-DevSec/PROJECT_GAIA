@@ -86,6 +86,8 @@ def test_change_workflow_end_to_end(data_dirs, tmp_path, monkeypatch):
     man = r["manifest"]
     assert man["dates"] == {"a": "2025-11-22", "b": "2026-03-10"}
     assert man["quality"]["provisional"] is True
+    assert man["change_summary"]["loss_area_ha"] == r["loss_area_ha"]
+    assert man["change_summary"]["alerts"] == r["alerts"]
     import rasterio
     with rasterio.open(man["cog_path"]) as src:
         assert src.crs.to_epsg() == 32719 and src.count == 1
@@ -166,3 +168,51 @@ def test_timeseries_orders_dates_and_ratio(data_dirs, tmp_path, monkeypatch):
     assert dates == sorted(dates) and len(dates) == 3
     assert r["samples"][0]["HVHV"]["median_db"] < 0
     assert r["samples"][0]["HV_HH_ratio_db"] == pytest.approx(-6.02, abs=0.1)  # HH = 4*HV
+
+
+def test_active_comparison_keeps_archived_periods_available(data_dirs, monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from app import main
+    from sarlab_pipeline import settings
+
+    monkeypatch.setattr(main, "PROCESSED", settings.PROCESSED)
+    base = settings.PROCESSED / "test" / "gcov"
+    old, new = "2026-06-19__2026-10-05", "2026-06-24__2026-10-10"
+    for period in (old, new):
+        folder = base / period
+        folder.mkdir(parents=True)
+        first, last = period.split("__")
+        manifest = {"id": period, "aoi_id": "test", "dates": {"a": first, "b": last},
+                    "provenance": {"product": "GCOV", "layer": "HVHV"},
+                    "change_summary": {"loss_area_ha": 20, "mapped_loss_area_ha": 15, "alerts": 1}}
+        (folder / "manifest_hvhv.json").write_text(json.dumps(manifest))
+        (folder / "alerts_hvhv.geojson").write_text(json.dumps({"features": [{"type": "Feature",
+            "geometry": None,
+            "properties": {"id": period, "layer_id": period, "date_range": [first, last]}}]}))
+        (folder / "timeseries.json").write_text(json.dumps({"period": period, "samples": []}))
+        (folder / "polarizations.json").write_text(json.dumps({"period": period}))
+    (base / "active-comparison.json").write_text(json.dumps({"period": new}))
+    client = TestClient(main.app)
+    assert len(client.get("/api/layers?aoi=test").json()) == 2
+    assert client.get("/api/layers?aoi=test&active_only=true").json()[0]["id"] == new
+    assert client.get(f"/api/layers/{old}").status_code == 200
+    alerts = client.get("/api/alerts?aoi=test&active_only=true").json()["features"]
+    assert [item["properties"]["id"] for item in alerts] == [new]
+    assert alerts[0]["properties"]["comparison_summary"]["loss_area_ha"] == 20
+    assert client.get("/api/timeseries?aoi=test").json()["period"] == new
+    assert client.get("/api/polarizations?aoi=test&active_only=true").json() == [{"period": new}]
+    exposure = main.PROCESSED.parent / "04_published" / "exposure" / "test.json"
+    exposure.parent.mkdir(parents=True)
+    exposure.write_text(json.dumps({"alerts": {}}))
+    read_text = Path.read_text
+    reads = []
+
+    def tracked_read(path, *args, **kwargs):
+        if path == exposure:
+            reads.append(path)
+        return read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", tracked_read)
+    assert len(client.get("/api/alerts?aoi=test").json()["features"]) == 2
+    assert len(reads) == 1

@@ -1,8 +1,8 @@
 id: ayacucho-huanta
 name: Ayacucho · Huanta y La Mar
 role: flagship
-status: approximate
+status: confirmed
 bbox: [-74.4, -13.4, -73.9, -12.8]
 phenomena: [wildfire, landslide]
-notes: Caja de estudio en Huanta y La Mar. El catálogo NISAR debe confirmar cobertura, trayectoria, dirección y fechas antes del análisis.
+notes: Caja de estudio en Huanta y La Mar. Comparación GCOV de trayectoria 147 ascendente, marco 171, con cobertura válida común del 99,91 % entre el 24 de junio y el 10 de octubre de 2026. La caja representa el área de estudio del proyecto.
 camera: { heading_deg: 25, pitch_deg: -35 }

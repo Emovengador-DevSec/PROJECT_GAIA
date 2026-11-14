@@ -41,6 +41,8 @@ export type ContextLayer = {
 export type Validation = {
   source: string; source_url: string; granule: string; date: string; note: string;
   common_ha: number; nisar_loss_ha: number; opera_disturbance_ha: number; overlap_ha: number; agreement_pct: number | null;
+  nisar_confirmed_pct?: number | null; radar_coverage_pct?: number;
+  granules?: { name: string; date: string }[];
 };
 export type Rainfall = {
   source: string; source_url: string; note: string; dates: string[]; granules: string[];
@@ -53,6 +55,16 @@ export type TimeSeries = {
 };
 
 export type AlertKind = "quake" | "fire" | "surface_change" | "deformation";
+export type ExposureSource = {
+  name: string; date?: string; year?: number; license?: string; license_url?: string; url?: string; attribution?: string;
+};
+export type Exposure = {
+  people?: number | null; crop_ha?: number | null; forest_ha?: number | null; grassland_ha?: number | null;
+  other_landcover_ha?: number | null; landcover_unmapped_ha?: number | null; landcover_coverage_pct?: number | null;
+  settlements?: number | null; settlement_buffer_m?: number; places?: string[] | null;
+  nearby_places?: { name: string; distance_m: number; url?: string }[] | null;
+  sources?: (ExposureSource | string)[] | Record<string, ExposureSource>; note?: string; issues?: string[];
+};
 export type AlertFeature = {
   type: "Feature"; id?: string;
   geometry: { type: string; coordinates: unknown };
@@ -61,9 +73,9 @@ export type AlertFeature = {
     title: string; place: string; date: string; level: "alto" | "medio" | "bajo"; confidence: string;
     note: string; source_url: string; aoi_id?: string; granules?: string[]; provisional?: boolean;
     center?: [number, number]; members?: { id: string; date: string }[]; first_date?: string;
+    comparison_summary?: { loss_area_ha: number; mapped_loss_area_ha: number; alerts: number } | null;
     metrics: { magnitude?: number; magnitude_type?: string; depth_km?: number; frp_mw?: number; area_ha?: number | null; count?: number };
-    exposure?: { people?: number | null; crop_ha?: number | null; forest_ha?: number | null;
-      settlements?: number | null; sources?: string[]; note?: string } | null;
+    exposure?: Exposure | null;
   };
 };
 export type FeedStatus = { source: string; status: string; last_updated: string | null; stale: boolean; message?: string; latency: string; coverage_days?: number };
@@ -98,10 +110,10 @@ export const api = {
     `${BASE}/context/${encodeURIComponent(aoi)}/${encodeURIComponent(item.id)}/${encodeURIComponent(date)}.png`,
   validation: (id: string) => get<Validation | null>(`/validation/${encodeURIComponent(id)}`),
   rainfall: (aoi: string) => get<Rainfall | null>(`/rainfall/${encodeURIComponent(aoi)}`),
-  alerts: () => get<AlertCollection>("/alerts?include_live=true"),
+  alerts: () => get<AlertCollection>("/alerts?include_live=true&active_only=true"),
   trend: (aoi: string, pol: string) => get<Trend>(`/trend?aoi=${encodeURIComponent(aoi)}&pol=${encodeURIComponent(pol)}`),
-  layers: (aoi: string) => get<LayerManifest[]>(`/layers?aoi=${encodeURIComponent(aoi)}`),
-  polarizations: (aoi: string) => get<PolarizationSummary[]>(`/polarizations?aoi=${encodeURIComponent(aoi)}`),
+  layers: (aoi: string) => get<LayerManifest[]>(`/layers?aoi=${encodeURIComponent(aoi)}&active_only=true`),
+  polarizations: (aoi: string) => get<PolarizationSummary[]>(`/polarizations?aoi=${encodeURIComponent(aoi)}&active_only=true`),
   story: (aoi: string) => get<Story>(`/stories/${encodeURIComponent(aoi)}`),
   timeseries: (aoi: string) => get<TimeSeries>(`/timeseries?aoi=${encodeURIComponent(aoi)}&allow_empty=true`),
   /** Teselas por identificador de capa publicada. */
