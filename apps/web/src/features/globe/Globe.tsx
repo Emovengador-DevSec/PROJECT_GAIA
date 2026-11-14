@@ -7,10 +7,12 @@ import { loadAyacuchoTerrain } from "./localTerrain";
 import { observationMetric } from "../workspace/AlertFeed";
 import { formatDate } from "../../lib/formatDate";
 import { formatNumber } from "../../lib/formatNumber";
+import type { CitizenReport } from "../../lib/api";
 import { addNisarOrbit } from "./nisarOrbit";
 
 type Props = {
-  aoi?: AOI; tileUrl?: string; beforeUrl?: string; afterUrl?: string; split: number;
+  aoi?: AOI; communityCenter?: [number, number]; tileUrl?: string; beforeUrl?: string; afterUrl?: string; split: number;
+  reports?: CitizenReport[]; reportPicker?: (point: [number, number]) => void; reportPoint?: [number, number];
   radarBounds?: AOI["bbox"];
   contextOverlay?: { url: string; credit: string; beforeUrl?: string };
   exaggeration: number; camera?: CameraMode; alerts: AlertFeature[]; selected?: AlertFeature;
@@ -35,13 +37,16 @@ function marker(kind: string, color: string): string {
   return "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><g fill="${color}" stroke="${color}" stroke-width="1">${shapes[kind] ?? shapes.surface_change}</g></svg>`);
 }
 
-export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, radarBounds, contextOverlay, split, exaggeration, camera = "oblique",
+export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint, tileUrl, beforeUrl,
+  afterUrl, radarBounds, contextOverlay, split, exaggeration, camera = "oblique",
   alerts, fireCells, active, cutoff, orbitData, orbitVisible, satelliteFocus, selected, onSelect, onStatus, offline = false,
   realTimeLighting }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
   const viewer = useRef<Cesium.Viewer | null>(null);
   const selectRef = useRef(onSelect);
+  const reportPickerRef = useRef(reportPicker);
+  reportPickerRef.current = reportPicker;
   const statusRef = useRef(onStatus);
   const lastInput = useRef(performance.now());
   const [hover, setHover] = useState<{ feature: AlertFeature; x: number; y: number }>();
@@ -253,6 +258,15 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, radarBounds, contextO
         y: Math.max(12, Math.min(event.endPosition.y + 18, v.scene.canvas.clientHeight - 205)) });
     }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
     clicks.setInputAction((event: { position: Cesium.Cartesian2 }) => {
+      if (reportPickerRef.current) {
+        const ray = v.camera.getPickRay(event.position);
+        const pickedPoint = ray && v.scene.globe.pick(ray, v.scene);
+        if (pickedPoint) {
+          const point = Cesium.Cartographic.fromCartesian(pickedPoint);
+          reportPickerRef.current([Cesium.Math.toDegrees(point.longitude), Cesium.Math.toDegrees(point.latitude)]);
+        }
+        return;
+      }
       const picked = v.scene.pick(event.position);
       const feature = picked?.id?.properties?.alert?.getValue(v.clock.currentTime) as AlertFeature | undefined;
       if (feature) selectRef.current(feature);
@@ -263,6 +277,30 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, radarBounds, contextO
       clicks.destroy(); v.destroy(); viewer.current = null;
     };
   }, [offline]);
+
+  useEffect(() => {
+    const v = viewer.current;
+    if (!v || (!reports?.length && !reportPoint)) return;
+    const data = new Cesium.CustomDataSource("Reportes ciudadanos · sin verificar");
+    for (const report of reports ?? []) {
+      data.entities.add({ id: report.id, name: "Reporte ciudadano · sin verificar",
+        position: Cesium.Cartesian3.fromDegrees(report.lon, report.lat),
+        point: { pixelSize: 11, color: Cesium.Color.fromCssColorString("#62f0be"),
+          outlineWidth: 2, outlineColor: Cesium.Color.BLACK, heightReference: Cesium.HeightReference.CLAMP_TO_GROUND } });
+    }
+    if (reportPoint) data.entities.add({ name: "Punto del reporte",
+      position: Cesium.Cartesian3.fromDegrees(...reportPoint),
+      point: { pixelSize: 14, color: Cesium.Color.WHITE, outlineColor: Cesium.Color.BLACK,
+        outlineWidth: 2, heightReference: Cesium.HeightReference.CLAMP_TO_GROUND } });
+    v.dataSources.add(data);
+    return () => { if (!v.isDestroyed()) v.dataSources.remove(data, true); };
+  }, [reports, reportPoint, offline, active]);
+
+  useEffect(() => {
+    const canvas = viewer.current?.scene.canvas;
+    if (canvas) canvas.style.cursor = reportPicker ? "crosshair" : "";
+    return () => { if (canvas) canvas.style.cursor = ""; };
+  }, [reportPicker]);
 
   useEffect(() => { if (viewer.current) viewer.current.scene.verticalExaggeration = exaggeration; }, [exaggeration, offline]);
   useEffect(() => {
@@ -299,6 +337,14 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, radarBounds, contextO
   useEffect(() => {
     const v = viewer.current;
     if (!v || !active) return;
+    if (communityCenter) {
+      lastInput.current = performance.now();
+      v.camera.flyToBoundingSphere(new Cesium.BoundingSphere(Cesium.Cartesian3.fromDegrees(...communityCenter), 0), {
+        offset: new Cesium.HeadingPitchRange(0, Cesium.Math.toRadians(-70), 24_000),
+        duration: reduceMotion ? 0 : 1.8,
+      });
+      return;
+    }
     if (!aoi) {
       arrival.current = performance.now();
       lastInput.current = performance.now() - 16_400;
@@ -318,7 +364,7 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, radarBounds, contextO
       offset: new Cesium.HeadingPitchRange(Cesium.Math.toRadians(radarBounds ? 0 : cam.heading_deg ?? 20),
         Cesium.Math.toRadians(radarBounds || camera === "zone" ? -90 : camera === "overview" ? -60 : cam.pitch_deg ?? -38), range),
       duration: window.matchMedia(REDUCED).matches ? 0 : 2.4, easingFunction: Cesium.EasingFunction.QUINTIC_IN_OUT });
-  }, [aoi, radarBounds, camera, offline, active, reduceMotion]);
+  }, [aoi, communityCenter, radarBounds, camera, offline, active, reduceMotion]);
 
   useEffect(() => {
     const v = viewer.current;

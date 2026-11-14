@@ -1,0 +1,62 @@
+.community { color: #eaf3f8; }
+.community-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.community-controls label { display: grid; gap: 5px; align-content: start; color: #cbd9e4; min-width: 0; }
+.community-controls select, .community-controls input, .community-controls textarea {
+  width: 100%; min-height: 44px; padding: 8px 10px; border: 1px solid #435360;
+  border-radius: 7px; background: #131e27; color: #f4f7fb; font: inherit;
+}
+.community-search, .community-results { grid-column: 1 / -1; }
+.community-results { list-style: none; margin: 0; padding: 0; max-height: 13rem; overflow: auto; }
+.community-results button {
+  width: 100%; padding: 8px 10px; color: #eef8fa; background: #111d26;
+  border: 1px solid #324452; text-align: left; font: inherit; cursor: pointer;
+}
+.community-results button:hover { background: #203442; }
+.community-results small { display: block; color: #bdd2df; }
+.community-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-top: 25px; }
+.community-heading h3 { margin: 0; }
+.community-heading p { margin-top: 3px; }
+.community-heading button { flex: none; }
+.community-block { padding-block: 15px; border-top: 1px solid #334451; }
+.community-block h4 { margin: 0 0 8px; font: 650 1.1em/1.25 var(--font-display); }
+.community-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; margin-block: 10px; }
+.community-metrics dt { color: #bed2df; font-size: .92em; }
+.community-metrics dd { margin: 0; font-size: 1.45em; font-weight: 650; font-variant-numeric: tabular-nums; }
+.community-metrics dd small { font-size: .65em; }
+.community-status { display: flex; align-items: baseline; gap: 9px; font-weight: 700; }
+.community-status::before { content: ""; flex: 0 0 10px; height: 10px; border-radius: 50%; background: #aebbc7; }
+.community-status[data-level="red"]::before { background: #ff777b; }
+.community-status[data-level="orange"]::before { background: #ffad69; }
+.community-status[data-level="yellow"]::before { background: #f6d26b; }
+.community-status[data-level="green"]::before { background: #77d6a5; }
+.community-indicator .detail-actions { margin-top: 13px; }
+.climate-arcs h3 { margin: 0; }
+.climate-periods { display: flex; gap: 6px; margin: 14px 0; }
+.climate-periods button { flex: 1; min-height: 42px; padding: 5px; border: 1px solid #435360; border-radius: 6px; color: #eaf3f8; background: #111d26; font: inherit; cursor: pointer; }
+.climate-periods button[aria-pressed="true"] { color: #eaf7fc; background: #253e4e; border-color: #9dbdcf; }
+.climate-lane { padding: 11px 0; border-top: 1px solid #334451; }
+.community-climate-plot { display: block; width: 100%; margin-block: 12px; color: #b8c7d6; }
+.community-climate-plot text { fill: currentColor; font: 12px var(--font-body); }
+.report-form { margin-top: 18px; }
+.report-form textarea { resize: vertical; }
+.community-report-list { margin: 0; padding: 0; list-style: none; }
+.community-report-list li { padding: 8px 0; border-bottom: 1px solid #334451; }
+@media (max-width: 720px) {
+  .shell[data-workspace][data-tab="community"] .inspector,
+  .shell[data-workspace][data-tab="series"] .inspector {
+    top: 135px; bottom: calc(91px + env(safe-area-inset-bottom)); max-height: none;
+  }
+  .shell[data-workspace][data-report-picking] .inspector { top: auto; max-height: 33svh; }
+}
+@media print {
+  .community { color: #161616; }
+  .shell[data-workspace] .community { font-size: 9pt; line-height: 1.25; }
+  .community-controls, .community-heading button, .community details, .citizen-reports,
+  .community .detail-actions { display: none !important; }
+  .community-heading { margin-top: 0; }
+  .community-block { padding-block: 8px; }
+  .community p { margin-block: 5px; }
+  .inspector-content .community .muted { font-size: 9pt; }
+  .community .muted, .community dt, .community a { color: #252525 !important; }
+  .community-block { break-inside: avoid; }
+}

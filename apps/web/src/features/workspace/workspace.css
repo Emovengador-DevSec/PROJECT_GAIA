@@ -320,6 +320,7 @@
   .workspace-action { font-size: var(--workspace-text); min-height: 40px; padding: 8px 11px; }
   .place-search { grid-column: 1; grid-row: 2; width: 100%; min-width: 0; min-height: 43px; }
   .workspace-action { grid-column: 2; grid-row: 1; justify-self: end; }
+  .workspace-bar > .workspace-action:not(.community-entry) { display: none; }
   .workspace-light { grid-column: 2; grid-row: 2; }
   .workspace-light > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   .map-context { top: 139px; left: 17px; gap: 4px; max-width: calc(100% - 34px); }
@@ -359,7 +360,7 @@
   .shell[data-workspace] > .inspector { display: block !important; position: static; width: auto; max-height: none; margin: 0; border: none; color: #111; background: #fff; overflow: visible; }
   .inspector-heading { display: none; }
   .inspector-content { overflow: visible; padding: 0; }
-  .inspector-content > :not(.alert-detail) { display: none !important; }
+  .inspector-content > :not(.alert-detail, .community) { display: none !important; }
   .alert-detail { color: #111; }
   .alert-detail p, .alert-detail dt, .alert-detail dd, .alert-detail h3, .alert-detail h4, .alert-detail .muted { color: #111 !important; }
   .detail-actions, .detail-back, .alert-detail details { display: none !important; }

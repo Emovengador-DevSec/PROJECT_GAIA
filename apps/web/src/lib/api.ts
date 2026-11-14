@@ -93,13 +93,50 @@ export type PolarizationSummary = {
   HVHV?: { loss_area_ha: number; alerts: number };
 };
 
-async function get<T>(path: string): Promise<T> {
-  const r = await fetch(`${BASE}${path}`);
+type CommunitySource = { name: string; url: string; year?: number; date?: string; license?: string };
+type CommunityImpact = { zones: number; cropland_ha: number | null; grassland_ha: number | null;
+  forest_ha: number | null; population: number | null; population_zones: number };
+export type CommunityPlace = { id: string; name: string; kind: "province" | "district" | "place";
+  province: string; center: [number, number]; url?: string };
+export type CommunityIndex = { period: { a: string; b: string }; granules: string[]; coverage_pct: number;
+  region: CommunityImpact; sources: Record<string, CommunitySource>; district_source?: CommunitySource;
+  places: CommunityPlace[] };
+type NearbyEvents = { status: string; updated_at: string | null; radius_km: number;
+  events: { date: string; km: number; magnitude?: number }[] };
+export type Climate = { source: string; version: string; source_url: string; fetched_at: string;
+  coordinates: [number, number]; trend_per_decade: number;
+  annual: { year: number; temperature: number; rain_mm: number }[];
+  projection: { year: number; temperature: number; low: number; high: number }[];
+  current: { date: string; max_c: number; min_c: number | null; heat_days: number; hot_last_year: number;
+    rain_mm: number | null; normal_rain_mm: number | null; rain_ratio: number | null } };
+export type CommunityDetail = CommunityPlace & { impact: CommunityImpact | null; as_of: string;
+  fire: NearbyEvents; quakes: NearbyEvents; fires_today: number;
+  indicator: { level: "red" | "orange" | "yellow" | "green" | "unavailable";
+    reasons: [string, string, string, string][]; live_complete: boolean; weather_at: string | null };
+  rules: { fire_radius_km: number; quake_radius_km: number; quake_magnitude: number; heat_days: number; rain_ratio: number } };
+export type ReportKind = "fire" | "landslide" | "dry_water" | "crop_damage";
+export type CitizenReport = { id: string; kind: ReportKind; lon: number; lat: number; observed_at: string;
+  firms_match: boolean; nisar_overlap: boolean };
+
+async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
+  const r = await fetch(`${BASE}${path}`, { signal });
   if (!r.ok) throw new Error(`La API respondió ${r.status} en ${path}`);
   return r.json() as Promise<T>;
 }
 
 export const api = {
+  reports: (signal?: AbortSignal) => get<CitizenReport[]>("/reports", signal),
+  submitReport: async (report: Pick<CitizenReport, "kind" | "lon" | "lat" | "observed_at"> & { note: string }) => {
+    const response = await fetch(`${BASE}/reports`, { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(report) });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => null);
+      throw new Error(typeof payload?.detail === "string" ? payload.detail : "No se pudo enviar el reporte.");
+    }
+  },
+  climate: (aoi: string, signal?: AbortSignal) => get<Climate | null>(`/climate/${encodeURIComponent(aoi)}`, signal),
+  community: (signal?: AbortSignal) => get<CommunityIndex | null>("/community", signal),
+  communityPlace: (id: string, signal?: AbortSignal) => get<CommunityDetail>(`/community/${encodeURIComponent(id)}`, signal),
   orbit: () => get<OrbitData>("/orbit"),
   aois: () => get<AOI[]>("/aois"),
   health: () => get<Health>("/health"),

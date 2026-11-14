@@ -4,6 +4,8 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- C4 añade reportes ciudadanos en el globo con ubicación aproximada, moderación y cruces informativos con FIRMS y NISAR.
+
 - C3 agrega los arcos climáticos de Ayacucho con NASA POWER, observaciones recientes y una extrapolación térmica hasta 2035.
 
 - C2 activa el semáforo informativo con umbrales publicados, fuentes oficiales peruanas y una ficha para imprimir o compartir por WhatsApp.

@@ -9,6 +9,8 @@ import { ApplicationReference, LearnMore, Resources, nisarGuide, training, uavsa
 import { RadarGlossary, vertexGranule } from "../workspace/RadarGlossary";
 import { AlertFeed } from "../workspace/AlertFeed";
 import { Sparkline } from "./Sparkline";
+import { Community } from "../community/Community";
+import { ClimateArcs } from "../community/ClimateArcs";
 
 type Props = {
   tab: TabId; aois: AOI[]; current?: AOI; layers: LayerManifest[]; layer?: LayerManifest;
@@ -27,6 +29,7 @@ type Props = {
   validation?: Validation;
   rainfall?: Rainfall;
   onClose: () => void; onResources: () => void;
+  communityProps: React.ComponentProps<typeof Community>;
 };
 
 const PHENOMENA: Record<string, string> = {
@@ -113,6 +116,7 @@ export function Inspector(p: Props) {
       {p.contextLoading && tab !== "alerts" && tab !== "cases" && tab !== "resources" && <p className="loading-state" role="status">Consultando las observaciones del lugar…</p>}
 
       {tab === "resources" && <Resources sources={p.sources} health={p.health} />}
+      {tab === "community" && <Community {...p.communityProps} />}
 
       {tab === "cases" && <>
         <p className="panel-introduction">Cuatro territorios, distintas huellas. Elige un caso para situar las observaciones sobre el mapa.</p>
@@ -229,6 +233,7 @@ export function Inspector(p: Props) {
       </>}
 
       {tab === "series" && <>
+        <ClimateArcs alerts={p.alerts} sources={p.sources} rainfall={p.rainfall} />
         <p className="panel-introduction">La evolución de la señal radar por fecha ayuda a estudiar qué cambia y qué permanece.</p>
         {p.ts ? <Sparkline ts={p.ts} trend={p.trend} polarization={p.pol} /> : !p.contextLoading && <EmptyState title="Sin serie procesada">Elige un lugar y procesa sus observaciones compatibles para seguir la evolución de HH y HV.</EmptyState>}
         <section className="trend-explanation"><h3>Proyección de tendencia</h3>

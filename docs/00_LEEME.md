@@ -14,6 +14,7 @@
 | `13_Plan_Final_Codex.md` | **Plan vigente**: fases G1 a G10 hasta la entrega |
 | `14_Entrega_Demo.md` | Guion, resultados comprobados, texto de entrega y pasos pendientes del equipo |
 | `15_Despliegue_Completo.md` | Contenedor Docker, datos NISAR publicados y configuración del servicio en vivo |
+| `17_Valor_Comunitario_Codex.md` | Fichas comunitarias, semáforo, arcos climáticos y reportes ciudadanos |
 | `data-notes.md` | Lo descubierto en archivos reales |
 | `v2-referencia/` | Especificación ampliada anterior (pestañas, filtros, Analista IA, seguridad) |
 

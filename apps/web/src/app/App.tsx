@@ -8,7 +8,7 @@ import { SectionIcon } from "../features/workspace/SectionIcon";
 import { LiveSummary } from "../features/workspace/LiveSummary";
 import { EventTimeline } from "../features/workspace/EventTimeline";
 import { OrbitCard } from "../features/workspace/OrbitCard";
-import { api, type AOI, type AlertFeature, type AlertKind, type Audience, type Catalog,
+import { api, type AOI, type AlertFeature, type AlertKind, type Audience, type Catalog, type CitizenReport,
   type ContextLayer, type FeedStatus, type GlobeStatus, type Health, type LayerManifest, type OrbitData, type PolarizationSummary, type Rainfall, type Story, type TimeSeries, type Trend, type Validation } from "../lib/api";
 import { TABS, type TabId } from "../config/tabs";
 import "../features/workspace/workspace.css";
@@ -16,7 +16,13 @@ import "../features/workspace/workspace.css";
 const Globe = lazy(() => import("../features/globe/Globe").then(m => ({ default: m.Globe })));
 
 export function App() {
-  const [tab, setTab] = useState<TabId>("alerts");
+  const [tab, setTab] = useState<TabId>(() => new URLSearchParams(location.search).has("lugar") ? "community" : "alerts");
+  const [communityCenter, setCommunityCenter] = useState<[number, number]>();
+  const [reports, setReports] = useState<CitizenReport[]>();
+  const [reportError, setReportError] = useState(false);
+  const [reportLayer, setReportLayer] = useState(false);
+  const [pickingReport, setPickingReport] = useState(false);
+  const [reportPoint, setReportPoint] = useState<[number, number]>();
   const [aois, setAois] = useState<AOI[]>([]);
   const [current, setCurrent] = useState<AOI>();
   const [layers, setLayers] = useState<LayerManifest[]>([]);
@@ -55,7 +61,7 @@ export function App() {
   const openedRadar = useRef<string | undefined>(undefined);
   const stopSweep = useRef<(() => void) | undefined>(undefined);
   const [sweeping, setSweeping] = useState(false);
-  const [panelOpen, setPanelOpen] = useState(() => window.innerWidth > 720);
+  const [panelOpen, setPanelOpen] = useState(() => window.innerWidth > 720 || new URLSearchParams(location.search).has("lugar"));
   const [search, setSearch] = useState("");
   const [searchMessage, setSearchMessage] = useState("");
   const [ready, setReady] = useState(false);
@@ -65,6 +71,17 @@ export function App() {
   const [satelliteFocus, setSatelliteFocus] = useState(0);
   const [warm, setWarm] = useState(false);
   const [entered, setEntered] = useState(false);
+  useEffect(() => {
+    if (!entered || (tab !== "community" && !reportLayer)) return;
+    const request = new AbortController();
+    const refresh = () => {
+      api.reports(request.signal).then(value => { setReports(value); setReportError(false); })
+        .catch(() => { if (!request.signal.aborted) setReportError(true); });
+    };
+    refresh();
+    const timer = window.setInterval(refresh, 60_000);
+    return () => { request.abort(); clearInterval(timer); };
+  }, [entered, tab, reportLayer]);
   const requestId = useRef(0);
   const onIntroDone = useCallback(() => setReady(true), []);
   const onCoverReady = useCallback(() => setWarm(true), []);
@@ -260,12 +277,17 @@ export function App() {
       ?? fireCells.find(feature => feature.properties.id === linkedAlert.current);
     if (match) { linkedAlert.current = null; pickAlert(match); }
   }, [alerts, fireCells, pickAlert]);
-  const chooseTab = (id: TabId) => { setTab(id); setSelected(undefined); setPanelOpen(true); };
+  const chooseTab = (id: TabId) => { setPickingReport(false); setTab(id); setSelected(undefined); setPanelOpen(true); };
 
-  return <div className="shell" data-workspace={ready || undefined}
-    data-panel-open={panelOpen || undefined} data-comparison={comparison || undefined} data-sequence={!comparison || undefined}>
+  return <div className="shell" data-workspace={ready || undefined} data-tab={tab}
+    data-report-picking={pickingReport || undefined}
+    data-panel-open={panelOpen || undefined} data-comparison={comparison || undefined}
+    data-sequence={!comparison && tab !== "community" && tab !== "series" || undefined}>
     {warm && <Suspense fallback={null}>
-      <Globe aoi={current} active={ready} exaggeration={exaggeration} camera={activeContext ? "zone" : storyStep?.camera ?? "oblique"}
+      <Globe aoi={current} communityCenter={tab === "community" ? communityCenter : undefined} active={ready} exaggeration={exaggeration} camera={activeContext ? "zone" : storyStep?.camera ?? "oblique"}
+        reports={reportLayer ? reports : undefined}
+        reportPicker={tab === "community" && pickingReport ? point => { setReportPoint(point); setPickingReport(false); } : undefined}
+        reportPoint={tab === "community" ? reportPoint : undefined}
         offline={health?.offline} radarBounds={radarBounds} realTimeLighting={realTimeLighting}
         tileUrl={health?.tiles && layer && showRadar && !comparison && !activeContext ? api.tileUrl(layer) : undefined}
         beforeUrl={layer && showRadar && radarComparison ? api.tileUrl(layer, "before", rgb) : undefined}
@@ -306,6 +328,7 @@ export function App() {
           </select>
         </label>
         <button type="button" className="workspace-action" onClick={() => { setCurrent(undefined); setSelected(undefined); setTab("alerts"); setPanelOpen(true); }}>Sudamérica</button>
+        <button type="button" className="workspace-action community-entry" onClick={() => chooseTab("community")}>Mi comunidad</button>
       </header>
 
       <div className="map-context" aria-live="polite">
@@ -338,7 +361,16 @@ export function App() {
         setAlertLevel={value => { setAlertLevel(value); setSelected(undefined); }} health={health} mapStatus={mapStatus}
         compare={compare} setCompare={value => { cancelSweep(); setSplit(50); if (value) { setContextChoice(null); setCutoff(undefined); } setCompare(value); }}
         canUseFalseColor={canUseFalseColor} falseColor={rgb} setFalseColor={value => { cancelSweep(); setSplit(50); setFalseColor(value); }}
-        onClose={() => setPanelOpen(false)} onResources={() => chooseTab("resources")} />
+        onClose={() => { setPanelOpen(false); setPickingReport(false); }} onResources={() => chooseTab("resources")}
+        communityProps={{ onLocate: place => { setSelected(undefined); setCommunityCenter([...place.center]); },
+          reports, reportError, reportLayer, picking: pickingReport, point: reportPoint,
+          onReportLayer: () => setReportLayer(value => !value),
+          onPick: value => {
+            setPickingReport(value);
+            if (value) setCommunityCenter(communityCenter ? [...communityCenter] : [-74.15, -13.1]);
+          },
+          onLocateReport: report => { setReportLayer(true); setCommunityCenter([report.lon, report.lat]); },
+        }} />
         : <button type="button" className="panel-reopen" onClick={() => setPanelOpen(true)}><SectionIcon id={tab} />Abrir {TABS.find(item => item.id === tab)?.label.toLocaleLowerCase("es")}</button>}
 
       {comparison && comparisonDates && <div className="comparison-control">
@@ -349,7 +381,7 @@ export function App() {
           onPointerDown={cancelSweep} onKeyDown={cancelSweep} onChange={event => { cancelSweep(); setSplit(Number(event.target.value)); }} />
       </div>}
       {comparison && <div className="comparison-divider" data-sweeping={sweeping || undefined} style={{ left: `${split}%` }} aria-hidden="true" />}
-      {!comparison && <EventTimeline alerts={filteredAlerts} sources={sources} cutoff={cutoff}
+      {!comparison && tab !== "community" && tab !== "series" && <EventTimeline alerts={filteredAlerts} sources={sources} cutoff={cutoff}
         onChange={value => { setCutoff(value); setSelected(undefined); }} />}
 
       <div className="map-legend" aria-label="Fuentes del mapa">
