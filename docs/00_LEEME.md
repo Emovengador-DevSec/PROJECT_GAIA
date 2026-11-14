@@ -11,8 +11,9 @@
 | `07_Dia_del_Evento_Datos.md` | Qué hacer con los recursos que se publiquen el sábado |
 | `10_Plan_GAIA_Alerta_Codex.md` | **Plan vigente**: GAIA Alerta, fases F0 a F7 para Codex |
 | `11_Experiencia_Interactiva_Codex.md` | Momentos W1 a W8 para que la app sea interactiva y asombre |
-| `13_Plan_Final_Codex.md` | **Plan vigente**: fases G1 a G8 hasta la entrega |
+| `13_Plan_Final_Codex.md` | **Plan vigente**: fases G1 a G9 hasta la entrega |
 | `14_Entrega_Demo.md` | Guion, resultados comprobados, texto de entrega y pasos pendientes del equipo |
+| `14_Publicacion.md` | Copia estática, comprobaciones y publicación de G9 en Cloudflare Pages |
 | `data-notes.md` | Lo descubierto en archivos reales |
 | `v2-referencia/` | Especificación ampliada anterior (pestañas, filtros, Analista IA, seguridad) |
 

@@ -14,6 +14,7 @@ __pycache__/
 .ruff_cache/
 node_modules/
 dist/
+apps/web/dist-static/
 *.h5
 *.hdf5
 *.nc

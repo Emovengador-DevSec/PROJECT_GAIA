@@ -130,3 +130,8 @@ se reinició y sirve el período activo a la web de `localhost:5173`.
 G5 necesita cuatro fechas compatibles, frente al límite vigente de dos descargas GCOV.
 G6 permanece pendiente de la selección, descarga e inspección GUNW y de la fuente
 volcánica oficial. Las fases G1, G2, G3 y G4 conservan los resultados descritos arriba.
+
+G9 dispone de una compilación estática verificada con la API apagada y una revisión
+independiente de seguridad completada. La foto conserva el par de Ayacucho y los
+datos complementarios con sus fechas. Sigue pendiente conectar el repositorio y
+obtener el enlace público desde la cuenta del equipo. Consulta la [guía de publicación](14_Publicacion.md).

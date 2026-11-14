@@ -18,6 +18,7 @@ type Props = {
   cutoff?: number;
   orbitData?: OrbitData; orbitVisible: boolean; satelliteFocus: number;
   offline?: boolean;
+  tileLevels?: { minimum_level: number; maximum_level: number };
   realTimeLighting: boolean;
   onSelect: (alert: AlertFeature) => void; onStatus: (status: GlobeStatus) => void;
 };
@@ -35,7 +36,7 @@ function marker(kind: string, color: string): string {
 }
 
 export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, radarBounds, contextOverlay, split, exaggeration, camera = "oblique",
-  alerts, fireCells, active, cutoff, orbitData, orbitVisible, satelliteFocus, selected, onSelect, onStatus, offline = false,
+  alerts, fireCells, active, cutoff, orbitData, orbitVisible, satelliteFocus, selected, onSelect, onStatus, offline = false, tileLevels,
   realTimeLighting }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
@@ -67,7 +68,8 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, radarBounds, contextO
 
   useEffect(() => {
     if (!host.current) return;
-    const token = offline ? undefined : import.meta.env.VITE_CESIUM_ION_TOKEN as string | undefined;
+    const token = import.meta.env.VITE_DATA_MODE === "static" || offline
+      ? undefined : import.meta.env.VITE_CESIUM_ION_TOKEN as string | undefined;
     if (token) Cesium.Ion.defaultAccessToken = token;
     const v = new Cesium.Viewer(host.current, {
       animation: false, timeline: false, baseLayerPicker: false, geocoder: false,
@@ -365,14 +367,15 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, radarBounds, contextO
       ? [[beforeUrl, Cesium.SplitDirection.LEFT], [afterUrl, Cesium.SplitDirection.RIGHT]]
       : [[tileUrl, Cesium.SplitDirection.NONE]];
     for (const [url, direction] of sources) if (url) {
-      const layer = v.imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({ url, maximumLevel: 16,
+      const layer = v.imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({ url,
+        minimumLevel: tileLevels?.minimum_level ?? 0, maximumLevel: tileLevels?.maximum_level ?? 16,
         rectangle: aoi ? Cesium.Rectangle.fromDegrees(...aoi.bbox) : undefined }));
       layer.alpha = .9;
       layer.splitDirection = direction;
       overlays.push(layer);
     }
     return () => { if (!v.isDestroyed()) for (const layer of overlays) v.imageryLayers.remove(layer); };
-  }, [tileUrl, beforeUrl, afterUrl, aoi, offline]);
+  }, [tileUrl, beforeUrl, afterUrl, aoi, offline, tileLevels]);
   useEffect(() => { if (viewer.current) viewer.current.scene.splitPosition = split / 100; }, [split, offline]);
 
   const contextUrl = contextOverlay?.url;

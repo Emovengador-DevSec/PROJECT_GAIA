@@ -1,0 +1,11 @@
+{
+  "mode": "live",
+  "apiRequests": [
+    "/api/aois",
+    "/api/health",
+    "/api/orbit",
+    "/api/alerts"
+  ],
+  "snapshotBanner": false,
+  "errors": []
+}

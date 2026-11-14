@@ -10,8 +10,16 @@ Estado: las tres claves (Earthdata, Cesium ion, FIRMS) están configuradas; los 
 - G2 publicado para las 1.106 manchas activas con WorldPop, WorldCover y 1.192 localidades OSM. Las categorías WorldCover reconcilian el área de cada mancha y WorldPop conserva su cobertura parcial.
 - G3 publicado con total HV del manifiesto, área delimitada aparte y contraste OPERA original. Coinciden 21,08 ha, el 2,25 % de las manchas HV, con intersección/unión del 0,80 %. La atribución a incendios continúa por verificar.
 - G7 tiene guion, relato actualizado y video de respaldo de 2 min 38 s en `art/verificacion/gaia-alerta-demo.mp4`. El modo sin conexión pasó la verificación con el par nuevo en PC y teléfono.
+- G9 implementado y verificado en PC y teléfono con la API apagada. La foto incluye 2.840 teselas y conserva 2.145 observaciones con fuente y fecha. La compilación contiene 3.276 archivos y 342,3 MB, dentro de los límites revisados de Pages. Las cuatro zonas y la cortina pasaron con cero llamadas a `/api`, errores JavaScript y respuestas 404. El modo live también pasó la comprobación. La guía está en `docs/14_Publicacion.md`.
 - G8 tiene texto de entrega y auditoría local. Quedan pendientes verificar la guía oficial 2026, accesible desde Resources, y la publicación del repositorio/envío desde la cuenta del equipo. El detalle está en `docs/14_Entrega_Demo.md`.
 - G5 requiere cuatro fechas y continúa sujeto al límite vigente de dos descargas GCOV. G6 sigue pendiente de la selección e inspección GUNW.
+
+La revisión independiente de seguridad de G9 terminó sin hallazgos bloqueantes. Los JSON
+y sus hashes se comprobaron contra el manifiesto. El bundle estático excluye el token
+Cesium del usuario y conserva el token público predeterminado de la propia dependencia.
+npm y pip-audit informaron cero vulnerabilidades conocidas. La suite completa terminó
+con 52 pruebas aprobadas. El repositorio todavía carece de remoto configurado, por lo
+que la conexión a GitHub y la cuenta de alojamiento siguen pendientes de la persona del equipo.
 
 ## Lo que se revisó y lo que falla
 

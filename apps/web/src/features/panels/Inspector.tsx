@@ -25,6 +25,7 @@ type Props = {
   context: ContextLayer[]; activeContext?: ContextLayer; onContext: (id: string | null) => void; moistureCatalog?: Catalog;
   validation?: Validation;
   rainfall?: Rainfall;
+  snapshotLabel?: string;
   onClose: () => void; onResources: () => void;
 };
 
@@ -239,6 +240,7 @@ export function Inspector(p: Props) {
       </>}
 
       {tab === "quality" && <>
+        {p.snapshotLabel && <p className="snapshot-quality">{p.snapshotLabel}</p>}
         {layer ? <><p className="source-label">NISAR · fuente principal</p><h3>{layer.title}</h3>
           <p className="date-comparison"><span>{layer.dates.a}</span><span>→</span><span>{layer.dates.b}</span></p>
           <dl className="quality-facts"><div><dt>Unidad</dt><dd>{layer.unit}</dd></div><div><dt>Área válida</dt><dd>{layer.quality.valid_area_pct.toFixed(1)} %</dd></div><div><dt>Polarización</dt><dd>{String(layer.provenance.layer ?? "Sin informar")}</dd></div><div><dt>Umbral de cambio</dt><dd>{typeof layer.provenance.threshold_db === "number" ? `${layer.provenance.threshold_db.toFixed(2)} dB` : "Sin informar"}</dd></div></dl>

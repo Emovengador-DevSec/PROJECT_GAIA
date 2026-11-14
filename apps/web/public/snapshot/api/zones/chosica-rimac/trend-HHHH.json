@@ -1,0 +1,1 @@
+{"method":"Theil–Sen","unit":"dB","polarization":"HHHH","label":"Proyección si la tendencia sigue igual — no es una predicción","dates":0,"horizon_days":12,"confidence":0.95,"scope":"Retrodispersión NISAR de la zona; no aplicable a sismos.","projection":[],"status":"insufficient","message":"Se necesitan al menos cuatro fechas NISAR distintas con datos válidos."}

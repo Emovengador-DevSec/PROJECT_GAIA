@@ -23,6 +23,19 @@ HV presenta **3.607 ha con caída de señal**. Las **498 manchas delimitadas** r
 
 El globo abre con **Siempre de día**. El selector de la barra permite explorar la iluminación solar en **Hora real**.
 
+## Publicación estática
+
+Con la API local encendida, `uv run python tools/snapshot_static.py` prepara una copia
+fechada de los datos y las teselas en `apps/web/public/snapshot/`. Compila con
+`VITE_DATA_MODE=static` para que la web lea esos archivos. En la PC puedes usar una
+salida independiente con `npm --prefix apps/web run build -- --outDir dist-static` y
+abrirla con `npm --prefix apps/web run preview -- --outDir dist-static`.
+
+La barra y Calidad muestran la fecha de la foto. Cada fuente conserva sus fechas de
+observación. La compilación estática incluye los mapas y el relieve regional locales.
+La guía de [publicación](docs/14_Publicacion.md) contiene los comandos de PowerShell,
+la comprobación con la API apagada y los ajustes para conectar Cloudflare Pages al repositorio.
+
 ![Comparación NISAR activa en Ayacucho](art/verificacion/final/radar-1440.jpg)
 
 [Ver exposición territorial](art/verificacion/final/exposicion-1440.jpg) · [Video de respaldo de 2 min 38 s](art/verificacion/gaia-alerta-demo.mp4)

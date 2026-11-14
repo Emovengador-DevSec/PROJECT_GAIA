@@ -1,0 +1,88 @@
+[
+  {
+    "width": 1440,
+    "height": 900,
+    "before": {
+      "status": {
+        "left": 26,
+        "right": 1414,
+        "top": 72,
+        "bottom": 92.296875,
+        "height": 20.296875,
+        "width": 1388,
+        "scroll": 1388,
+        "client": 1388
+      },
+      "bar": {
+        "left": 0,
+        "right": 1440,
+        "top": 0,
+        "bottom": 110.296875,
+        "height": 110.296875,
+        "width": 1440,
+        "scroll": 1440,
+        "client": 1440
+      },
+      "panel": {
+        "left": 996,
+        "right": 1416,
+        "top": 136,
+        "bottom": 790,
+        "height": 654,
+        "width": 420,
+        "scroll": 418,
+        "client": 418
+      },
+      "label": "Datos actualizados al 13 nov. 2026, 11:46 p. m. (Perú) · foto estática",
+      "bodyWidth": 1440
+    },
+    "after": {
+      "top": 72,
+      "bottom": 92.296875,
+      "text": "Datos actualizados al 13 nov. 2026, 11:46 p. m. (Perú) · foto estática"
+    }
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "before": {
+      "status": {
+        "left": 15,
+        "right": 375,
+        "top": 122,
+        "bottom": 140.84375,
+        "height": 18.84375,
+        "width": 360,
+        "scroll": 360,
+        "client": 360
+      },
+      "bar": {
+        "left": 0,
+        "right": 390,
+        "top": 0,
+        "bottom": 152.84375,
+        "height": 152.84375,
+        "width": 390,
+        "scroll": 390,
+        "client": 390
+      },
+      "panel": {
+        "left": 12,
+        "right": 378,
+        "top": 272.171875,
+        "bottom": 576,
+        "height": 303.828125,
+        "width": 366,
+        "scroll": 364,
+        "client": 364
+      },
+      "label": "Datos actualizados al 13 nov. 2026, 11:46 p. m. (Perú) · foto estática",
+      "bodyWidth": 390
+    },
+    "after": {
+      "top": 122,
+      "bottom": 140.84375,
+      "text": "Datos actualizados al 13 nov. 2026, 11:46 p. m. (Perú) · foto estática"
+    }
+  }
+]
