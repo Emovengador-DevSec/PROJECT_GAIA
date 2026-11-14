@@ -1,0 +1,34 @@
+{
+  "offline": true,
+  "coverage": 99.91,
+  "summary": {
+    "loss_area_ha": 3607,
+    "mapped_loss_area_ha": 938.28,
+    "alerts": 498
+  },
+  "agreement": 2.25,
+  "sizes": [
+    {
+      "width": 1440,
+      "height": 900,
+      "layout": {
+        "left": 996,
+        "right": 1416,
+        "scroll": 418,
+        "width": 418
+      },
+      "errors": []
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "layout": {
+        "left": 12,
+        "right": 378,
+        "scroll": 364,
+        "width": 364
+      },
+      "errors": []
+    }
+  ]
+}

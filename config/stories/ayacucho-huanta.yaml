@@ -3,7 +3,7 @@ title: Ayacucho, las huellas que deja el fuego
 question: ¿Qué cambios de vegetación muestran las observaciones radar en Huanta y La Mar durante 2026?
 audience_summary:
   publico: Comparamos observaciones NISAR de la misma zona para localizar cambios en el territorio. Los focos de calor de NASA FIRMS ayudan a investigar si esos cambios coinciden con incendios.
-  tecnico: Comparación GCOV de potencia HVHV y HHHH en la misma trayectoria, dirección y marco, con diferencia en dB y umbral estadístico robusto. Los gránulos del 19 de junio y el 5 de octubre de 2026 comparten datos válidos en el 1,69 % de la zona. HV detectó la mayor superficie con caída de señal. La atribución requiere evidencia independiente.
+  tecnico: Comparación GCOV HH/HV de la trayectoria 147 ascendente, marco 171, el 24 de junio y el 10 de octubre de 2026. La cobertura válida común es del 99,91 %. HV registra 3.607 ha con caída de señal, de las cuales 938,28 ha forman 498 manchas delimitadas. OPERA coincide con el 2,25 % de esas manchas. La atribución a incendios continúa por verificar.
 hypotheses:
   - id: perdida_vegetacion
     text: Una caída persistente en HV, mayor que en HH y coincidente con focos FIRMS, sería compatible con pérdida de vegetación por incendio.
@@ -35,19 +35,18 @@ steps:
     camera: zone
     text: Una imagen óptica de luz visible depende de la iluminación solar y puede quedar tapada por nubes o humo. NISAR emite sus propios pulsos de microondas y registra el eco de día o de noche. FIRMS aporta focos térmicos en horas. NISAR repite la geometría orbital cada 12 días, y la publicación del producto añade demora.
   - title: La comparación radar
-    layer: none
+    layer: diff_hvhv
     camera: zone
-    context: nisar-gcov
-    text: Desliza la cortina para ver mosaicos oficiales NISAR en falso color de junio y octubre. El cálculo de pérdida de señal por polarización usa un par de gránulos HDF5 independiente.
+    text: Desliza la cortina para explorar las observaciones NISAR. La comparación procesada usa HH/HV del 24 de junio y el 10 de octubre de 2026 y conserva el 99,91 % de la zona. Los mosaicos oficiales están disponibles como referencia adicional.
   - title: El territorio expuesto
     layer: diff_hvhv
     camera: oblique
-    text: Las áreas de cambio se contrastan con población, cultivos y centros poblados cuando existen capas de exposición verificadas. Las cifras pendientes se muestran como no disponibles.
+    text: Abre una mancha en Observaciones para consultar población WorldPop 2025, cobertura ESA WorldCover 2021 y centros poblados OpenStreetMap a 2 km. La disponibilidad de cada fuente acompaña a la cifra. Son estimaciones de exposición territorial.
   - title: La vegetación desde otra fuente
     layer: none
     camera: zone
     context: opera
-    text: OPERA usa observaciones ópticas de Landsat y Sentinel-2 para identificar perturbaciones de vegetación. Las áreas comunes permiten contrastar señales independientes. Para calcular un porcentaje se necesitan los rásteres originales y fechas compatibles.
+    text: Los rásteres originales OPERA del 13 de octubre contrastan toda la cobertura radar. Coinciden en 21,08 ha, el 2,25 % de las manchas HV delimitadas. Abre Calidad para consultar ambas métricas de concordancia y sus gránulos. Esta coincidencia limitada mantiene abierta la interpretación del cambio.
   - title: Seguir la recuperación
     layer: diff_hvhv
     camera: zone

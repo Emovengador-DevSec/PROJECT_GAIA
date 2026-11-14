@@ -15,13 +15,17 @@ Abre [GAIA Alerta](http://127.0.0.1:8000/). Para la demo sin internet usa `uv ru
 
 ## Caso Ayacucho
 
-Busca «Huanta» para abrir el recorrido de Ayacucho. En Cambios o Calidad se puede consultar el catálogo ASF con las fechas, trayectorias y tamaños. Para generar la comparación se eligieron los GCOV del **19 de junio y 5 de octubre de 2026**, en la trayectoria 75 ascendente, marco 171. Las dos observaciones suman aproximadamente **3,86 GB**.
+Busca «Huanta» para abrir el recorrido de Ayacucho. La comparación activa usa los GCOV del **24 de junio y 10 de octubre de 2026**, trayectoria 147 ascendente, marco 171, con HH/HV y la misma versión de procesamiento. Suman **4,16 GB**. La cobertura válida común es del **99,91 %** de la caja de estudio.
 
-Con Earthdata configurado, `uv run python scripts/process_ayacucho.py` descarga los dos GCOV, registra sus capas HDF5 y publica las comparaciones HH y HV y sus series. La proyección de tendencia requiere cuatro fechas compatibles. El [registro de datos](docs/data-notes.md) documenta la selección, las fuentes territoriales y las comprobaciones pendientes.
+Con Earthdata configurado, ejecuta `uv run python tools/download_approved.py` y después `uv run python scripts/process_ayacucho.py`. La ingesta registra los originales con SHA-256. El procesamiento inspecciona HDF5, publica HH/HV y activa el período completo cuando supera el 80 % de cobertura válida. El período anterior se conserva en el archivo local. La proyección de tendencia requiere cuatro fechas compatibles.
 
-![GAIA Alerta en Sudamérica](art/verificacion/gaia-alerta-local-2560.jpg)
+HV presenta **3.607 ha con caída de señal**. Las **498 manchas delimitadas** reúnen **938,28 ha** y el resto son fragmentos inferiores al mínimo de 25 píxeles. OPERA del 13 de octubre coincide en **21,08 ha**, el **2,25 %** de esas manchas, con intersección/unión del **0,80 %**. La atribución a incendios continúa por verificar. Cada ficha muestra exposición con WorldPop, WorldCover y localidades OSM, con las fechas, licencias y disponibilidad de cada fuente. El [registro de datos](docs/data-notes.md) detalla el método y sus límites.
 
-[Ver el recorrido en Ayacucho](art/verificacion/gaia-alerta-ayacucho-2560.jpg) · [Video de respaldo](art/verificacion/gaia-alerta-demo.mp4)
+El globo abre con **Siempre de día**. El selector de la barra permite explorar la iluminación solar en **Hora real**.
+
+![Comparación NISAR activa en Ayacucho](art/verificacion/final/radar-1440.jpg)
+
+[Ver exposición territorial](art/verificacion/final/exposicion-1440.jpg) · [Video de respaldo de 2 min 38 s](art/verificacion/gaia-alerta-demo.mp4)
 
 ## Cumplimiento del reto
 Cada punto del enunciado oficial y dónde se cumple: `docs/06_Requisitos_del_Reto.md`.
