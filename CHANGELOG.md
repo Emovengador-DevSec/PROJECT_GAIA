@@ -4,6 +4,7 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- Añadida la guía para llevar GAIA a otra PC (docs/22): qué copiar por Drive, claves, instalación, estado del proyecto y mensaje de contexto para Codex y Claude Code.
 - Los focos individuales FIRMS actualizan su color al mover la fecha de reproducción, también con movimiento reducido; el contenedor incorpora la escala por antigüedad ya confirmada.
 
 - El fuego FIRMS usa una escala por antigüedad (rojo con brillo < 24 h, naranja 1–3 días, marrón 4–7 días) con su leyenda; antes solo era rojo con menos de 12 h y casi siempre se veía naranja.

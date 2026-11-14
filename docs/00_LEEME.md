@@ -15,6 +15,10 @@
 | `14_Entrega_Demo.md` | Guion, resultados comprobados, texto de entrega y pasos pendientes del equipo |
 | `15_Despliegue_Completo.md` | Contenedor Docker, datos NISAR publicados y configuración del servicio en vivo |
 | `17_Valor_Comunitario_Codex.md` | Fichas comunitarias, semáforo, arcos climáticos y reportes ciudadanos |
+| `18_Datos_Extra_y_Entrega.md` | Datos extra D1–D7, horario del domingo y pitch de 30 s en inglés |
+| `19_Verificacion_Final.md` · `20_Cierre_Revision_19.md` | Verificación tras C1–C4 y su cierre |
+| `21_Datos_Extra_Verificados.md` | Pendiente agrícola, HLS, calendario y archivo MODIS (D1–D4) |
+| `22_Arranque_en_otra_PC.md` | **Empieza aquí en una PC nueva**: qué copiar, claves, instalación, estado y contexto para los agentes |
 | `data-notes.md` | Lo descubierto en archivos reales |
 | `v2-referencia/` | Especificación ampliada anterior (pestañas, filtros, Analista IA, seguridad) |
 

@@ -3,6 +3,7 @@
 Aplicación web que convierte **datos radar NISAR reales** (NASA-ISRO) en respuestas claras sobre cambios de la superficie terrestre, con un globo 3D cinematográfico. NASA Space Apps Challenge 2026, reto "Dancing with the SARs" (14 y 15 de noviembre de 2026).
 
 ## Lee primero
+0. `docs/22_Arranque_en_otra_PC.md` — estado actual del proyecto, cómo levantarlo y qué falta (manda sobre el plan M0–M6).
 1. `docs/00_LEEME.md` — mapa del proyecto.
 2. `docs/05_Plan_MVP_72h.md` — qué construir y en qué orden (fases M0 a M6).
 3. `docs/06_Requisitos_del_Reto.md` — **todo cambio debe mantener cumplido cada punto del enunciado oficial.**
