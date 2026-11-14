@@ -1,4 +1,4 @@
-.PHONY: setup dev-api dev-web test lint doctor search ingest inspect change build-web
+.PHONY: setup dev dev-api dev-web test lint doctor search ingest inspect change build-web
 
 AOI ?= madre-de-dios-la-pampa
 START ?= 2025-10-01
@@ -7,11 +7,13 @@ setup:            ## Instala Python (uv) y la web (npm)
 	uv sync
 	cd apps/web && npm ci
 
-dev-api:          ## API en http://localhost:8000
-	uv run fastapi dev services/api/app/main.py
-
-dev-web:          ## Interfaz en http://localhost:5173
+dev:              ## Todo GAIA (web + API) en http://localhost:5173
 	cd apps/web && npm run dev
+
+dev-api:          ## Solo la API (interna, 127.0.0.1:8000); normalmente la arranca `make dev`
+	uv run uvicorn app.main:app --app-dir services/api --host 127.0.0.1 --port 8000 --reload
+
+dev-web: dev
 
 test:
 	uv run pytest -q
