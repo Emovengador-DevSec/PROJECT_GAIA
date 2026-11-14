@@ -1,0 +1,60 @@
+# Reglas configurables para generación de anomalías climáticas (Fase 2)
+# Fuentes: NASA POWER (climatología histórica 1981-2025) y Open-Meteo (pronóstico a 7-16 días).
+# No comercial, sin clave requerida.
+
+thresholds:
+  heat_anomaly:
+    percentile: 90
+    name: "Calor anómalo"
+    description: "Temperatura máxima pronosticada supera el percentil 90 histórico de la estación."
+    level: "medio"
+    color_hex: "#FF5722"
+
+  frost_puna:
+    temp_min_c: 0.0
+    percentile: 10
+    name: "Riesgo de helada"
+    description: "Temperatura mínima desciende bajo 0 °C en pisos de quechua/puna, amenazando brotes tiernos o ganado."
+    level: "alto"
+    color_hex: "#00BCD4"
+
+  extreme_frost:
+    temp_min_c: -3.0
+    name: "Helada severa para ganado"
+    description: "Temperatura mínima desciende a -3 °C o menos; riesgo de mortandad de crías de alpacas y ovinos."
+    level: "alto"
+    color_hex: "#3F51B5"
+
+  heavy_rainfall:
+    daily_mm_threshold: 20.0
+    accumulated_3d_mm: 40.0
+    percentile: 90
+    name: "Lluvia intensa"
+    description: "Precipitación diaria o acumulada supera el percentil 90 de la estación; riesgo de huaico o saturación."
+    level: "medio"
+    color_hex: "#2196F3"
+
+seasons:
+  DEF:
+    name: "Verano (diciembre–febrero)"
+    months: [12, 1, 2]
+    typical_characteristic: "Época de lluvias y desarrollo vegetativo principal"
+  MAM:
+    name: "Otoño (marzo–mayo)"
+    months: [3, 4, 5]
+    typical_characteristic: "Descenso de lluvias, maduración y cosechas tempranas"
+  JJA:
+    name: "Invierno (junio–agosto)"
+    months: [6, 7, 8]
+    typical_characteristic: "Temporada seca y fría; mayor frecuencia de heladas nocturnas"
+  SON:
+    name: "Primavera (septiembre–noviembre)"
+    months: [9, 10, 11]
+    typical_characteristic: "Inicio de lluvias erráticas, preparación de suelos y primeras siembras"
+
+source_attribution:
+  forecast: "Open-Meteo API (modelo meteorológico GFS/ECMWF)"
+  forecast_url: "https://open-meteo.com/"
+  climatology: "NASA POWER · Climatología de 45 años (1981–2025)"
+  climatology_url: "https://power.larc.nasa.gov/"
+  disclaimer: "Aviso de monitoreo climático. No reemplaza los avisos y alertas oficiales de SENAMHI."

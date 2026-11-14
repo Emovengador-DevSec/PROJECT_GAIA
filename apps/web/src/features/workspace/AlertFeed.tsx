@@ -5,7 +5,11 @@ import { formatNumber } from "../../lib/formatNumber";
 import { CountUp } from "./CountUp";
 
 export const kindLabels: Record<AlertKind, string> = {
-  quake: "Sismos", fire: "Focos de calor", surface_change: "Cambios de superficie", deformation: "Deformación",
+  quake: "Sismos",
+  fire: "Focos de calor",
+  surface_change: "Cambios de superficie",
+  deformation: "Deformación",
+  climate_anomaly: "Anomalías climáticas",
 };
 
 export function AlertSymbol({ kind }: { kind: AlertKind }) {
@@ -13,12 +17,16 @@ export function AlertSymbol({ kind }: { kind: AlertKind }) {
     {kind === "quake" ? <><circle cx="12" cy="12" r="3" /><circle cx="12" cy="12" r="8" /></>
       : kind === "fire" ? <path d="M13 2c4 7-2 8 2 12l3-4c6 9 1 12-6 12S3 15 7 10c0 4 3 4 3 4-2-7 2-9 3-12Z" />
       : kind === "deformation" ? <path d="m12 2 10 10-10 10L2 12Z" />
+      : kind === "climate_anomaly" ? <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
       : <path d="m12 3 8 5v8l-8 5-8-5V8Z" />}
   </svg>;
 }
 
 export function observationMetric(feature: AlertFeature) {
   const m = feature.properties.metrics;
+  if (m.tmax_c != null) return { value: m.tmax_c, unit: "°C", label: "T. máxima", decimals: 1 };
+  if (m.tmin_c != null) return { value: m.tmin_c, unit: "°C", label: "T. mínima", decimals: 1 };
+  if (m.rain_sum_mm != null) return { value: m.rain_sum_mm, unit: "mm", label: "Lluvia prevista", decimals: 1 };
   if (m.magnitude != null) return { value: m.magnitude, unit: m.magnitude_type ?? "M", label: "Magnitud", decimals: 1 };
   if (m.count != null) return { value: m.count, unit: "focos", label: "Detecciones en la celda", decimals: 0 };
   if (m.area_ha != null) return { value: m.area_ha, unit: "ha", label: "Área con cambio", decimals: 1 };

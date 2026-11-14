@@ -369,6 +369,30 @@ def alerts(aoi: str | None = Query(None, pattern=r"^[a-z0-9-]+$"), include_live:
             feed = live.collection(provider)
             sources.append({k: v for k, v in feed.items() if k != "features"})
             feats.extend({**feature, "properties": {**feature["properties"]}} for feature in feed["features"])
+
+        climate_dir = PROCESSED.parent / "04_published" / "climate"
+        if climate_dir.is_dir():
+            for c_path in sorted(climate_dir.glob("*.json")):
+                czone = c_path.stem
+                if aoi and czone != aoi:
+                    continue
+                try:
+                    cdata = json.loads(c_path.read_text(encoding="utf-8"))
+                    coords = cdata.get("coordinates", [-74.15, -13.1])
+                    for anom in cdata.get("anomalies", []):
+                        feats.append({
+                            "type": "Feature",
+                            "geometry": {"type": "Point", "coordinates": coords},
+                            "properties": {
+                                **anom,
+                                "aoi_id": czone,
+                                "source_kind": "complementary",
+                                "confidence": anom.get("confidence", "pronóstico meteorológico"),
+                                "metrics": anom.get("metrics", {}),
+                            },
+                        })
+                except Exception:
+                    pass
     from .fire_cells import aggregate, region_name
 
     for feature in feats:

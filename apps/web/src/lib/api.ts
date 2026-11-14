@@ -55,7 +55,7 @@ export type TimeSeries = {
   aoi_id: string; samples: { date: string; granule: string; HHHH: PolStats; HVHV: PolStats; HV_HH_ratio_db?: number }[];
 };
 
-export type AlertKind = "quake" | "fire" | "surface_change" | "deformation";
+export type AlertKind = "quake" | "fire" | "surface_change" | "deformation" | "climate_anomaly";
 export type ExposureSource = {
   name: string; date?: string; year?: number; license?: string; license_url?: string; url?: string; attribution?: string;
 };
@@ -176,7 +176,19 @@ export type AlertFeature = {
     note: string; source_url: string; aoi_id?: string; granules?: string[]; provisional?: boolean; polarization?: string | null;
     center?: [number, number]; members?: { id: string; date: string }[]; first_date?: string;
     comparison_summary?: { loss_area_ha: number; mapped_loss_area_ha: number; alerts: number } | null;
-    metrics: { magnitude?: number; magnitude_type?: string; depth_km?: number; frp_mw?: number; area_ha?: number | null; count?: number };
+    metrics: {
+      magnitude?: number;
+      magnitude_type?: string;
+      depth_km?: number;
+      frp_mw?: number;
+      area_ha?: number | null;
+      count?: number;
+      tmin_c?: number | null;
+      tmax_c?: number | null;
+      rain_mm?: number | null;
+      rain_sum_mm?: number | null;
+      elevation_m?: number | null;
+    };
     exposure?: Exposure | null;
     remediation?: RemediationAlert | null;
   };
@@ -221,7 +233,43 @@ export type Climate = { source: string; version: string; source_url: string; fet
   annual: { year: number; temperature: number; rain_mm: number }[];
   projection: { year: number; temperature: number; low: number; high: number }[];
   current: { date: string; max_c: number; min_c: number | null; heat_days: number; hot_last_year: number;
-    rain_mm: number | null; normal_rain_mm: number | null; rain_ratio: number | null } };
+    rain_mm: number | null; normal_rain_mm: number | null; rain_ratio: number | null };
+  seasonal_normals?: Record<string, {
+    name: string; tmax_mean: number | null; tmax_p10: number | null; tmax_p90: number | null;
+    tmin_mean: number | null; tmin_p10: number | null; tmin_p90: number | null;
+    rain_daily_mean: number | null; rain_daily_p90: number | null; rain_mean_monthly_mm: number | null;
+  }>;
+  typical_season?: {
+    season_code: string; season_name: string; typical_tmax_c: number | null;
+    typical_tmin_c: number | null; typical_rain_mm: number | null;
+    p10_tmin_c: number | null; p90_tmax_c: number | null; p90_rain_daily_mm: number | null;
+    units: { temperature: string; rainfall: string }; description: string;
+  };
+  forecast?: {
+    source: string; source_url?: string; fetched_at: string; status?: string;
+    daily: {
+      time: string[]; temperature_2m_max: number[]; temperature_2m_min: number[];
+      precipitation_sum: number[]; soil_moisture_0_to_10cm_mean?: number[];
+    };
+  } | null;
+  anomalies?: {
+    id: string; kind: string; source: string; source_kind?: string; title: string;
+    place: string; date: string; level: "alto" | "medio" | "bajo"; confidence: string;
+    note: string; metrics: { tmin_c?: number; tmax_c?: number; rain_mm?: number; normal_p10_c?: number; normal_p90_c?: number; normal_p90_mm?: number };
+    source_url?: string;
+  }[];
+  agricultural_calendar?: {
+    evaluated_at: string; season: string; outlook_days: number;
+    crops: {
+      id: string; name: string; scientific: string; altitude_m: [number, number];
+      status: "favorable" | "precaucion" | "fuera_de_temporada";
+      sowing_season_months: string; guidance: string;
+      factors: { avg_tmin_c?: number | null; avg_tmax_c?: number | null; rain_7d_mm?: number | null; soil_moisture_m3m3?: number | null };
+    }[];
+    livestock: { name: string; altitude_m: [number, number]; status: string; guidance: string };
+    promoter_note: string;
+  };
+};
 export type CommunityDetail = CommunityPlace & { impact: CommunityImpact | null; as_of: string;
   fire: NearbyEvents; quakes: NearbyEvents; fires_today: number;
   indicator: { level: "red" | "orange" | "yellow" | "green" | "unavailable";

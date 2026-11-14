@@ -1,0 +1,72 @@
+# Calendario y requerimientos agroclimáticos para cultivos andinos (Fase 2)
+# Basado en SENAMHI, INIA y cartillas técnicas de la DRA Ayacucho.
+# El saber local manda: las ventanas son sugerencias fundamentadas en datos satelitales y meteorológicos.
+
+crops:
+  - id: papa
+    name: Papa nativa / Papa
+    scientific: Solanum tuberosum
+    altitude_m: [2800, 4200]
+    sowing_months: [9, 10, 11, 12]  # Septiembre a Diciembre (campaña grande)
+    min_temp_c: 4.0
+    max_temp_c: 20.0
+    frost_sensitive: true
+    min_soil_moisture: 0.18
+    ideal_rainfall_7d_mm: [15.0, 45.0]
+    guidance:
+      favorable: "Condiciones de humedad y temperatura favorables para siembra o aporque."
+      frost_warning: "Alerta de helada: aplicar riego nocturno ligero o cobertura con mulching/paja de ichu."
+      drought_warning: "Estrés hídrico: retrasar siembra o asegurar riego complementario por zanjas de infiltración."
+
+  - id: maiz
+    name: Maíz choclo / Maíz grano
+    scientific: Zea mays
+    altitude_m: [2200, 3400]
+    sowing_months: [9, 10, 11]  # Primavera andina
+    min_temp_c: 8.0
+    max_temp_c: 24.0
+    frost_sensitive: true
+    min_soil_moisture: 0.15
+    ideal_rainfall_7d_mm: [10.0, 40.0]
+    guidance:
+      favorable: "Ventana térmica óptima para germinación y emergencia de plántulas."
+      frost_warning: "Alta vulnerabilidad a heladas en valles interandinos; proteger con barreras vivas de molle."
+      drought_warning: "Suelo seco: riesgo de mala germinación; esperar humedecimiento adecuado del perfil."
+
+  - id: quinua
+    name: Quinua
+    scientific: Chenopodium quinoa
+    altitude_m: [2800, 3900]
+    sowing_months: [9, 10, 11]  # Inicio de lluvias
+    min_temp_c: 2.0
+    max_temp_c: 22.0
+    frost_sensitive: false  # más resistente en estados avanzados
+    min_soil_moisture: 0.12
+    ideal_rainfall_7d_mm: [8.0, 30.0]
+    guidance:
+      favorable: "Condiciones propicias para siembra de quinua en secano."
+      frost_warning: "Tolerante al frío ligero, pero vulnerable durante la floración."
+      drought_warning: "Alta rusticidad, pero requiere humedad mínima de suelo para la emergencia inicial."
+
+  - id: habas
+    name: Habas
+    scientific: Vicia faba
+    altitude_m: [2600, 3800]
+    sowing_months: [10, 11, 12]  # Octubre a Diciembre
+    min_temp_c: 5.0
+    max_temp_c: 20.0
+    frost_sensitive: true
+    min_soil_moisture: 0.16
+    ideal_rainfall_7d_mm: [12.0, 40.0]
+    guidance:
+      favorable: "Temperatura y humedad adecuadas para establecimiento de leguminosa fijadora de nitrógeno."
+      frost_warning: "Las heladas queman flores y vainas tiernas; vigilar pronóstico nocturno."
+      drought_warning: "Sensible a estrés hídrico en llenado de grano; coordinar agua de qocha o amuna."
+
+livestock:
+  name: "Ganado altoandino (Alpacas, llamas y ovinos)"
+  altitude_m: [3800, 4800]
+  frost_risk_temp_c: -3.0
+  guidance:
+    frost_warning: "Helada severa (< -3 °C): resguardar crías en cobertizos y proveer forraje seco (heno de avena/ichu)."
+    heavy_rain: "Lluvias intensas o nevada en puna: vigilar pastos anegados y afecciones respiratorias."

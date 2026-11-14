@@ -37,6 +37,10 @@ export function AlertDetails({ feature, onBack, onResources }: { feature: AlertF
       {p.metrics.frp_mw !== undefined && <div><dt>Potencia radiativa</dt><dd><CountUp value={p.metrics.frp_mw} decimals={1} /> <small>MW</small></dd></div>}
       {p.metrics.count !== undefined && <div><dt>Detecciones en la celda</dt><dd><CountUp value={p.metrics.count} /> <small>focos</small></dd></div>}
       {p.metrics.area_ha != null && <div><dt>Área de esta mancha</dt><dd><CountUp value={p.metrics.area_ha} decimals={2} /> <small>ha</small></dd></div>}
+      {p.metrics.tmax_c != null && <div><dt>Temperatura máxima</dt><dd><CountUp value={p.metrics.tmax_c} decimals={1} /> <small>°C</small></dd></div>}
+      {p.metrics.tmin_c != null && <div><dt>Temperatura mínima</dt><dd><CountUp value={p.metrics.tmin_c} decimals={1} /> <small>°C</small></dd></div>}
+      {p.metrics.rain_sum_mm != null && <div><dt>Lluvia prevista</dt><dd><CountUp value={p.metrics.rain_sum_mm} decimals={1} /> <small>mm</small></dd></div>}
+      {p.metrics.elevation_m != null && <div><dt>Altitud de referencia</dt><dd><CountUp value={p.metrics.elevation_m} decimals={0} /> <small>m s.n.m.</small></dd></div>}
     </dl>
     <p className="observation-note">{p.note}</p>
     <p className="muted">Confianza o revisión · {p.confidence}</p>

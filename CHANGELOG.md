@@ -4,6 +4,7 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- Fase 2 (doc 23): normales climáticas estacionales (45 años NASA POWER), pronóstico y anomalías de Open-Meteo, y calendario agrícola inteligente para 4 cultivos andinos y ganado en puna con registro de saber tradicional.
 - Fase 1 (doc 23): motor de riesgo ponderado y recetas naturales (SbN) con especies nativas, costos por verificar y fuentes citadas; comando `sarlab remediation`, API en `/api/remediation` y pestaña Acción en el visor 3D.
 - Plan maestro en 4 fases para pasar de detector a acción con soluciones basadas en la naturaleza (docs/23): riesgo, recetas SbN, clima, costo-beneficio, radio y Minka; con credenciales necesarias y prompt para Antigravity.
 - Todo GAIA se usa en localhost:5173: `npm run dev` (o `make dev`) arranca también la API, que queda interna en 127.0.0.1:8000 y se alcanza por /api.

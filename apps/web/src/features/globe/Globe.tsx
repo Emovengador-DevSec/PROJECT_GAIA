@@ -26,7 +26,7 @@ type Props = {
   onSelect: (alert: AlertFeature) => void; onStatus: (status: GlobeStatus) => void;
 };
 const REDUCED = "(prefers-reduced-motion: reduce)";
-const COLORS = { quake: "#fbbf24", fire: "#ff3b3b", surface_change: "#c69aff", deformation: "#a855f7" };
+const COLORS = { quake: "#fbbf24", fire: "#ff3b3b", surface_change: "#c69aff", deformation: "#a855f7", climate_anomaly: "#38bdf8" };
 
 function marker(kind: string, color: string): string {
   const shapes: Record<string, string> = {
@@ -34,6 +34,7 @@ function marker(kind: string, color: string): string {
     fire: '<path d="M21 5c3 9-1 10 3 14 2-3 3-5 3-5 8 13 2 21-7 21C9 35 7 25 13 18c0 5 3 5 3 5-2-8 4-10 5-18z"/>',
     surface_change: '<path d="m20 5 13 8v14l-13 8-13-8V13z"/>',
     deformation: '<path d="m20 4 15 16-15 16L5 20z"/>',
+    climate_anomaly: '<path d="M12 26a8 8 0 1 1 15.5-3.5A6 6 0 1 1 34 28H12a6 6 0 0 1 0-12 6 6 0 0 1 6 2"/>',
   };
   return "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><g fill="${color}" stroke="${color}" stroke-width="1">${shapes[kind] ?? shapes.surface_change}</g></svg>`);
 }

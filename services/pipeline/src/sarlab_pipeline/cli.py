@@ -75,6 +75,7 @@ def main(argv: list[str] | None = None) -> int:
     climate = sub.add_parser("climate", help="Publica la climatología diaria de NASA POWER")
     climate.add_argument("--aoi", required=True)
     climate.add_argument("--input", type=Path, help="Respuesta original descargada de NASA POWER")
+    climate.add_argument("--offline", action="store_true", help="No consulta pronósticos externos")
     fires = sub.add_parser("fire-history", help="Publica el archivo histórico completo de focos MODIS")
     fires.add_argument("--aoi", required=True)
 
@@ -104,7 +105,7 @@ def main(argv: list[str] | None = None) -> int:
         from .climate import publish
 
         try:
-            result = publish(a.aoi, a.input)
+            result = publish(a.aoi, a.input, offline=getattr(a, "offline", False))
         except (OSError, ValueError, KeyError) as exc:
             ap.error(str(exc))
         print(json.dumps({"years": len(result["annual"]), "current": result["current"]["date"],

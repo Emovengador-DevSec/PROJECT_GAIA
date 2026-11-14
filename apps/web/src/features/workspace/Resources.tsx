@@ -55,6 +55,7 @@ const alertReferences: Record<AlertKind, Link[]> = {
   deformation: [subsidence, applications],
   fire: [fires, opera],
   surface_change: [applications, sar],
+  climate_anomaly: [gpm, applications],
 };
 const storyReferences: Record<string, Link[]> = {
   "ayacucho-huanta": [fires, opera],
