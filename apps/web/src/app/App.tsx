@@ -9,7 +9,7 @@ import { LiveSummary } from "../features/workspace/LiveSummary";
 import { EventTimeline } from "../features/workspace/EventTimeline";
 import { OrbitCard } from "../features/workspace/OrbitCard";
 import { api, type AOI, type AlertFeature, type AlertKind, type Audience, type Catalog, type CitizenReport,
-  type ContextLayer, type FeedStatus, type GlobeStatus, type Health, type LayerManifest, type OrbitData, type PolarizationSummary, type Rainfall, type Story, type TimeSeries, type Trend, type Validation } from "../lib/api";
+  type CommunityPlace, type ContextLayer, type FeedStatus, type GlobeStatus, type Health, type LayerManifest, type OrbitData, type PolarizationSummary, type Rainfall, type Story, type TimeSeries, type Trend, type Validation } from "../lib/api";
 import { TABS, type TabId } from "../config/tabs";
 import "../features/workspace/workspace.css";
 
@@ -278,6 +278,17 @@ export function App() {
     if (match) { linkedAlert.current = null; pickAlert(match); }
   }, [alerts, fireCells, pickAlert]);
   const chooseTab = (id: TabId) => { setPickingReport(false); setTab(id); setSelected(undefined); setPanelOpen(true); };
+  const locateCommunity = useCallback((place: CommunityPlace) => {
+    const zone = aois.find(item => item.id === "ayacucho-huanta");
+    if (!zone) return;
+    setCurrent(zone);
+    setPol("HVHV");
+    setCutoff(undefined);
+    setContextChoice(null);
+    setCompare(false);
+    setSelected(undefined);
+    setCommunityCenter([...place.center]);
+  }, [aois]);
 
   return <div className="shell" data-workspace={ready || undefined} data-tab={tab}
     data-report-picking={pickingReport || undefined}
@@ -289,7 +300,7 @@ export function App() {
         reportPicker={tab === "community" && pickingReport ? point => { setReportPoint(point); setPickingReport(false); } : undefined}
         reportPoint={tab === "community" ? reportPoint : undefined}
         offline={health?.offline} radarBounds={radarBounds} realTimeLighting={realTimeLighting}
-        tileUrl={health?.tiles && layer && showRadar && !comparison && !activeContext ? api.tileUrl(layer) : undefined}
+        tileUrl={health?.tiles && layer && showRadar && !comparison && !activeContext && tab !== "community" ? api.tileUrl(layer) : undefined}
         beforeUrl={layer && showRadar && radarComparison ? api.tileUrl(layer, "before", rgb) : undefined}
         afterUrl={layer && showRadar && radarComparison ? api.tileUrl(layer, "after", rgb) : undefined}
         contextOverlay={activeContext && current && showContext
@@ -362,7 +373,7 @@ export function App() {
         compare={compare} setCompare={value => { cancelSweep(); setSplit(50); if (value) { setContextChoice(null); setCutoff(undefined); } setCompare(value); }}
         canUseFalseColor={canUseFalseColor} falseColor={rgb} setFalseColor={value => { cancelSweep(); setSplit(50); setFalseColor(value); }}
         onClose={() => { setPanelOpen(false); setPickingReport(false); }} onResources={() => chooseTab("resources")}
-        communityProps={{ onLocate: place => { setSelected(undefined); setCommunityCenter([...place.center]); },
+        communityProps={{ onLocate: locateCommunity,
           reports, reportError, reportLayer, picking: pickingReport, point: reportPoint,
           onReportLayer: () => setReportLayer(value => !value),
           onPick: value => {

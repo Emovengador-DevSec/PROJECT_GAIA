@@ -14,6 +14,7 @@ __pycache__/
 .ruff_cache/
 node_modules/
 dist/
+*.tsbuildinfo
 /deploy/
 *.h5
 *.hdf5

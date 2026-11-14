@@ -19,6 +19,8 @@ from . import settings as S
 # Ej.: NISAR_L2_PR_GCOV_005_172_A_008_2005_DHDH_A_20251122T024618_20251122T024652_X05007_N_F_J_001.h5
 NAME_RE = re.compile(r"^NISAR_(?P<level>L\d)_(?P<cfg>[A-Z]{2})_(?P<product>[A-Z0-9]{4})_.*?"
                      r"_(?P<start>\d{8}T\d{6})_(?P<end>\d{8}T\d{6})_.*\.h5$")
+IMERG_RE = re.compile(r"^3B-DAY-L\.MS\.MRG\.3IMERG\.(?P<day>\d{8})"
+                      r"-S000000-E235959\.V07B\.nc4$")
 
 
 def sha256(path: Path) -> str:
@@ -30,6 +32,14 @@ def sha256(path: Path) -> str:
 
 
 def identify(path: Path) -> dict:
+    imerg = IMERG_RE.fullmatch(path.name)
+    if imerg:
+        with h5py.File(path, "r"):
+            pass  # Validate the NetCDF4 container before publishing the original.
+        acquired = datetime.strptime(imerg["day"], "%Y%m%d").date().isoformat()
+        return {"source": "gpm", "level": "L3", "cfg": "PR", "product": "IMERGDL",
+                "start": imerg["day"] + "T000000", "end": imerg["day"] + "T235959",
+                "acquired": acquired}
     m = NAME_RE.match(path.name)
     if not m:
         raise ValueError("nombre no reconocido como producto NISAR")
@@ -132,7 +142,7 @@ def _ingest_locked() -> dict:
     checksums = json.loads(checksums_p.read_text()) if checksums_p.exists() else {}
     report = {"ingeridos": [], "omitidos": [], "cuarentena": [], "recuperados": []}
     accepted = []
-    for path in sorted(S.INBOX.glob("*.h5")):
+    for path in sorted([*S.INBOX.glob("*.h5"), *S.INBOX.glob("*.nc4")]):
         if not path.is_file():
             continue
         try:
@@ -146,7 +156,7 @@ def _ingest_locked() -> dict:
                 raise ValueError("El nombre ya está registrado con otra suma SHA-256.")
             y, m = info["acquired"][:4], info["acquired"][5:7]
             rel = Path(existing["path"]) if existing else (
-                Path("nisar") / info["product"].lower() / y / m / path.name)
+                Path(info.get("source", "nisar")) / info["product"].lower() / y / m / path.name)
             dest = (S.RAW / rel).resolve()
             if not dest.is_relative_to(S.RAW.resolve()):
                 raise ValueError("La ruta registrada sale de data/01_raw.")

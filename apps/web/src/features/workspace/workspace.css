@@ -52,7 +52,7 @@
   color: #f4f7fb;
   font: inherit;
 }
-.map-context { position: absolute; left: 28px; top: 99px; display: grid; gap: 4px; max-width: min(32vw, 360px); color: #f4f7fb; text-shadow: 0 2px 9px #000; }
+.map-context { position: absolute; left: 28px; top: 99px; display: grid; gap: 4px; max-width: min(32vw, 360px); padding: 14px; border-radius: 10px; background: rgb(5 10 16 / 94%); color: #f4f7fb; }
 .map-context > span { font: 520 18px/1.25 var(--font-display); }
 .map-context > .map-zone { justify-self: start; padding: 5px 10px; border-radius: 6px; background: rgb(5 7 10 / 94%); }
 .live-totals { display: flex; gap: clamp(15px, 2vw, 34px); margin-top: 22px; pointer-events: auto; }
@@ -271,6 +271,9 @@
 .context-layers small { display: block; color: #a6bdcc; margin-block-start: 3px; }
 .context-layers .source-link { display: block; width: fit-content; }
 .map-context .map-context-source { color: #c5f1f2; }
+.rainfall-chart { margin: 12px 0 18px; }
+.rainfall-chart svg { display: block; width: 100%; height: auto; }
+.rainfall-chart figcaption { color: var(--escarcha); font-size: 16px; line-height: 1.4; }
 .badge-provisional a { color: inherit; text-underline-offset: 3px; }
 .resource-group { border-bottom: 1px solid #2a3945; }
 .resource-group > summary { min-height: 44px; padding-block: 12px; cursor: pointer; color: #e5f1f8; font-size: var(--workspace-text); font-weight: 650; }
@@ -323,7 +326,7 @@
   .workspace-bar > .workspace-action:not(.community-entry) { display: none; }
   .workspace-light { grid-column: 2; grid-row: 2; }
   .workspace-light > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-  .map-context { top: 139px; left: 17px; gap: 4px; max-width: calc(100% - 34px); }
+  .map-context { top: 139px; left: 17px; gap: 4px; padding: 10px; max-width: calc(100% - 34px); }
   .map-context > span { font-size: var(--workspace-text); }
   .map-context small { font-size: var(--workspace-text); }
   .map-context button { font-size: var(--workspace-text); margin-top: 2px; padding: 3px 7px; }

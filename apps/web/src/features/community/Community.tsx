@@ -47,10 +47,12 @@ export function Community({ onLocate, reports, reportError, reportLayer, onRepor
     url.searchParams.delete("alert");
     url.searchParams.set("lugar", place.id);
     history.replaceState(null, "", url);
-    onLocate(place);
   }
   const provinces = index?.places.filter(place => place.kind === "province") ?? [];
   const selected = index?.places.find(place => place.id === placeId);
+  useEffect(() => {
+    if (selected) onLocate(selected);
+  }, [selected, onLocate]);
   const scope = province || selected?.province || "Huamanga";
   const districts = index?.places.filter(place => place.kind === "district" && place.province === scope) ?? [];
   const found = normalize(query).length >= 2 ? index?.places.filter(place =>
@@ -90,6 +92,7 @@ export function Community({ onLocate, reports, reportError, reportLayer, onRepor
             </dl>
             <p className="muted">WorldPop estima la población dentro de las manchas con píxeles válidos ({detail.impact.population_zones} de {detail.impact.zones}).</p>
           </> : <p className="muted">El lugar queda fuera de la cobertura analizada con este par de imágenes.</p>}
+          {index?.outside_provinces && <p className="muted">El total regional incluye {number(index.outside_provinces.cropland_ha)} ha de cultivos fuera de Huamanga, Huanta y La Mar. Por eso la suma de las tres fichas provinciales es menor que el total de la zona NISAR.</p>}
           <details className="technical-details"><summary>Fuentes y fechas</summary><ul className="source-list">
             <li><a href="https://nisar-docs.asf.alaska.edu/" target="_blank" rel="noreferrer">NISAR / ASF</a> · GCOV provisional</li>
             {Object.values(index?.sources ?? {}).map(source => <li key={source.name}><a href={source.url} target="_blank" rel="noreferrer">{source.name}</a> · {source.year ?? formatDate(source.date)} · {source.license}</li>)}

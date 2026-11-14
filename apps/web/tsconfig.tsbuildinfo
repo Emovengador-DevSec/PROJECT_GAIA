@@ -1,1 +1,0 @@
-{"root":["./src/main.tsx","./src/vite-env.d.ts","./src/app/app.tsx","./src/config/tabs.ts","./src/features/gaia/gaiacover.tsx","./src/features/globe/globe.tsx","./src/features/intro/fringeintro.tsx","./src/features/panels/inspector.tsx","./src/features/panels/sparkline.tsx","./src/lib/api.ts"],"version":"5.9.3"}

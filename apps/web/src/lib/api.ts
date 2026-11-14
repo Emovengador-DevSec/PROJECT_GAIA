@@ -47,6 +47,7 @@ export type Validation = {
 export type Rainfall = {
   source: string; source_url: string; note: string; dates: string[]; granules: string[];
   mean_mm: number | null; valid_area_pct: number;
+  daily?: { date: string; mean_mm: number | null }[];
 };
 
 export type PolStats = { median_db: number; p10_db: number; p90_db: number; valid_pct: number } | null;
@@ -99,7 +100,7 @@ type CommunityImpact = { zones: number; cropland_ha: number | null; grassland_ha
 export type CommunityPlace = { id: string; name: string; kind: "province" | "district" | "place";
   province: string; center: [number, number]; url?: string };
 export type CommunityIndex = { period: { a: string; b: string }; granules: string[]; coverage_pct: number;
-  region: CommunityImpact; sources: Record<string, CommunitySource>; district_source?: CommunitySource;
+  region: CommunityImpact; outside_provinces?: CommunityImpact; sources: Record<string, CommunitySource>; district_source?: CommunitySource;
   places: CommunityPlace[] };
 type NearbyEvents = { status: string; updated_at: string | null; radius_km: number;
   events: { date: string; km: number; magnitude?: number }[] };
@@ -113,7 +114,7 @@ export type CommunityDetail = CommunityPlace & { impact: CommunityImpact | null;
   fire: NearbyEvents; quakes: NearbyEvents; fires_today: number;
   indicator: { level: "red" | "orange" | "yellow" | "green" | "unavailable";
     reasons: [string, string, string, string][]; live_complete: boolean; weather_at: string | null };
-  rules: { fire_radius_km: number; quake_radius_km: number; quake_magnitude: number; heat_days: number; rain_ratio: number } };
+  rules: { fire_radius_km: number; quake_radius_km: number; quake_magnitude: number; heat_days: number; rain_ratio: number; rain_excess_ratio: number } };
 export type ReportKind = "fire" | "landslide" | "dry_water" | "crop_damage";
 export type CitizenReport = { id: string; kind: ReportKind; lon: number; lat: number; observed_at: string;
   firms_match: boolean; nisar_overlap: boolean };

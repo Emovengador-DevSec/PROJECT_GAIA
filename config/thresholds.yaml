@@ -24,3 +24,5 @@ community:
   quake_magnitude: 4.5
   heat_days: 3
   rain_ratio: 0.5
+  # Regla informativa de GAIA, no umbral oficial ni pronóstico de deslizamiento.
+  rain_excess_ratio: 2.0

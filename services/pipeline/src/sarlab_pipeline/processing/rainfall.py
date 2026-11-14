@@ -33,7 +33,10 @@ def three_day_rain(aoi: str, files: list[Path], variable: str, group: str | None
                 raise ValueError("La variable diaria debe expresar precipitación en mm/día.")
             coordinates = {
                 role: next((key for key in dataset.variables
-                            if dataset[key].attrs.get("standard_name") == role), None)
+                            if dataset[key].attrs.get("standard_name") == role
+                            or (role != "time" and dataset[key].attrs.get("units") == {
+                                "latitude": "degrees_north", "longitude": "degrees_east",
+                            }[role])), None)
                 for role in ("latitude", "longitude", "time")
             }
             if not all(coordinates.values()):
@@ -66,10 +69,14 @@ def three_day_rain(aoi: str, files: list[Path], variable: str, group: str | None
     shape[aligned[0].dims.index(aligned[0][lat].dims[0])] = latitudes.size
     weights = np.broadcast_to(np.cos(np.deg2rad(latitudes)).reshape(shape), cumulative.shape)
     mean = float(np.sum(cumulative[valid] * weights[valid]) / weights[valid].sum()) if valid.any() else None
+    daily = [{"date": observed.isoformat(), "mean_mm": round(float(
+        np.sum(values[index][valid] * weights[valid]) / weights[valid].sum()), 2) if valid.any() else None}
+        for index, (observed, _) in enumerate(days)]
     result = {
         "aoi_id": aoi, "source": "NASA/GPM · IMERG", "unit": "mm",
         "source_url": "https://gpm.nasa.gov/data/imerg",
         "dates": [item[0].isoformat() for item in days], "granules": sorted(paths),
+        "daily": daily,
         "variable": variable, "group": group, "mean_mm": round(mean, 2) if mean is not None else None,
         "valid_area_pct": round(float(valid.mean()) * 100, 2),
         "note": "Acumulado de tres días UTC. Media espacial sobre píxeles válidos en los tres días, "

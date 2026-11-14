@@ -90,6 +90,15 @@ def community_detail(
             reasons.append(
                 ("yellow", "NASA POWER", "Lluvia de 30 días por debajo del umbral", conditions["date"])
             )
+        if (conditions.get("rain_ratio") is not None
+                and conditions["rain_ratio"] >= settings["rain_excess_ratio"]):
+            ratio = f"{conditions['rain_ratio']:.1f}".replace(".", ",")
+            reasons.append((
+                "orange", "NASA POWER",
+                f"Lluvia de 30 días: {ratio} veces la climatología; "
+                "vigilar condiciones asociadas a huaicos y deslizamientos",
+                conditions["date"],
+            ))
     rank = {"red": 0, "orange": 1, "yellow": 2}
     reasons.sort(key=lambda reason: rank[reason[0]])
     verified = not any(feed["stale"] or feed["status"] != "ok" for feed in feeds.values())

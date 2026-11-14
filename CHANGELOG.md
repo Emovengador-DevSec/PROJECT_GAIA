@@ -4,6 +4,9 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- Revisión 19: lluvia excesiva en el semáforo, acumulado IMERG real de Chosica, vuelo y radar desde Mi comunidad, explicación del área fuera de las provincias y panel orbital legible.
+
+- Añadido el plan de datos extra y entrega del domingo (docs/18): erosión por pendiente, óptico HLS, calendario agrícola, historial de incendios y pitch de 30 s en inglés.
 - C4 añade reportes ciudadanos en el globo con ubicación aproximada, moderación y cruces informativos con FIRMS y NISAR.
 
 - C3 agrega los arcos climáticos de Ayacucho con NASA POWER, observaciones recientes y una extrapolación térmica hasta 2035.
@@ -12,6 +15,7 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 - C1 publica fichas de Mi comunidad con exposición HV por lugar, cultivos, población estimada y observaciones recientes de FIRMS y USGS.
 
+- Añadido el plan de valor comunitario (docs/17): resumen por pueblo, semáforo informativo con fuentes oficiales, dos arcos de clima con NASA POWER y reportes ciudadanos seguros; destaca que 518 de las 938 ha de cambio HV están en chacras.
 - Validación de publicación: fecha UTC del gránulo, recuento HV y superficies verificadas, relato corregido, compresión y precarga de fuentes, y contenedor con las teselas NISAR reales.
 
 - Añadida la validación previa a publicar (docs/16): pruebas, compilación, recorrido real y secretos en orden; quedan 12 correcciones de cifras, rendimiento y presentación.

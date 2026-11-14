@@ -1,0 +1,26 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "instrument serif",
+        "files": [
+          "apps/web/src/features/gaia/gaia.css"
+        ],
+        "createdAt": "2026-11-13T00:08:13.512Z",
+        "reason": "Codex: Instrument Serif is intentional in the requested editorial comparison variant at ?portada=editorial. The user selected variant A with Bricolage as the primary cover."
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "apps/web/src/styles/tokens.css"
+        ],
+        "createdAt": "2026-11-13T00:08:18.984Z",
+        "reason": "Codex: the sole match is the pre-existing .badge-provisional status notice in HEAD. Inspector.tsx uses it to identify provisional NISAR calibration data, consistent with the required visible data-quality warning."
+      }
+    ]
+  }
+}

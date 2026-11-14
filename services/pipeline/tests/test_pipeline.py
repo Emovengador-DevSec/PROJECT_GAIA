@@ -71,6 +71,24 @@ def test_ingest_moves_and_quarantines(data_dirs):
     assert "provisional" in item["quality_flags"]
 
 
+def test_ingest_imerg_preserves_original_and_checksums(data_dirs):
+    import h5py
+
+    from sarlab_pipeline import settings as S
+    from sarlab_pipeline.ingest import ingest_inbox, sha256
+
+    name = "3B-DAY-L.MS.MRG.3IMERG.20260222-S000000-E235959.V07B.nc4"
+    with h5py.File(S.INBOX / name, "w") as file:
+        file.attrs["test_fixture"] = True
+    digest = sha256(S.INBOX / name)
+    assert ingest_inbox()["ingeridos"] == [name]
+    catalog = json.loads((S.CATALOG / "catalog.json").read_text())
+    item = catalog["items"][name]
+    assert item["source"] == "gpm" and item["acquired"] == "2026-02-22"
+    assert sha256(S.RAW / item["path"]) == digest
+    assert not (S.INBOX / name).exists()
+
+
 def test_change_workflow_end_to_end(data_dirs, tmp_path, monkeypatch):
     from sarlab_pipeline import workflows
     from sarlab_pipeline.config import AOI, Thresholds  # noqa: F401

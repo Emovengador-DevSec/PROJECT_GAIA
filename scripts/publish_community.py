@@ -10,6 +10,7 @@ from zipfile import ZipFile
 
 from shapely import make_valid
 from shapely.geometry import Point, box, mapping, shape
+from shapely.ops import unary_union
 
 from sarlab_pipeline import exposure
 from sarlab_pipeline import settings as S
@@ -157,12 +158,22 @@ def publish(districts: Path | None) -> dict:
                     "impact": summarize(by_place[props["url"]]) if coverage.covers(point) else None,
                 }
             )
+    province_union = unary_union([geometry for _, geometry in provinces])
+    outside = []
+    for patch, metrics in patches:
+        remainder = patch.difference(province_union)
+        if remainder.area:
+            outside.append(metrics if remainder.equals(patch) else {
+                **exposure._landcover(local / "worldcover.tif", mapping(remainder)),
+                "population": exposure._population(local / "worldpop.tif", mapping(remainder)),
+            })
     result = {
         "aoi": AOI,
         "period": manifest["dates"],
         "granules": manifest["provenance"]["granules"],
         "coverage_pct": manifest["quality"]["valid_area_pct"],
         "region": summarize([m for _, m in patches]),
+        "outside_provinces": summarize(outside),
         "sources": published["sources"],
         "district_source": district_source,
         "places": entries,

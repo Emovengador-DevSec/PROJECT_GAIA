@@ -98,6 +98,9 @@ export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint
     v.scene.highDynamicRange = true;
     v.scene.postProcessStages.fxaa.enabled = true;
     v.scene.fog.enabled = true;
+    v.scene.globe.tileLoadProgressEvent.addEventListener((remaining: number) => {
+      host.current?.setAttribute("aria-busy", String(remaining > 0));
+    });
     if (v.scene.skyAtmosphere) v.scene.skyAtmosphere.show = true;
     v.camera.setView({ destination: Cesium.Cartesian3.fromDegrees(-105, 4, 22_000_000) });
     let terrain: GlobeStatus["terrain"] = "loading";

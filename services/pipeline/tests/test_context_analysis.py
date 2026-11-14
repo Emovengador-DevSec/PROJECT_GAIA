@@ -84,6 +84,7 @@ def test_imerg_three_days_require_common_data_and_consecutive_dates(data_dirs):
     assert result["valid_area_pct"] == 75
     assert result["dates"] == ["2026-02-22", "2026-02-23", "2026-02-24"]
     assert 17.9 < result["mean_mm"] < 18.1
+    assert abs(sum(row["mean_mm"] for row in result["daily"]) - result["mean_mm"]) <= .02
     with pytest.raises(ValueError, match="consecutivos"):
         three_day_rain("chosica-rimac", [paths[0], paths[0], paths[2]], "precipitation")
     with pytest.raises(ValueError, match="Confirma la variable"):

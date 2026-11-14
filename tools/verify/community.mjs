@@ -16,6 +16,11 @@ const source = JSON.parse(await readFile("data/04_published/exposure/ayacucho-hu
 const hv = Object.entries(source.alerts).filter(([id]) => id.includes("_hvhv_")
   && id.includes(`${index.period.a}__${index.period.b}`)).map(([, value]) => value);
 assert.equal(index.region.zones, hv.length);
+assert(index.outside_provinces.cropland_ha > 20 && index.outside_provinces.cropland_ha < 21);
+const rainfall = await fetch(base + "/api/rainfall/chosica-rimac").then(result => result.json());
+assert.equal(rainfall.valid_area_pct, 100);
+assert.equal(rainfall.daily.length, 3);
+assert(Math.abs(rainfall.daily.reduce((sum, row) => sum + row.mean_mm, 0) - rainfall.mean_mm) <= .02);
 const fields = ["cropland_ha", "forest_ha", "grassland_ha", "population"];
 for (const field of fields) {
   assert(Math.abs(index.region[field] - hv.reduce((total, row) => total + (row[field] ?? 0), 0)) < .001);
@@ -28,7 +33,7 @@ const browser = await puppeteer.launch({
   headless: true,
 });
 try {
-  for (const [width, height] of [[1440, 900], [390, 844]]) {
+  for (const [width, height] of [[1440, 900], [1600, 900], [390, 844]]) {
     const page = await browser.newPage();
     const errors = [];
     page.on("pageerror", error => errors.push(error.message));
@@ -41,6 +46,8 @@ try {
     await page.locator(".gaia-cta").click();
     await page.waitForSelector(".community-status");
     await page.waitForFunction(() => !document.querySelector(".map-context")?.textContent.includes("Cargando imagen"));
+    await page.waitForFunction(() => document.querySelector(".map-zone")?.textContent.includes("Ayacucho"));
+    await page.waitForSelector('.globe[aria-busy="false"]', { timeout: 60_000 });
     assert.equal(await page.$eval(".community-heading h3", el => el.textContent), "Huamanga");
     assert.equal(await page.$eval(".community-controls select", el => el.value), "Huamanga");
     if (width === 390) assert(await page.$eval(".inspector", el => el.getBoundingClientRect().height > 500));
@@ -58,6 +65,8 @@ try {
     await page.$eval(".report-form", el => el.scrollIntoView({ block: "center" }));
     await page.screenshot({ path: path.join(out, `reportes-${width}.jpg`), type: "jpeg", quality: 87 });
     await page.locator(".rail button:nth-child(4)").click();
+    await page.waitForSelector(".series-table tbody tr:nth-child(2)");
+    assert(!(await page.$eval(".inspector-content", el => el.textContent)).includes("Sin serie procesada"));
     await page.locator(".climate-periods button:nth-child(3)").click();
     await page.waitForSelector(".community-climate-plot polygon");
     assert((await page.$eval(".climate-arcs", el => el.textContent)).includes("45 años completos"));
@@ -73,6 +82,14 @@ try {
     }));
     const pages = [...pdf.toString("latin1").matchAll(/\/Type\s*\/Page\b/g)].length;
     assert.equal(pages, 1, "La ficha impresa debe caber en una página");
+    await page.emulateMediaType("screen");
+    await page.locator(".rail button:nth-child(2)").click();
+    await page.$$eval('.case-list .case', buttons => buttons.find(button => button.textContent.includes('Chosica')).click());
+    await page.waitForSelector('.rainfall-chart svg');
+    const rainSummary = await page.$eval('.rainfall-chart', el => el.parentElement.textContent);
+    assert(rainSummary.includes('13,6 mm') && rainSummary.includes('2026-02-22'));
+    await page.$eval('.rainfall-chart', el => el.scrollIntoView({ block: 'center' }));
+    await page.screenshot({ path: path.join(out, `chosica-${width}.jpg`), type: 'jpeg', quality: 87 });
     assert.deepEqual(errors, []);
     console.log(JSON.stringify({ width, height, community: true, printPages: pages, errors }));
     await page.close();

@@ -49,6 +49,17 @@ Cada entrada con fecha, archivo de origen y comando usado. Solo rutas vistas en 
   Una copia pública NOAA de 2025 presentó numerosos valores faltantes y se descartó para
   publicar un acumulado del caso de 2026.
   [Episodio documentado por INDECI](https://www.gob.pe/institucion/indeci/noticias/1359263-indeci-realizo-visita-tecnica-en-lurigancho-chosica-y-coordino-acciones-de-preparacion-ante-lluvias-intensas)
+  Actualización 14-nov-2026: aceptadas las condiciones GES DISC de la cuenta,
+  se descargaron los tres originales `3B-DAY-L.MS.MRG.3IMERG.202602{22,23,24}-S000000-E235959.V07B.nc4`
+  (80.451.948 bytes) desde las URL de CMR, colección `GPM_3IMERGDL`, versión 07.
+  Entraron por `00_inbox` y `sarlab ingest` los archivó con SHA-256 en `01_raw/gpm/imergdl/2026/02`.
+  `sarlab inspect` confirmó las variables en la raíz: `precipitation` (1,3600,1800),
+  dimensiones `(time,lon,lat)`, unidades `mm/day`; `lat` usa `degrees_north`,
+  `lon` usa `degrees_east` y `time` tiene `standard_name=time`.
+  El lector reconoce las coordenadas por estos atributos CF, sin asumir su orden.
+  `sarlab rainfall --aoi chosica-rimac --variable precipitation <tres originales>`
+  publicó 4,99 / 2,84 / 5,79 mm diarios y 13,62 mm acumulados, con 100 % de cobertura común.
+  Es IMERG **Late**, una estimación satelital regional de unos 10 km, complementaria a NISAR.
 - El catálogo abierto EODMS devolvió escenas RADARSAT-1 con cobertura de las cuatro
   zonas. Se publicaron recortes visuales de Madre de Dios del 4 de abril de 1998
   (escena `8d7424dd-0a1c-5281-8127-2f43e48c7d33`) y Sabancaya del 3 de septiembre

@@ -9,6 +9,7 @@ import { ApplicationReference, LearnMore, Resources, nisarGuide, training, uavsa
 import { RadarGlossary, vertexGranule } from "../workspace/RadarGlossary";
 import { AlertFeed } from "../workspace/AlertFeed";
 import { Sparkline } from "./Sparkline";
+import { RainfallChart } from "./RainfallChart";
 import { Community } from "../community/Community";
 import { ClimateArcs } from "../community/ClimateArcs";
 
@@ -174,9 +175,10 @@ export function Inspector(p: Props) {
         {p.audience === "tecnico" && <a className="source-link" href={training.href} target="_blank" rel="noopener noreferrer">Fundamentos del método · NASA ARSET en español ↗</a>}
         <ContextLayers items={previews} active={p.activeContext} onSelect={p.onContext} title="Vista visual NISAR" />
         <ContextLayers items={complementary} active={p.activeContext} onSelect={p.onContext} />
-        {p.current?.id === "chosica-rimac" && <details className="technical-details">
+        {p.current?.id === "chosica-rimac" && <details className="technical-details" open={!!p.rainfall}>
           <summary>Lluvia acumulada de tres días</summary>
           {p.rainfall ? <>
+            <RainfallChart data={p.rainfall} />
             <p>{p.rainfall.dates[0]} → {p.rainfall.dates.at(-1)}</p>
             <p>{p.rainfall.mean_mm === null ? "Sin píxeles válidos en los tres días" : `${number(p.rainfall.mean_mm, 1)} mm de media en el área de estudio`}</p>
             <p className="muted">Cobertura común · {number(p.rainfall.valid_area_pct, 1)} %</p>
