@@ -40,7 +40,15 @@ try {
   for (const [width, height] of [[1440, 900], [390, 844]]) {
     const page = await browser.newPage();
     const errors = [];
+    const radarTiles = new Set();
     page.on("pageerror", error => errors.push(error.message));
+    page.on("response", response => {
+      const url = new URL(response.url());
+      if (response.ok() && url.pathname.startsWith(`/api/tiles/${hv.id}/`)
+          && url.searchParams.get("palette") === "rgb") {
+        radarTiles.add(url.pathname.split("/")[4]);
+      }
+    });
     await page.setViewport({ width, height });
     const recording = record && width === 1440;
     const pause = ms => new Promise(resolve => setTimeout(resolve, recording ? ms : Math.min(ms, 700)));
@@ -80,6 +88,11 @@ try {
       await page.keyboard.press("ArrowRight");
       await page.keyboard.press("ArrowLeft");
       await pause(10000);
+      for (let attempt = 0; radarTiles.size < 2 && attempt < 100; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 250));
+      }
+      assert(radarTiles.has("before") && radarTiles.has("after"), "Ambas fechas deben servir teselas reales");
+      await new Promise(resolve => setTimeout(resolve, 3000));
       await page.screenshot({ path: path.join(output, `radar-${width}.jpg`), type: "jpeg", quality: 88 });
       await page.locator(".rail button:nth-child(5)").click();
       await page.waitForFunction(() => document.querySelector(".quality-facts")?.textContent.includes("99.9"));

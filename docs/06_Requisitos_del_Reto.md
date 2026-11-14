@@ -2,7 +2,7 @@
 
 Texto de referencia del reto *Dancing with the SARs* (NASA Space Apps 2026). Revisión de GAIA Alerta del 13 de noviembre de 2026.
 
-La demo abre el globo con imagen satelital, sismos de USGS y focos de NASA FIRMS. Ayacucho tiene dos GCOV reales procesados, del 19 de junio y el 5 de octubre de 2026. La comparación y sus alertas se limitan al 1,69 % del área de estudio con cobertura válida en ambas fechas.
+La demo abre el globo con imagen satelital, sismos de USGS y focos de NASA FIRMS. El par activo de Ayacucho corresponde al 24 de junio y el 10 de octubre de 2026, trayectoria 147 ascendente. La cobertura válida común es del 99,91 % de la caja de estudio. OPERA contrasta la misma cobertura con sus rásteres originales.
 
 ## Objetivo principal
 
@@ -31,7 +31,7 @@ La demo abre el globo con imagen satelital, sismos de USGS y focos de NASA FIRMS
 |---|---|---|
 | Distintas **polarizaciones** y **frecuencias** | HH, HV; `--freq frequencyA|frequencyB` | Hecho |
 | **Series de tiempo** con varias fechas | `sarlab timeseries` + pestaña Tiempo | Hecho |
-| Datos de **contexto** (población, vegetación) | `sarlab exposure` cruza WorldPop, ESA WorldCover y localidades con polígonos NISAR | Integrado. Cálculo pendiente de los polígonos reales. |
+| Datos de **contexto** (población, vegetación) | `sarlab exposure` cruza WorldPop 2025, ESA WorldCover 2021 y 1.192 localidades OSM con polígonos NISAR | Publicado para las 608 manchas HH y 498 HV del par activo, con disponibilidad, fechas y licencias. |
 | **Factores humanos** (minería, agricultura, ciudad) | Campo `human_factors` en cada relato | Hecho |
 | **Contar historias** con visualización | Despertar de franjas, vuelos de cámara, relato por pasos | Hecho |
 | **Conocimiento local** | Casos peruanos; el equipo aporta contexto en los relatos | Hecho, a enriquecer |
@@ -41,11 +41,11 @@ La demo abre el globo con imagen satelital, sismos de USGS y focos de NASA FIRMS
 
 | Atributo pedido | Cómo | Estado |
 |---|---|---|
-| **Código abierto** | Licencia MIT, repositorio público, dependencias abiertas | Hecho (cámbiala si el equipo prefiere otra) |
+| **Código abierto** | Licencia MIT y dependencias abiertas | Código preparado. Publicación del repositorio pendiente del equipo. |
 | **Fácil de usar** | Modo público con lenguaje llano; estados vacíos que dicen qué hacer | Hecho |
-| Para **científicos, gestores, educadores, decisores y público** | Modo técnico con método y umbral, modo público, fichas para imprimir y compartir, recursos del reto | Interfaz verificada. Validación científica pendiente de datos NISAR reales. |
+| Para **científicos, gestores, educadores, decisores y público** | Modo técnico con método y umbral, modo público, fichas para imprimir y compartir, recursos del reto | Contraste real OPERA publicado. La coincidencia limitada mantiene pendiente la atribución del cambio a incendios. |
 
 ## Lo que el equipo debe completar con los datos reales
 1. Cambiar el `status` de cada hipótesis a `confirmada` o `descartada`, con la evidencia.
-2. Ajustar las cajas de las zonas a las huellas reales y marcar `status: confirmed`.
+2. Ayacucho tiene caja y cobertura confirmadas. Verificar las demás zonas antes de activarlas como casos cuantitativos.
 3. Escribir en `docs/science/` los hallazgos y las limitaciones.

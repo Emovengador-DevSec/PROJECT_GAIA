@@ -4,6 +4,8 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- G8 prepara el texto y los pendientes de entrega, actualiza Vitest a 4.1.12 para resolver los avisos de seguridad y cierra doctor, pruebas y verificación de la demo con cero vulnerabilidades conocidas.
+
 - G7 actualiza el relato de Ayacucho, verifica la demo con y sin conexión en PC y teléfono y graba un respaldo de 2 min 38 s con los datos nuevos.
 
 - G3 muestra el total HV del manifiesto y las manchas delimitadas por separado, contrasta dos teselas OPERA originales y publica la coincidencia del 2,25 % con la interpretación pendiente de validación.
