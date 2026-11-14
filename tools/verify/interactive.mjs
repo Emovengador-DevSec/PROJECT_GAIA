@@ -5,7 +5,8 @@ import path from "node:path";
 const require = createRequire(new URL("../../art/render/v3/qa/package.json", import.meta.url));
 const puppeteer = require("puppeteer-core");
 const moment = process.argv[2] ?? "W8";
-const output = path.resolve("art/verificacion/interactiva", moment);
+const publishedRadar = moment === "W7";
+const output = path.resolve("art/verificacion/interactiva", publishedRadar ? "W7-radar" : moment);
 await mkdir(output, { recursive: true });
 const browser = await puppeteer.launch({
   executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe",
@@ -15,18 +16,27 @@ try {
   for (const [width, height] of [[1440, 900], [2560, 1440], [390, 844]]) {
     const page = await browser.newPage();
     const errors = [];
-    page.on("pageerror", error => { errors.push(error.message); console.log(error.stack); });
-    page.on("console", message => {
-      if (message.type() === "error" && /model|nisar|draco/i.test(message.text())) console.log(message.text());
+    page.on("pageerror", error => { errors.push(error.name); });
+    const radarTiles = new Set();
+    const radarZoom = new Map();
+    page.on("response", response => {
+      if (!publishedRadar || !response.ok()) return;
+      const url = new URL(response.url());
+      if (!url.pathname.startsWith("/api/tiles/") || url.searchParams.get("palette") !== "rgb") return;
+      const stage = url.pathname.split("/")[4];
+      if (stage === "before" || stage === "after") {
+        radarTiles.add(stage);
+        radarZoom.set(stage, Math.max(radarZoom.get(stage) ?? 0, Number(url.pathname.split("/")[5])));
+      }
     });
     await page.setViewport({ width, height });
     await page.emulateMediaFeatures([{ name: "prefers-reduced-motion", value: "reduce" }]);
-    await page.goto("http://127.0.0.1:5173/", { waitUntil: "domcontentloaded" });
+    await page.goto("http://localhost:5173/", { waitUntil: "domcontentloaded" });
     await page.locator(".gaia-cta").click();
     if (width < 720) await page.locator(".panel-reopen").click();
     await page.waitForSelector(".featured-observation");
     await page.waitForFunction(() => !document.querySelector(".loading-state"));
-    if (moment !== "W8") {
+    if (moment !== "W8" && !(publishedRadar && width === 390)) {
       await page.emulateMediaFeatures([{ name: "prefers-reduced-motion", value: "no-preference" }]);
     }
     await new Promise(resolve => setTimeout(resolve, ["W1", "W3"].includes(moment) ? 4400 : 900));
@@ -90,15 +100,27 @@ try {
       await new Promise(resolve => setTimeout(resolve, 3400));
       console.log(JSON.stringify({ moment, width, orbitSource: await page.$eval(".orbit-card a", element => element.textContent) }));
     }
-    if (moment === "W7") {
+    if (publishedRadar) {
       await page.locator(".rail button:nth-child(2)").click();
       await page.locator(".case:first-child").click();
       await page.locator(".rail button:nth-child(3)").click();
-      await page.waitForFunction(() => document.querySelector(".empty-state h3")?.textContent === "Falta procesar NISAR");
-      const health = await page.evaluate(async () => (await (await fetch("/api/health")).json()));
-      if (health.layers !== 0 || health.credentials.earthdata) throw new Error("The pending-data scenario changed");
-      await new Promise(resolve => setTimeout(resolve, 3200));
-      console.log(JSON.stringify({ moment, width, state: "Waiting for Earthdata and processed NISAR", layers: health.layers }));
+      await page.waitForSelector("#comparison-split");
+      const initial = await page.$eval("#comparison-split", element => Number(element.value));
+      const expectsMotion = width !== 390;
+      if (initial !== (expectsMotion ? 0 : 50)) throw new Error(`Unexpected initial split ${initial}`);
+      if (expectsMotion) await page.waitForFunction(() => document.querySelector(".comparison-divider[data-sweeping]") !== null);
+      await page.waitForFunction(() => document.querySelector("#comparison-split")?.value === "50"
+        && !document.querySelector(".comparison-divider[data-sweeping]"));
+      const slider = await page.$("#comparison-split");
+      await slider.focus();
+      await page.keyboard.press("ArrowRight");
+      await page.waitForFunction(() => document.querySelector("#comparison-split")?.value === "51");
+      for (let attempt = 0; (radarTiles.size < 2 || Math.min(...radarZoom.values()) < 11) && attempt < 35; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+      if (radarTiles.size !== 2) throw new Error("Both actual NISAR RGB tile stages must respond");
+      await new Promise(resolve => setTimeout(resolve, 2200));
+      console.log(JSON.stringify({ moment, width, initial, final: 50, keyboard: 51, tileZoom: Object.fromEntries(radarZoom), prefersReducedMotion: !expectsMotion }));
     }
     const layoutSelector = width < 720 && moment === "W6" ? ".panel-reopen" : ".inspector";
     await page.waitForFunction(selector => {
@@ -116,7 +138,7 @@ try {
     }
     if (errors.length) throw new Error(errors.join("\n"));
     const renderError = await page.$(".cesium-widget-errorPanel");
-    if (renderError) throw new Error(await renderError.evaluate(element => element.textContent));
+    if (renderError) throw new Error("Cesium stopped rendering");
     await page.screenshot({ path: path.join(output, `${width}x${height}.jpg`), type: "jpeg", quality: 85 });
     console.log(JSON.stringify({ moment, width, layout, errors }));
     await page.close();

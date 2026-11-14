@@ -14,10 +14,12 @@ import re
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from ..settings import INBOX, earthdata_token
 
 PRODUCTS = {"GCOV", "GUNW", "GOFF", "GSLC", "SME2"}
+HDF5_SIGNATURE = b"\x89HDF\r\n\x1a\n"
 
 
 def load_cached_catalog(aoi_id: str, product: str = "GCOV", catalog_dir: Path | None = None) -> dict | None:
@@ -111,11 +113,46 @@ def search(wkt: str, start: date, end: date, product: str = "GCOV",
 def download(granules: list[Granule], dest: Path = INBOX, processes: int = 2) -> list[Path]:
     """Descarga a data/00_inbox/. Luego `sarlab ingest` los valida y mueve a 01_raw."""
     import asf_search as asf
+    from asf_search.exceptions import ASFAuthenticationError
+
+    if not granules:
+        return []
+    for granule in granules:
+        url = urlsplit(granule.url)
+        if (url.scheme != "https" or url.hostname != "nisar.asf.earthdatacloud.nasa.gov"
+                or url.username or url.password or url.port not in (None, 443)):
+            raise ValueError("La descarga autenticada exige una URL oficial de NISAR en ASF.")
 
     token = earthdata_token()
     if not token:
         raise RuntimeError("Falta EARTHDATA_TOKEN en el entorno (.env). Créalo en urs.earthdata.nasa.gov.")
-    session = asf.ASFSession().auth_with_token(token)
+    session = asf.ASFSession()
+    try:
+        session.auth_with_token(token)
+    except ASFAuthenticationError:
+        # Some EDL tokens are accepted by the protected object while the SDK's
+        # separate token-introspection endpoint rejects them. Verify the object itself.
+        session.headers.update({"Authorization": "Bearer " + token})
+        try:
+            with session.get(granules[0].url, headers={"Range": "bytes=0-7"},
+                             stream=True, timeout=30) as response:
+                signature = (
+                    next(response.iter_content(chunk_size=8), b"")
+                    if response.status_code in (200, 206) else b""
+                )
+                accepted = signature == HDF5_SIGNATURE
+        except Exception:
+            raise RuntimeError("No se pudo verificar el acceso protegido a NISAR.") from None
+        if not accepted:
+            raise RuntimeError("Earthdata no autorizó el archivo NISAR solicitado.") from None
     dest.mkdir(parents=True, exist_ok=True)
     asf.download_urls([g.url for g in granules], str(dest), session=session, processes=processes)
-    return [dest / Path(g.url).name for g in granules]
+    paths = [dest / Path(g.url).name for g in granules]
+    for granule, path in zip(granules, paths, strict=True):
+        expected = round(granule.size_mb * 1e6) if granule.size_mb else None
+        if not path.is_file() or (expected and path.stat().st_size != expected):
+            raise RuntimeError("La descarga NISAR está incompleta. Revisa data/00_inbox antes de ingerir.")
+        with path.open("rb") as handle:
+            if handle.read(8) != HDF5_SIGNATURE:
+                raise RuntimeError("El archivo descargado no contiene una cabecera HDF5 válida.")
+    return paths

@@ -32,8 +32,8 @@ Cada entrada con fecha, archivo de origen y comando usado. Solo rutas vistas en 
   Se guardaron recortes de Ayacucho del 17 de junio y 15 de octubre de 2026. El catálogo
   ASF confirma HH/HV, trayectoria 54 descendente y marco 95 para ambas fechas.
   Los mosaicos visuales de GIBS tienen una descomposición RGB de NASA. Los cálculos de
-  cambio y la composición propia HH/HV siguen usando los dos HDF5 autorizados de la
-  trayectoria 75, pendientes de Earthdata.
+  cambio y la composición propia HH/HV usan los dos HDF5 autorizados y procesados de la
+  trayectoria 75.
   [Visualización NISAR y colores del mosaico](https://nisar-docs.asf.alaska.edu/worldview/)
 - Se guardaron imágenes OPERA DIST-ALERT-HLS de Ayacucho del 8 de octubre de 2026 y
   Madre de Dios del 5 de octubre. Son capas visuales de estado de perturbación. La
@@ -75,7 +75,14 @@ reducen antes de reproyectar.
 ## GCOV (documentación ASF, 2026-11-11)
 - Grupo: `/science/LSAR/GCOV/grids/frequencyA` (puede existir `frequencyB`).
 - Capas: `HHHH`, `HVHV`, `mask`, `numberOfLooks`, `rtcGammaToSigmaFactor`, `xCoordinates`, `yCoordinates`, `projection` (`attrs['epsg_code']`).
-- Pendiente: confirmar con `sarlab inspect` sobre un archivo descargado (fase M1).
+- Inspección local del gránulo de Ayacucho del 19 de junio de 2026. `sarlab inspect`
+  confirmó las capas anteriores en `frequencyA`, con matriz de 16 200 × 16 632 y
+  potencia HH/HV `float32`. Proyección WGS 84 / UTM 18S (`EPSG:32718`), píxel de 20 m.
+  `mask` es `uint8`; el atributo del archivo indica `0` para muestras que no se
+  enfocaron por completo y `255` para relleno exterior. En el rectángulo proyectado
+  de recorte había 1 620 449 valores HV positivos y finitos y 156 574 píxeles de
+  subfranja válida antes de recortar el polígono y cruzarlo con octubre. Se aplica
+  la máscara del producto y se conserva la cobertura común en el cambio y la cortina.
 
 ## GUNW
 - Pendiente: rutas no verificadas.
@@ -117,6 +124,29 @@ sobre los archivos reales antes de procesarlos.
 La observación del 23 de septiembre usa `SHSH` y carece de HV, por lo que se excluyó de la
 comparación de vegetación. Dos fechas permiten antes y después. La proyección de tendencia
 permanece pendiente hasta disponer de al menos cuatro fechas compatibles.
+
+### Resultados con los HDF5 de Ayacucho
+
+Los dos archivos se descargaron por rangos HTTPS autenticados, se verificaron contra
+los tamaños publicados en ASF y se registraron con SHA-256 mediante `sarlab ingest`.
+`sarlab inspect` confirmó las mismas rutas HH, HV y máscara en ambos HDF5.
+La ventana común contiene 151 592 píxeles válidos de 20 m, el 1,69 % de la caja del caso.
+Se limita a una franja en el borde occidental. La comparación aplica el recorte de la
+zona y conserva esa máscara en ambas imágenes y en la diferencia.
+
+| Polarización | Umbral respecto a la mediana | Caída significativa | Polígonos de al menos 25 píxeles | Área de los polígonos |
+|---|---:|---:|---:|---:|
+| HH | 2,60 dB | 29,28 ha | 3 | 3,16 ha |
+| HV | 3,18 dB | 52,76 ha | 5 | 7,12 ha |
+
+Con 3 veces la dispersión robusta, HV detectó la mayor extensión de caída de señal.
+La señal puede responder a varios procesos. La atribución a incendios y la extrapolación
+a Huanta y La Mar requieren validación independiente y mayor cobertura.
+La serie usa los píxeles válidos de cada adquisición. Las medianas HH y HV fueron
+−10,561 y −20,385 dB el 19 de junio, y −10,888 y −20,607 dB el 5 de octubre.
+La cobertura individual fue 1,70 % y 1,69 %, respectivamente.
+
+[Máscara y producto GCOV en ASF](https://nisar-docs.asf.alaska.edu/gcov/)
 
 ### Acceso por rangos y Sabancaya
 

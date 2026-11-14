@@ -10,6 +10,7 @@ import { addNisarOrbit } from "./nisarOrbit";
 
 type Props = {
   aoi?: AOI; tileUrl?: string; beforeUrl?: string; afterUrl?: string; split: number;
+  radarBounds?: AOI["bbox"];
   contextOverlay?: { url: string; credit: string; beforeUrl?: string };
   exaggeration: number; camera?: CameraMode; alerts: AlertFeature[]; selected?: AlertFeature;
   fireCells: AlertFeature[];
@@ -32,11 +33,14 @@ function marker(kind: string, color: string): string {
   return "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><g fill="${color}" stroke="${color}" stroke-width="1">${shapes[kind] ?? shapes.surface_change}</g></svg>`);
 }
 
-export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split, exaggeration, camera = "oblique",
+export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, radarBounds, contextOverlay, split, exaggeration, camera = "oblique",
   alerts, fireCells, active, cutoff, orbitData, orbitVisible, satelliteFocus, selected, onSelect, onStatus, offline = false }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
   const viewer = useRef<Cesium.Viewer | null>(null);
+  const nightLayer = useRef<Cesium.ImageryLayer | undefined>(undefined);
+  const radarInspection = useRef(false);
+  radarInspection.current = !!radarBounds;
   const selectRef = useRef(onSelect);
   const statusRef = useRef(onStatus);
   const lastInput = useRef(performance.now());
@@ -136,7 +140,11 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
         }
       }
       const night = await Cesium.SingleTileImageryProvider.fromUrl("/globe/earth-night.jpg", { credit: "NASA Black Marble 2016" });
-      if (!v.isDestroyed()) v.imageryLayers.add(new Cesium.ImageryLayer(night, { dayAlpha: 0, nightAlpha: 1 }), nightIndex);
+      if (!v.isDestroyed()) {
+        const lighting = new Cesium.ImageryLayer(night, { dayAlpha: 0, nightAlpha: 1, show: !radarInspection.current });
+        v.imageryLayers.add(lighting, nightIndex);
+        nightLayer.current = lighting;
+      }
     };
     addBase().catch(() => {
       if (!v.isDestroyed() && v.imageryLayers.length === 0) { imagery = "No se pudo cargar la imagen satelital"; publish(); }
@@ -253,11 +261,18 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
     return () => {
       window.removeEventListener("resize", resize);
       v.scene.canvas.removeEventListener("mouseleave", leave);
-      clicks.destroy(); v.destroy(); viewer.current = null;
+      clicks.destroy(); v.destroy(); viewer.current = null; nightLayer.current = undefined;
     };
   }, [offline]);
 
   useEffect(() => { if (viewer.current) viewer.current.scene.verticalExaggeration = exaggeration; }, [exaggeration, offline]);
+  useEffect(() => {
+    const v = viewer.current;
+    if (!v) return;
+    // Inspection uses the daytime base so that nighttime shadows don't dim the radar colours.
+    v.scene.globe.enableLighting = !radarBounds;
+    if (nightLayer.current) nightLayer.current.show = !radarBounds;
+  }, [radarBounds, offline]);
   useEffect(() => {
     const v = viewer.current;
     if (!v || !active) return;
@@ -285,19 +300,19 @@ export function Globe({ aoi, tileUrl, beforeUrl, afterUrl, contextOverlay, split
         duration: reduceMotion ? 0 : 3.6, easingFunction: Cesium.EasingFunction.QUINTIC_IN_OUT });
       return;
     }
-    const [w, s, e, n] = aoi.bbox;
+    const [w, s, e, n] = radarBounds ?? aoi.bbox;
     const cam = aoi.camera ?? {};
     const pad = camera === "overview" ? 6 : 0;
     const target = Cesium.Cartesian3.fromDegrees((w + e) / 2, (s + n) / 2);
     const radius = Cesium.BoundingSphere.fromPoints([
       Cesium.Cartesian3.fromDegrees(w - pad, s - pad), Cesium.Cartesian3.fromDegrees(e + pad, n + pad),
     ]).radius;
-    const range = Math.max(camera === "zone" ? 80_000 : 120_000, radius * 3.6);
+    const range = radarBounds ? Math.max(30_000, radius * 2.8) : Math.max(camera === "zone" ? 80_000 : 120_000, radius * 3.6);
     v.camera.flyToBoundingSphere(new Cesium.BoundingSphere(target, radius), {
-      offset: new Cesium.HeadingPitchRange(Cesium.Math.toRadians(cam.heading_deg ?? 20),
-        Cesium.Math.toRadians(camera === "zone" ? -90 : camera === "overview" ? -60 : cam.pitch_deg ?? -38), range),
+      offset: new Cesium.HeadingPitchRange(Cesium.Math.toRadians(radarBounds ? 0 : cam.heading_deg ?? 20),
+        Cesium.Math.toRadians(radarBounds || camera === "zone" ? -90 : camera === "overview" ? -60 : cam.pitch_deg ?? -38), range),
       duration: window.matchMedia(REDUCED).matches ? 0 : 2.4, easingFunction: Cesium.EasingFunction.QUINTIC_IN_OUT });
-  }, [aoi, camera, offline, active, reduceMotion]);
+  }, [aoi, radarBounds, camera, offline, active, reduceMotion]);
 
   useEffect(() => {
     const v = viewer.current;

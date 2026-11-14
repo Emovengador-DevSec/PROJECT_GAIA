@@ -45,6 +45,18 @@ def test_read_window_outside_raises(tmp_path):
         gcov.read_window(p, "HVHV", (0, 0, 10, 10))
 
 
+def test_gcov_reader_excludes_unfocused_and_fill_pixels_with_finite_power(tmp_path):
+    import h5py
+
+    path = make_synthetic_gcov(tmp_path / NAME.format(d="20251122"))
+    with h5py.File(path, "r+") as file:
+        mask = file[gcov.GRID.format(freq="frequencyA")]["mask"]
+        mask[0, :3] = [0, 255, 1]
+    window = gcov.read_window(path, "HVHV", (360000, 8600000, 360200, 8600000))
+    assert np.isnan(window.data[0, :2]).all()
+    assert np.isfinite(window.data[0, 2])
+
+
 def test_ingest_moves_and_quarantines(data_dirs):
     from sarlab_pipeline import settings as S
     from sarlab_pipeline.ingest import ingest_inbox

@@ -191,18 +191,16 @@ export function Inspector(p: Props) {
               <p>El revelado del radar se habilitará cuando estén publicadas las capas procesadas.</p>
             </details>
           </>}
-          <CatalogSummary catalog={p.catalog} />
-          <ContextLayers items={previews} active={p.activeContext} onSelect={p.onContext} title="Vista visual NISAR" />
           {!!p.layers.length && <>
             <label className="field-label" htmlFor="pol">Polarización<select id="pol" value={p.pol} onChange={event => p.setPol(event.target.value)}>
               {polarizations.map(value => <option key={value} value={value}>{value === "HVHV" ? "HV · vegetación" : value === "HHHH" ? "HH · superficie y agua" : value}</option>)}
             </select></label>
             {layer && <><h3>{layer.title}</h3><p className="date-comparison"><time>{layer.dates.a}</time><span aria-hidden="true">→</span><time>{layer.dates.b}</time></p>
               {!p.compare && <div className="data-legend"><span>{layer.range.min?.toFixed(1) ?? "—"} {layer.unit}</span><div className="color-scale" /><span>{layer.range.max?.toFixed(1) ?? "—"} {layer.unit}</span></div>}
-              <p className="muted">Área válida · {layer.quality.valid_area_pct.toFixed(1)} %</p>
+              <p className="muted">Cobertura válida en ambas fechas · {layer.quality.valid_area_pct.toLocaleString("es-PE", { maximumFractionDigits: 2 })} % de la zona de estudio</p>
               {layer.kind === "backscatter_diff_db" && <RadarGlossary terms={["hh", "hv", "retrodispersion"]} />}
               {p.polarizationSummary?.strongest && p.polarizationSummary.HHHH && p.polarizationSummary.HVHV &&
-                <p className="muted">Mayor área con caída de señal en {p.polarizationSummary.strongest.slice(0, 2)}.
+                <p className="muted">Mayor área con caída de señal en {p.polarizationSummary.strongest.slice(0, 2)} dentro de la cobertura común.
                   HH · {p.polarizationSummary.HHHH.loss_area_ha} ha. HV · {p.polarizationSummary.HVHV.loss_area_ha} ha.</p>}
               <label className="comparison-toggle"><input type="checkbox" checked={p.compare} disabled={!layer.comparison || !p.health?.tiles} onChange={event => p.setCompare(event.target.checked)} /><span>Comparar antes y después</span></label>
               {p.compare && <>
@@ -220,6 +218,8 @@ export function Inspector(p: Props) {
               {layer.quality.provisional && <p className="badge-provisional">NISAR provisional · interpretación pendiente de contraste.</p>}
             </>}
           </>}
+          <CatalogSummary catalog={p.catalog} />
+          <ContextLayers items={previews} active={p.activeContext} onSelect={p.onContext} title="Mosaicos oficiales NISAR" />
           {p.current.id === "ayacucho-huanta" && <OperaValidation result={p.validation} />}
         </>}
       </>}

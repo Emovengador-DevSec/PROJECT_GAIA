@@ -38,13 +38,16 @@ def zone_stats(path: Path, bbox_wgs84, layers=("HHHH", "HVHV"), freq="frequencyA
             continue
         w = gcov.read_window(path, layer, bbox, freq)
         db = to_db(w.data)
+        inside, area_m2 = gcov.study_area_mask(w, bbox_wgs84)
+        db[~inside] = np.nan
         dbs[layer] = db
         v = db[np.isfinite(db)]
+        pixel_area_m2 = abs(w.transform.a * w.transform.e)
         out[layer] = None if v.size == 0 else {
             "median_db": round(float(np.median(v)), 3),
             "p10_db": round(float(np.percentile(v, 10)), 3),
             "p90_db": round(float(np.percentile(v, 90)), 3),
-            "valid_pct": round(100 * v.size / db.size, 2)}
+            "valid_pct": round(min(100., 100 * v.size * pixel_area_m2 / area_m2), 2)}
     if "HHHH" in dbs and "HVHV" in dbs and dbs["HHHH"].shape == dbs["HVHV"].shape:
         ratio = dbs["HVHV"] - dbs["HHHH"]          # HV/HH en dB
         v = ratio[np.isfinite(ratio)]
@@ -57,7 +60,7 @@ def timeseries(aoi_id: str, files: list[Path], freq: str = "frequencyA") -> dict
     aoi = load_aois()[aoi_id]
     rows = sorted((zone_stats(f, aoi.bbox, freq=freq) for f in files), key=lambda r: r["date"])
     result = {"aoi_id": aoi_id, "product": "GCOV", "freq": freq, "samples": rows,
-              "note": "Estadística de la zona completa por fecha. Mismo track y dirección para comparar."}
+              "note": "Píxeles válidos de cada fecha en la zona. Misma trayectoria y dirección."}
     out = S.PROCESSED / aoi_id / "gcov" / "timeseries.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")

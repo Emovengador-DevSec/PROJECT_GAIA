@@ -15,6 +15,7 @@ export type LayerManifest = {
   id: string; kind: string; title: string; unit: string; colormap: string;
   range: { min: number | null; max: number | null }; cog_path: string; aoi_id: string;
   dates: { a: string; b: string };
+  coverage_bbox?: AOI["bbox"];
   provenance: { source: string; granules: string[] } & Record<string, unknown>;
   quality: { provisional: boolean; valid_area_pct: number };
   comparison?: { before_cog_path: string; after_cog_path: string; range: { min: number; max: number } };

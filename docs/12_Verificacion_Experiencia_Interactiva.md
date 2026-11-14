@@ -13,7 +13,7 @@
 | W5 · Secuencia | Implementado. Histograma, selector por minuto, reproducción de un día por segundo y recuentos filtrados por la hora real. | Commit `dd998d7`. El navegador compara los recuentos con la respuesta real de la API. Capturas en `W5/`. |
 | W4 · Inmersión | Implementado. Vuelo oblicuo, giro alrededor del lugar y cancelación con Esc, arrastre o zoom. El móvil abre con el panel cerrado. | Commit `994be8d`. Sismo y foco térmico probados en las tres resoluciones. Capturas en `W4/`. |
 | W6 · Órbita | Implementado con la dependencia autorizada. Modelo existente, elementos públicos fechados, traza y franja lateral aproximada. | Commit `66d46c8`. `node tools/verify/orbit.mjs`, validaciones de época y capturas en `W6/`. |
-| W7 · Revelado | Pendiente. Hay cero capas NISAR procesadas y no está configurado Earthdata. La app indica el requisito en Cambios. | `/api/health` devuelve `layers: 0` y `earthdata: false`. Capturas del estado pendiente en `W7/`. |
+| W7 · Revelado | Implementado. Cambios abre los dos GCOV procesados de Ayacucho en falso color y deja la cortina manual al terminar el barrido. Respeta el movimiento reducido. | La API devuelve las capas HH y HV. Capturas del radar real en `art/verificacion/interactiva/W7-radar/`. |
 
 Las capturas de cada momento registran su versión durante la implementación. Las de cierre
 incluyen también las funciones que se añadieron después. Resoluciones de comprobación
@@ -32,16 +32,17 @@ incluyen también las funciones que se añadieron después. Resoluciones de comp
   de otras fechas.
 - Los mosaicos oficiales NISAR de GIBS siguen siendo vistas visuales con procedencia.
   No se presentan como cambios cuantificados ni se usan para fingir el revelado W7.
-- Continúa el límite autorizado de dos archivos NISAR, unos 3,9 GB. No se descargaron
-  los cuatro archivos inicialmente propuestos.
+- Se procesaron los dos archivos autorizados de Ayacucho, 3,86 GB en total. La máscara
+  GCOV deja una cobertura común del 1,69 % de la zona. Los resultados detallados y sus
+  límites están en `data-notes.md`.
 - La órbita utiliza elementos públicos con una edad máxima de siete días y caché de
   seis horas. La visualización se refresca cada hora y se oculta durante la secuencia histórica.
   El acceso geométrico no confirma que NISAR vaya a adquirir una imagen.
 - El ensayo orbital usa el ciclo nominal de 12 días para contrastar geometría con las
   trayectorias 54, 75 y 147 del catálogo. No asigna números de trayectoria al TLE/OMM.
   El modelo se centra durante su carga y mantiene la altura calculada sin exageración vertical.
-- Falta Cesium ion. Continúan el respaldo NASA GIBS y el relieve regional de Ayacucho.
-  La nitidez global al acercarse y el relieve mundial siguen limitados por esa configuración.
+- Cesium ion está activo en `http://localhost:5173`. Chrome confirmó imagen satelital
+  con etiquetas y Cesium World Terrain. FIRMS aceptó la clave en una consulta de Perú.
 - El entorno de captura usa Chrome con renderizado por software. No se acredita una
   tasa de 60 fps en la máquina física a partir de estas capturas.
 
@@ -56,10 +57,11 @@ node tools/verify/interactive.mjs W3
 node tools/verify/interactive.mjs W5
 node tools/verify/interactive.mjs W4
 node tools/verify/interactive.mjs W6
+node tools/verify/interactive.mjs W7
 node tools/verify/orbit.mjs
 ```
 
-Resultado de las pruebas Python, 35 aprobadas. Compilación de producción correcta.
+Resultado de las pruebas Python, 39 aprobadas. Compilación de producción correcta.
 Persisten avisos de tamaño de los paquetes de Cesium y advertencias de georreferenciación
 de los archivos sintéticos usados exclusivamente en pruebas. Se corrigió un fallo de las ondas
 al usar tiempos distintos para los dos radios de una elipse. La prueba ahora detecta también

@@ -2,14 +2,14 @@
 
 Texto de referencia del reto *Dancing with the SARs* (NASA Space Apps 2026). Revisión de GAIA Alerta del 13 de noviembre de 2026.
 
-La demo abre el globo con imagen de NASA, la historia de Ayacucho y sismos reales de USGS. El catálogo público de ASF lista las observaciones NISAR. Los resultados de cambio de Ayacucho requieren descargar y procesar los dos GCOV seleccionados con Earthdata.
+La demo abre el globo con imagen satelital, sismos de USGS y focos de NASA FIRMS. Ayacucho tiene dos GCOV reales procesados, del 19 de junio y el 5 de octubre de 2026. La comparación y sus alertas se limitan al 1,69 % del área de estudio con cobertura válida en ambas fechas.
 
 ## Objetivo principal
 
 | Lo que pide el reto | Cómo lo cumple | Dónde | Estado |
 |---|---|---|---|
 | Aplicación **interactiva** | Globo 3D, pestañas, selector de lugar y polarización, modo público/técnico | `apps/web` | Hecho |
-| Usar datos **NISAR** de teledetección radar | Búsqueda y descarga oficial con `asf_search`; lectura HDF5 del GCOV | `sources/nisar.py`, `readers/gcov.py` | Hecho (falta prueba con archivo real) |
+| Usar datos **NISAR** de teledetección radar | Descarga autenticada en ASF y lectura HDF5 de HH y HV con la máscara GCOV | `sources/nisar.py`, `readers/gcov.py` | Verificado con los dos archivos de Ayacucho |
 | **Rastrear y visualizar** uno o más tipos de cambio | Cambio de retrodispersión entre fechas: deforestación, huaicos; deformación en P1 | `workflows.py`, `config/phenomena` | Hecho |
 | En **diferentes lugares del mundo** | Cada lugar es un archivo; Perú como caso, cualquier zona como producto | `config/aois/*.yaml` | Hecho |
 
@@ -19,7 +19,7 @@ La demo abre el globo con imagen de NASA, la historia de Ayacucho y sismos reale
 |---|---|---|---|
 | 1. Elegir un **área de estudio** | Pestaña Lugares; tres zonas peruanas configuradas; se agregan más sin código | `config/aois` | Hecho |
 | 2. **Descargar NISAR** de la lista de recursos | `sarlab search` y `--download`; o soltar cualquier `.h5` en `data/00_inbox` | CLI | Hecho |
-| Datos **complementarios** (óptico, SIG) | Blue Marble y Landsat, límites y localidades, sismos USGS y detecciones VIIRS vía FIRMS | `apps/web/public/globe`, `/api/live/quakes`, `/api/live/fires` | USGS y mapas verificados. FIRMS requiere clave. |
+| Datos **complementarios** (óptico, SIG) | Blue Marble y Landsat, límites y localidades, sismos USGS y detecciones VIIRS vía FIRMS | `apps/web/public/globe`, `/api/live/quakes`, `/api/live/fires` | USGS, mapas y acceso a FIRMS verificados. |
 | 3. **Presentar** en medio digital interactivo | Pestaña Historia: mapa narrativo con pasos de cámara; video de la demo | `config/stories`, `Inspector.tsx` | Hecho |
 | Formular **hipótesis físicas** | Cada relato tiene hipótesis, cómo probarlas y estado (por verificar / confirmada / descartada) | `config/stories/*.yaml` | Hecho (el equipo actualiza el estado con los resultados) |
 | ¿Qué **polarizaciones** resaltan los cambios? | Cambio en HH y HV por separado, razón HV/HH y `polarizations.json` con la más fuerte | `analysis.py`, selector en Cambios | Hecho |

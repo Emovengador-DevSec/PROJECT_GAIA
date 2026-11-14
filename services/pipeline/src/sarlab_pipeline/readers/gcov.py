@@ -77,6 +77,9 @@ def read_window(path: str | Path, layer: str, bbox_proj: tuple[float, float, flo
         xs, ys = slice(xi.min(), xi.max() + 1), slice(yi.min(), yi.max() + 1)
         data = g[layer][ys, xs].astype("float32")
         mask = g["mask"][ys, xs] if "mask" in g else None
+        if mask is not None:
+            fill = int(np.asarray(g["mask"].attrs.get("_FillValue", 255)).item())
+            data[(mask == 0) | (mask == fill)] = np.nan
         epsg = int(np.asarray(g["projection"].attrs.get("epsg_code")).item())
     return Window(data=data, x=x[xs], y=y[ys], epsg=epsg, layer=layer,
                   source=Path(path).name, mask=mask)
@@ -86,6 +89,22 @@ def bbox_to_product_crs(bbox_wgs84: tuple[float, float, float, float], epsg: int
     """Convierte una caja lon/lat al sistema del producto."""
     from rasterio.warp import transform_bounds
     return transform_bounds("EPSG:4326", f"EPSG:{epsg}", *bbox_wgs84, densify_pts=21)
+
+
+def study_area_mask(
+    window: Window, bbox_wgs84: tuple[float, float, float, float],
+) -> tuple[np.ndarray, float]:
+    """Mask pixels outside the study polygon and return its projected area in m²."""
+    from rasterio.features import geometry_mask
+    from rasterio.warp import transform_geom
+    from shapely.geometry import shape
+
+    west, south, east, north = bbox_wgs84
+    ring = [[west, south], [east, south], [east, north], [west, north], [west, south]]
+    source = {"type": "Polygon", "coordinates": [ring]}
+    projected = transform_geom("EPSG:4326", f"EPSG:{window.epsg}", source)
+    mask = geometry_mask([projected], out_shape=window.data.shape, transform=window.transform, invert=True)
+    return mask, shape(projected).area
 
 
 def product_epsg(path: str | Path, freq: str = "frequencyA") -> int:

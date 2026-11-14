@@ -1,4 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { animate } from "framer-motion";
+import { useReducedMotion } from "../lib/useMotionPreference";
 import { GaiaCover } from "../features/gaia/GaiaCover";
 import { FringeIntro } from "../features/intro/FringeIntro";
 import { Inspector } from "../features/panels/Inspector";
@@ -48,6 +50,10 @@ export function App() {
   const [compare, setCompare] = useState(false);
   const [falseColor, setFalseColor] = useState(false);
   const [split, setSplit] = useState(50);
+  const reduceMotion = useReducedMotion();
+  const openedRadar = useRef<string | undefined>(undefined);
+  const stopSweep = useRef<(() => void) | undefined>(undefined);
+  const [sweeping, setSweeping] = useState(false);
   const [panelOpen, setPanelOpen] = useState(() => window.innerWidth > 720);
   const [search, setSearch] = useState("");
   const [searchMessage, setSearchMessage] = useState("");
@@ -182,9 +188,9 @@ export function App() {
   const showContext = !!activeContext && (cutoff == null || Date.parse(activeContext.date + "T00:00:00Z") <= cutoff);
   const showRadar = !!layer && (cutoff == null || Date.parse(layer.dates.b) <= cutoff);
   const preview = activeContext?.before ? activeContext : undefined;
-  const radarComparison = !!health?.tiles && !!layer?.comparison && !activeContext &&
-    (compare || storyStep?.layer?.startsWith("diff_"));
-  const comparison = radarComparison || !!preview;
+  const radarComparison = !!health?.tiles && showRadar && !!layer?.comparison && !activeContext &&
+    ((tab === "changes" && compare) || storyStep?.layer?.startsWith("diff_"));
+  const comparison = radarComparison || (!!preview && showContext);
   const comparisonDates = preview?.before ? { a: preview.before, b: preview.date } : layer?.dates;
   const canUseFalseColor = !!layer?.comparison && layer.kind === "backscatter_diff_db" &&
     ["HHHH", "HVHV"].every(polarization => layers.some(item =>
@@ -195,6 +201,38 @@ export function App() {
       item.provenance.granules.every((granule, index) => granule === layer.provenance.granules[index])
     ));
   const rgb = tab === "changes" && canUseFalseColor && falseColor;
+  const radarBounds = radarComparison && tab === "changes" ? layer?.coverage_bbox : undefined;
+  const automaticRadar = tab === "changes" && current?.id === "ayacucho-huanta"
+    && !!health?.tiles && canUseFalseColor && !contextLoading;
+
+  useEffect(() => {
+    if (!automaticRadar) { openedRadar.current = undefined; return; }
+    if (openedRadar.current === current?.id) return;
+    openedRadar.current = current?.id;
+    setCutoff(undefined);
+    setContextChoice(null);
+    setCompare(true);
+    setFalseColor(true);
+    setSplit(reduceMotion ? 50 : 0);
+    setSweeping(!reduceMotion);
+  }, [automaticRadar, current?.id, reduceMotion]);
+
+  useEffect(() => {
+    if (!sweeping || !radarComparison || !rgb) return;
+    if (reduceMotion) { setSplit(50); setSweeping(false); return; }
+    // Let the camera settle on the measured footprint before the comparison sweeps across it.
+    let playback: ReturnType<typeof animate> | undefined;
+    const timer = window.setTimeout(() => {
+      playback = animate(0, 50, { duration: 1.15, ease: "linear", onUpdate: setSplit,
+        onComplete: () => setSweeping(false) });
+    }, 2_450);
+    const stop = () => { clearTimeout(timer); playback?.stop(); };
+    stopSweep.current = stop;
+    return () => { stop(); stopSweep.current = undefined; };
+  }, [sweeping, radarComparison, rgb, reduceMotion]);
+
+  const cancelSweep = () => { stopSweep.current?.(); setSweeping(false); };
+  useEffect(() => { if (tab !== "changes" && sweeping) { setSweeping(false); setSplit(50); } }, [tab, sweeping]);
 
   const pick = (aoi: AOI) => {
     setCurrent(aoi);
@@ -227,7 +265,7 @@ export function App() {
     data-panel-open={panelOpen || undefined} data-comparison={comparison || undefined} data-sequence={!comparison || undefined}>
     {warm && <Suspense fallback={null}>
       <Globe aoi={current} active={ready} exaggeration={exaggeration} camera={activeContext ? "zone" : storyStep?.camera ?? "oblique"}
-        offline={health?.offline}
+        offline={health?.offline} radarBounds={radarBounds}
         tileUrl={health?.tiles && layer && showRadar && !comparison && !activeContext ? api.tileUrl(layer) : undefined}
         beforeUrl={layer && showRadar && radarComparison ? api.tileUrl(layer, "before", rgb) : undefined}
         afterUrl={layer && showRadar && radarComparison ? api.tileUrl(layer, "after", rgb) : undefined}
@@ -271,7 +309,7 @@ export function App() {
         {!current && !alertsLoading && !alertsError && <LiveSummary alerts={cutoff == null ? alerts : timelineAlerts} sources={sources} onKind={kind => {
           setAlertKind(kind); setSelected(undefined); chooseTab("alerts");
         }} />}
-        {!selected && <OrbitCard data={orbitData} visible={orbitVisible} historical={cutoff != null}
+        {!selected && !radarBounds && <OrbitCard data={orbitData} visible={orbitVisible} historical={cutoff != null}
           onToggle={() => setOrbitVisible(value => !value)} onFocus={() => { setCurrent(undefined); setSatelliteFocus(value => value + 1); }} onRefresh={refreshOrbit} />}
       </div>
 
@@ -284,14 +322,14 @@ export function App() {
         polarizationSummary={polarizations.length === 1 ? polarizations[0] : undefined}
         step={step} setStep={value => { setStep(value); setContextChoice(undefined); }} audience={audience} setAudience={setAudience} pol={pol} setPol={setPol}
         context={context} activeContext={activeContext} validation={validation}
-        onContext={id => { setCompare(false); setContextChoice(id); }} moistureCatalog={moistureCatalog} rainfall={rainfall}
+        onContext={id => { cancelSweep(); setSplit(50); setCompare(false); setContextChoice(id); }} moistureCatalog={moistureCatalog} rainfall={rainfall}
         error={error} contextLoading={contextLoading} onPick={pick} exaggeration={exaggeration} setExaggeration={setExaggeration}
         alerts={timelineAlerts} alertsLoading={alertsLoading} alertsError={alertsError} sources={sources} selected={selected}
         onSelectAlert={pickAlert} onClearAlert={() => setSelected(undefined)} onRefresh={refreshAlerts} alertKind={alertKind}
         setAlertKind={value => { setAlertKind(value); setSelected(undefined); }} alertLevel={alertLevel}
         setAlertLevel={value => { setAlertLevel(value); setSelected(undefined); }} health={health} mapStatus={mapStatus}
-        compare={compare} setCompare={value => { if (value) setContextChoice(null); setCompare(value); }}
-        canUseFalseColor={canUseFalseColor} falseColor={rgb} setFalseColor={setFalseColor}
+        compare={compare} setCompare={value => { cancelSweep(); setSplit(50); if (value) { setContextChoice(null); setCutoff(undefined); } setCompare(value); }}
+        canUseFalseColor={canUseFalseColor} falseColor={rgb} setFalseColor={value => { cancelSweep(); setSplit(50); setFalseColor(value); }}
         onClose={() => setPanelOpen(false)} onResources={() => chooseTab("resources")} />
         : <button type="button" className="panel-reopen" onClick={() => setPanelOpen(true)}><SectionIcon id={tab} />Abrir {TABS.find(item => item.id === tab)?.label.toLocaleLowerCase("es")}</button>}
 
@@ -299,9 +337,10 @@ export function App() {
         <div><span>Antes · {comparisonDates.a}</span><span>Después · {comparisonDates.b}</span></div>
         <label className="sr-only" htmlFor="comparison-split">Posición de la cortina antes y después</label>
         <input id="comparison-split" type="range" min="0" max="100" step="1" value={split}
-          aria-valuetext={`${split} % antes, ${100 - split} % después`} onChange={event => setSplit(Number(event.target.value))} />
+          aria-valuetext={`${Math.round(split)} % antes, ${100 - Math.round(split)} % después`}
+          onPointerDown={cancelSweep} onKeyDown={cancelSweep} onChange={event => { cancelSweep(); setSplit(Number(event.target.value)); }} />
       </div>}
-      {comparison && <div className="comparison-divider" style={{ left: `${split}%` }} aria-hidden="true" />}
+      {comparison && <div className="comparison-divider" data-sweeping={sweeping || undefined} style={{ left: `${split}%` }} aria-hidden="true" />}
       {!comparison && <EventTimeline alerts={filteredAlerts} sources={sources} cutoff={cutoff}
         onChange={value => { setCutoff(value); setSelected(undefined); }} />}
 

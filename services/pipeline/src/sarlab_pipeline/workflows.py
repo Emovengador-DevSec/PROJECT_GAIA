@@ -51,7 +51,7 @@ def change_multi(aoi_id: str, before: Path, after: Path,
 
 def change_between(aoi_id: str, before: Path, after: Path, layer: str = "HVHV",
                    speckle: int = 3, freq: str = "frequencyA") -> dict:
-    from rasterio.warp import transform_geom
+    from rasterio.warp import transform_bounds, transform_geom
 
     gcov.validate_sequence([before, after])
     if _date(before.name) >= _date(after.name):
@@ -63,7 +63,15 @@ def change_between(aoi_id: str, before: Path, after: Path, layer: str = "HVHV",
     wa = gcov.read_window(before, layer, bbox, freq)
     wb = gcov.read_window(after, layer, bbox, freq)
     a, b, ref = _align(wa, wb)
+    inside, study_area_m2 = gcov.study_area_mask(ref, aoi.bbox)
+    common = inside & np.isfinite(a) & (a > 0) & np.isfinite(b) & (b > 0)
+    if not common.any():
+        raise ValueError("Las dos fechas no comparten píxeles válidos dentro de la zona.")
+    a = np.where(common, a, np.nan)
+    b = np.where(common, b, np.nan)
     a_db, b_db = boxcar(to_db(a), speckle), boxcar(to_db(b), speckle)
+    a_db[~common] = np.nan
+    b_db[~common] = np.nan
     d = diff_db(a_db, b_db)
     res = robust_threshold(d, thr.change_k_sigma)
 
@@ -77,7 +85,15 @@ def change_between(aoi_id: str, before: Path, after: Path, layer: str = "HVHV",
                   d, cog, aoi_id, {"a": _date(wa.source), "b": _date(wb.source)},
                   [wa.source, wb.source],
                   extra={"product": "GCOV", "layer": layer, "frequency": freq, "epsg": epsg,
-                         "threshold_db": res.threshold_db, "method": "robust_mad_k_sigma"})
+                         "threshold_db": res.threshold_db, "method": "robust_mad_k_sigma",
+                         "mask": "GCOV subswath válido en ambas fechas, recortado al área de estudio"})
+    pixel_area_m2 = abs(ref.transform.a * ref.transform.e)
+    man["quality"]["valid_area_pct"] = round(min(100., 100 * common.sum() * pixel_area_m2 / study_area_m2), 2)
+    rows = np.flatnonzero(common.any(axis=1))
+    cols = np.flatnonzero(common.any(axis=0))
+    left, top = ref.transform @ (cols[0], rows[0])
+    right, bottom = ref.transform @ (cols[-1] + 1, rows[-1] + 1)
+    man["coverage_bbox"] = transform_bounds(f"EPSG:{epsg}", "EPSG:4326", left, bottom, right, top)
     observations = np.concatenate((a_db[np.isfinite(a_db)], b_db[np.isfinite(b_db)]))
     low, high = np.percentile(observations, (2, 98))
     if high <= low:
@@ -110,6 +126,7 @@ def change_between(aoi_id: str, before: Path, after: Path, layer: str = "HVHV",
     (out / f"alerts_{layer.lower()}.geojson").write_text(json.dumps(
         {"type": "FeatureCollection", "crs_epsg": 4326, "features": alerts}), encoding="utf-8")
     return {"manifest": man, "alerts": len(alerts),
+            "mapped_loss_area_ha": round(sum(f["properties"]["area_ha"] for f in alerts), 2),
             "loss_area_ha": round(float(res.loss.sum()) * px_area_ha, 2), "out_dir": str(out)}
 
 

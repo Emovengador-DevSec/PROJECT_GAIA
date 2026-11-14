@@ -4,6 +4,10 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- Procesados dos GCOV reales de Ayacucho con máscara de validez y cobertura común. Cambios abre el barrido en falso color sobre la franja observada y deja disponible la cortina manual.
+
+- Añadido un asistente local en CMD para introducir las tres credenciales con entrada oculta y guardar los archivos de configuración conservando otros ajustes.
+
 - Ajustado el vuelo para centrar las zonas al inclinar la cámara y respetar la oclusión de marcadores detrás del globo; las alturas de focos se actualizan al cargar el relieve.
 
 - Verificación interactiva: aparición escalonada de marcadores al llegar, enlaces compartidos de celdas FIRMS y estado de W7 con el requisito real de Earthdata y procesamiento.

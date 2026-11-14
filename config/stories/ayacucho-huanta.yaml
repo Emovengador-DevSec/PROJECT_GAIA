@@ -3,7 +3,7 @@ title: Ayacucho, las huellas que deja el fuego
 question: ¿Qué cambios de vegetación muestran las observaciones radar en Huanta y La Mar durante 2026?
 audience_summary:
   publico: Comparamos observaciones NISAR de la misma zona para localizar cambios en el territorio. Los focos de calor de NASA FIRMS ayudan a investigar si esos cambios coinciden con incendios.
-  tecnico: Comparación GCOV de potencia HVHV y HHHH en la misma trayectoria, dirección y marco, con diferencia en dB, calidad y umbral estadístico robusto. Las hipótesis siguen pendientes hasta procesar y validar los gránulos.
+  tecnico: Comparación GCOV de potencia HVHV y HHHH en la misma trayectoria, dirección y marco, con diferencia en dB y umbral estadístico robusto. Los gránulos del 19 de junio y el 5 de octubre de 2026 comparten datos válidos en el 1,69 % de la zona. HV detectó la mayor superficie con caída de señal. La atribución requiere evidencia independiente.
 hypotheses:
   - id: perdida_vegetacion
     text: Una caída persistente en HV, mayor que en HH y coincidente con focos FIRMS, sería compatible con pérdida de vegetación por incendio.
