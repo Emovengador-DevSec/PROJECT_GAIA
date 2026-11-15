@@ -4,6 +4,8 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- Al llegar a una zona aparece sobre el mapa una barra «Mirada satelital · Fotos de campo · Plantas nativas · Vida cercana · Ubicar fotos» que abre galerías grandes en la pantalla principal (con flechas, miniaturas, leyenda y crédito); la pestaña pasa a «Explorar la zona».
+
 - 12 especies nativas andinas con para qué sirven, contra qué fenómeno ayudan (erosión, huaicos, heladas, sequía, incendios, agua) y su rango de altura (config/nbs/native_species.yaml); se reemplazan vetiver, maguey y tuna por chillihua, cabuya y chachacomo; fotos de plantas tomadas en Perú (11 de 12).
 
 - «Ver el lugar» más directo: las fotos de campo de INGEMMET van primero, las fotos de plantas se buscan primero en Perú (iNaturalist) y se quitan las notas técnicas repetidas (redimensionado, escena original, disponibilidad de fuentes).

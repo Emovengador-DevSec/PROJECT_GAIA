@@ -168,7 +168,7 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice, onChang
     </>}
     {!p.remediation && observationDetails}
     {p.remediation && <div className="zone-sheet-tabs" role="tablist" aria-label="Secciones de la ficha">
-      {[["diagnosis", "Diagnóstico"], ["climate", "Clima"], ["future", "Futuro y costos"], ["voice", "Voz y Minka"], ["place", "Ver el lugar"]].map(([id, label]) =>
+      {[["diagnosis", "Diagnóstico"], ["climate", "Clima"], ["future", "Futuro y costos"], ["voice", "Voz y Minka"], ["place", "Explorar la zona"]].map(([id, label]) =>
         <button key={id} type="button" role="tab" id={`zone-tab-${id}`} aria-selected={sheetTab === id}
           aria-controls={`zone-panel-${id}`} onClick={() => { setSheetTab(id); document.querySelector(".inspector-content")?.scrollTo(0, 0); }}
           onKeyDown={event => {

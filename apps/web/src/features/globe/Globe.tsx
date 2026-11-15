@@ -12,6 +12,7 @@ import { addNisarOrbit } from "./nisarOrbit";
 import { api } from "../../lib/api";
 import { climateSummary } from "../workspace/actionSummaryModel";
 import { FIELD_VIEW, PhotoPopup, usePlaceEvidence, type FieldViewRequest } from "../workspace/PlaceEvidence";
+import { ZoneDeck } from "./ZoneDeck";
 import { fieldContours, fieldHeights, sampleFieldSurface } from "./fieldView";
 import type { RealPhoto } from "../../lib/api";
 import { FIRE_AGE_ALPHA, FIRE_AGE_COLORS, fireAge } from "./fireAge";
@@ -913,7 +914,7 @@ export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint
   return <>
     <div ref={host} className="globe" aria-label="Globo satelital de Sudamérica con observaciones georreferenciadas" />
     {fieldRequest && <aside className="field-view-caption" aria-live="polite">
-      <strong>{fieldRequest.design ? "Diseño propuesto sobre el terreno" : "Chacra desde arriba"}</strong>
+      <strong>{fieldRequest.design ? "Diseño propuesto sobre el terreno" : "Mirada satelital de la zona"}</strong>
       <small>{aerialLoaded && placeEvidence?.field_aerial
         ? `${placeEvidence.field_aerial.source} · ${placeEvidence.field_aerial.date} · ${placeEvidence.field_aerial.resolution_m} m`
         : "Imagen del globo · fecha variable según proveedor"}</small>
@@ -934,18 +935,16 @@ export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint
         requestAnimationFrame(() => fieldTrigger.current?.focus());
       }}>Cerrar vista</button>
     </aside>}
-    {!!placeEvidence?.pins.length && <details className="map-photo-index"><summary>Fotos del lugar · {placeEvidence.pins.length}</summary>
-      <button type="button" onClick={() => {
+    {placeEvidence && selected?.properties.remediation && <ZoneDeck data={placeEvidence}
+      zoneId={selected.properties.remediation.alert_id} fieldOn={!!fieldRequest} onShowPins={() => {
         const v = viewer.current;
-        if (!v) return;
+        if (!v || !placeEvidence.pins.length) return;
         stopOrbit();
         const positions = placeEvidence.pins.map(photo => Cesium.Cartesian3.fromDegrees(photo.lon!, photo.lat!));
         const sphere = Cesium.BoundingSphere.fromPoints(positions);
         v.camera.flyToBoundingSphere(sphere, {offset: new Cesium.HeadingPitchRange(0, -Math.PI / 2, Math.max(20_000, sphere.radius * 3)), duration: reduceMotion ? 0 : 1.4});
-      }}>Ver ubicaciones en el mapa</button>
-      {placeEvidence.pins.map(photo => <button type="button" data-photo-id={photo.id} key={photo.id} onClick={() => setOpenPhoto(photo)}>{photo.title} · {photo.location_label}</button>)}
-    </details>}
-    {openPhoto && <PhotoPopup photo={openPhoto} onClose={() => { setOpenPhoto(undefined); document.querySelector<HTMLElement>(".map-photo-index summary")?.focus(); }} />}
+      }} />}
+    {openPhoto && <PhotoPopup photo={openPhoto} onClose={() => { setOpenPhoto(undefined); document.querySelector<HTMLElement>(".zone-deck button")?.focus(); }} />}
     {orbiting && <button type="button" className="camera-tour" onClick={stopOrbit}>Detener recorrido <kbd>Esc</kbd></button>}
     {hover && metric && <div className="map-tooltip" role="tooltip" data-kind={hover.feature.properties.kind}
       data-observation={hover.feature.properties.id}

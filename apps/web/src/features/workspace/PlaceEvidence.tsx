@@ -120,13 +120,13 @@ export function PlaceEvidencePanel({feature}: {feature: AlertFeature}) {
   ));
   const hasInfiltration = rem.budget?.some(line => line.intervention_id === "zanjas_infiltracion");
   return <div className="place-evidence">
-    <h4>Ver el lugar</h4>
+    <h4>Explorar la zona</h4>
     {!!data.field_photos?.length && <details className="place-block" open>
       <summary>Fotos de campo cercanas · {data.field_photos.length}</summary>
       <p className="place-note">Fotos de informes técnicos de lugares cercanos, en el año del informe.</p>
       {data.field_photos.map(photo => <PhotoFigure key={photo.id} photo={photo} />)}
     </details>}
-    <button type="button" className="primary-action" onClick={() => viewField()}>Ver la chacra desde arriba</button>
+    <button type="button" className="primary-action" onClick={() => viewField()}>Mirada satelital de la zona</button>
     <p className="place-note">{data.field_aerial
       ? <>{data.field_aerial.source} · {data.field_aerial.date} · {data.field_aerial.resolution_m} m · <a href={data.field_aerial.license_url} target="_blank" rel="noopener noreferrer">Condiciones de uso</a></>
       : "Imagen del globo · proveedor en la atribución del mapa · fecha variable según proveedor."}</p>
