@@ -385,24 +385,13 @@ def _build_recovery_scenario(risk_id: str) -> dict[str, Any]:
     }
 
 
-def _build_optical_context(aoi_id: str = "ayacucho-huanta") -> dict[str, Any]:
-    """Returns NASA HLS optical comparison context and 3D terrain flag (Fase 3.1)."""
-    return {
-        "product": "HLS S30 v2 · Sentinel-2, 30 m",
-        "source": "NASA HLS / Copernicus Sentinel-2 · GIBS",
-        "dates": {"before": "2026-06-22", "after": "2026-10-08"},
-        "scenes": [
-            "HLS.S30.T18LWL.2026173T150941.v2.0",
-            "HLS.S30.T18LXL.2026173T150941.v2.0",
-            "HLS.S30.T18LWL.2026281T150721.v2.0",
-            "HLS.S30.T18LXL.2026281T150721.v2.0",
-        ],
-        "image_urls": {
-            "before": f"/api/context/{aoi_id}/hls-optical/2026-06-22.png",
-            "after": f"/api/context/{aoi_id}/hls-optical/2026-10-08.png",
-        },
-        "terrain_3d_available": True,
-    }
+def _build_optical_context(aoi_id: str = "ayacucho-huanta") -> None:
+    """Regional PNGs lack archived georeferencing; never call them zone photos.
+
+    The full-region HLS images remain available in Changes. Zone crops require
+    validated pixel-to-coordinate provenance before this can return imagery.
+    """
+    return None
 
 
 # ---------------------------------------------------------------------------

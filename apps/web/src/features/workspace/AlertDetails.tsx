@@ -13,7 +13,7 @@ function ExposureMetric({ label, value, unit }: { label: string; value?: number 
   return <div><dt>{label}</dt><dd>{number(value)} {value != null && unit && <small>{unit}</small>}</dd></div>;
 }
 
-export function AlertDetails({ feature, onBack, onResources, focusVoice }: { feature: AlertFeature; onBack: () => void; onResources: () => void; focusVoice?: boolean }) {
+export function AlertDetails({ feature, onBack, onResources, focusVoice, onChanges }: { feature: AlertFeature; onBack: () => void; onResources: () => void; focusVoice?: boolean; onChanges?: () => void }) {
   const p = feature.properties;
   const [bulletinData, setBulletinData] = useState<RemediationBulletinResponse | null>(null);
   const voiceSection = useRef<HTMLDivElement>(null);
@@ -292,33 +292,14 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice }: { fea
           </ul>
         </details>
 
-        {p.remediation.optical_context && (
-          <div className="optical-context-box" style={{ marginTop: "1rem", padding: "10px", background: "var(--surface-subtle, #141b22)", borderRadius: "6px", border: "1px solid var(--border-subtle, #30363d)" }}>
-            <h4>Presente con foto real · Óptica HLS (Sentinel-2)</h4>
-            <p className="muted" style={{ fontSize: "0.82rem" }}>
-              {p.remediation.optical_context.product} · {p.remediation.optical_context.source}
-            </p>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", margin: "8px 0" }}>
-              <div>
-                <img
-                  src={p.remediation.optical_context.image_urls.before}
-                  alt="HLS Antes (22-jun-2026)"
-                  style={{ width: "100%", borderRadius: "4px", border: "1px solid #333", maxHeight: "120px", objectFit: "cover" }}
-                />
-                <small className="muted">Antes · 22-jun-2026</small>
-              </div>
-              <div>
-                <img
-                  src={p.remediation.optical_context.image_urls.after}
-                  alt="HLS Después (08-oct-2026)"
-                  style={{ width: "100%", borderRadius: "4px", border: "1px solid #333", maxHeight: "120px", objectFit: "cover" }}
-                />
-                <small className="muted">Después · 08-oct-2026</small>
-              </div>
-            </div>
-
-          </div>
-        )}
+        <section className="zone-optical-unavailable">
+          <h4>Imagen óptica de esta mancha</h4>
+          <p className="muted">No hay un recorte georreferenciado verificado para esta mancha.
+            Las imágenes HLS disponibles cubren toda la zona de estudio.</p>
+          {onChanges && <button type="button" className="secondary-action" onClick={onChanges}>
+            Ver imagen de toda la zona
+          </button>}
+        </section>
 
         {p.remediation.recovery_scenario && (
           <div className="recovery-scenario-box" style={{ marginTop: "1rem", padding: "10px", background: "var(--surface-subtle, #141b22)", borderRadius: "6px", border: "1px solid #ffb74d33" }}>
@@ -408,7 +389,7 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice }: { fea
         <div className="certificate-box" style={{ marginTop: "1rem", padding: "12px", background: "rgba(33, 150, 243, 0.08)", border: "1px solid rgba(33, 150, 243, 0.3)", borderRadius: "6px" }}>
           <h4 style={{ margin: "0 0 6px 0", color: "#90caf9" }}>Constancia de evidencia satelital para respaldar un trámite</h4>
           <p className="muted" style={{ fontSize: "0.8rem", margin: "0 0 8px 0" }}>
-            Expediente técnico con coordenadas, fechas NISAR, foto HLS, presupuesto y hash SHA-256 para presentar ante agencias agrarias o municipios.
+            Expediente técnico con coordenadas, fechas NISAR, presupuesto y hash SHA-256 para presentar ante agencias agrarias o municipios.
           </p>
           <p className="status-message" style={{ fontSize: "0.78rem", margin: "0 0 10px 0" }}>
             No es un certificado oficial ni garantiza el pago del Seguro Agrícola Catastrófico ni de MERESE o bonos de carbono; se presenta como evidencia técnica de apoyo.

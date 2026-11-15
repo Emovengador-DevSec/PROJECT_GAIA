@@ -76,13 +76,7 @@ def test_recovery_scenario_mandatory_label():
 
 def test_optical_context_structure():
     opt = _build_optical_context("ayacucho-huanta")
-    assert "HLS" in opt["product"]
-    assert "dates" in opt
-    assert opt["dates"]["before"] == "2026-06-22"
-    assert opt["dates"]["after"] == "2026-10-08"
-    assert len(opt["scenes"]) == 4
-    assert "ndvi_observed_approx" not in opt  # not measured per zone
-    assert opt["terrain_3d_available"] is True
+    assert opt is None  # regional PNGs must not masquerade as zone-specific photos
 
 
 def test_compute_risk_includes_phase3_fields():

@@ -4,6 +4,8 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- F3 del plan 25: se retiran las fotos HLS regionales de las fichas por falta de georreferencia archivada verificable; acceso a la imagen regional en Cambios, sin presentarla como foto de cada mancha.
+
 - F2 del plan 25: cabecera por mancha con área y principales factores medidos; lista Acción agrupada por causa y ordenada por índice, sin especies ni presupuesto en sus tarjetas.
 
 - F1 del plan 25: diagnóstico compuesto con las mediciones y las evidencias de cada mancha; se retiran el texto fijo de causa y la condición interna de la receta de la ficha.

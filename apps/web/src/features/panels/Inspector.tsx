@@ -32,7 +32,7 @@ type Props = {
   context: ContextLayer[]; activeContext?: ContextLayer; onContext: (id: string | null) => void; moistureCatalog?: Catalog;
   validation?: Validation;
   rainfall?: Rainfall;
-  onClose: () => void; onResources: () => void;
+  onClose: () => void; onResources: () => void; onChanges: () => void;
   communityProps: React.ComponentProps<typeof Community>;
 };
 
@@ -108,18 +108,20 @@ function ActionPanel({
   onSelect,
   onClear,
   onResources,
+  onChanges,
 }: {
   alerts: AlertFeature[];
   selected?: AlertFeature;
   onSelect: (a: AlertFeature) => void;
   onClear: () => void;
   onResources: () => void;
+  onChanges: () => void;
 }) {
   const [levelFilter, setLevelFilter] = useState<string>("all");
   const [riskFilter, setRiskFilter] = useState<string>("all");
 
   if (selected) {
-    return <AlertDetails feature={selected} onBack={onClear} onResources={onResources} />;
+    return <AlertDetails feature={selected} onBack={onClear} onResources={onResources} onChanges={onChanges} />;
   }
 
   // Only zones the remediation engine evaluated (HV); levels come from the engine, not the alert feed.
@@ -237,7 +239,7 @@ export function Inspector(p: Props) {
       </>}
 
       {tab === "alerts" && <>
-        {p.selected ? <AlertDetails feature={p.selected} focusVoice={p.focusVoice} onBack={p.onClearAlert} onResources={p.onResources} /> : <>
+        {p.selected ? <AlertDetails feature={p.selected} focusVoice={p.focusVoice} onChanges={p.onChanges} onBack={p.onClearAlert} onResources={p.onResources} /> : <>
           <div className="panel-subheading"><p>Observaciones con fuente y fecha</p><button type="button" className="text-button" disabled={p.alertsLoading} onClick={p.onRefresh}>{p.alertsLoading ? "Actualizando…" : "Actualizar"}</button></div>
           <div className="alert-filters">
             <label>Observación<select value={p.alertKind} onChange={event => p.setAlertKind(event.target.value as AlertKind | "all")}>
@@ -270,6 +272,7 @@ export function Inspector(p: Props) {
           onSelect={p.onSelectAlert}
           onClear={p.onClearAlert}
           onResources={p.onResources}
+          onChanges={p.onChanges}
         />
       )}
 

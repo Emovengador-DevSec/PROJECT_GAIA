@@ -398,7 +398,7 @@ export function App() {
         setAlertLevel={value => { setAlertLevel(value); setSelected(undefined); }} health={health} mapStatus={mapStatus}
         compare={compare} setCompare={value => { cancelSweep(); setSplit(50); if (value) { setContextChoice(null); setCutoff(undefined); } setCompare(value); }}
         canUseFalseColor={canUseFalseColor} falseColor={rgb} setFalseColor={value => { cancelSweep(); setSplit(50); setFalseColor(value); }}
-        onClose={() => { setPanelOpen(false); setPickingReport(false); }} onResources={() => chooseTab("resources")}
+        onClose={() => { setPanelOpen(false); setPickingReport(false); }} onResources={() => chooseTab("resources")} onChanges={() => chooseTab("changes")}
         communityProps={{ onLocate: locateCommunity,
           reports, reportError, reportLayer, picking: pickingReport, point: reportPoint,
           onReportLayer: () => setReportLayer(value => !value),
