@@ -9,8 +9,11 @@ import { formatDate } from "../../lib/formatDate";
 import { formatNumber } from "../../lib/formatNumber";
 import type { CitizenReport } from "../../lib/api";
 import { addNisarOrbit } from "./nisarOrbit";
-import { PhotoPopup, usePlaceEvidence } from "../workspace/PlaceEvidence";
-import { api, type RealPhoto } from "../../lib/api";
+import { api } from "../../lib/api";
+import { climateSummary } from "../workspace/actionSummaryModel";
+import { FIELD_VIEW, PhotoPopup, usePlaceEvidence, type FieldViewRequest } from "../workspace/PlaceEvidence";
+import { fieldContours, fieldHeights, sampleFieldSurface } from "./fieldView";
+import type { RealPhoto } from "../../lib/api";
 import { FIRE_AGE_ALPHA, FIRE_AGE_COLORS, fireAge } from "./fireAge";
 
 type Props = {
@@ -28,6 +31,9 @@ type Props = {
   onSelect: (alert: AlertFeature) => void; onStatus: (status: GlobeStatus) => void;
 };
 const REDUCED = "(prefers-reduced-motion: reduce)";
+// Same vivid cause colours as the zone sheet titles.
+const CAUSE_COLORS: Record<string, string> = { incendio_sequia: "#ff6b4a", erosion_huaico: "#ffc23d",
+  ladera_inestable_sismo: "#c084fc", estres_hidrico_agricola: "#38bdf8", causa_por_verificar: "#9fb0bf" };
 const COLORS = { quake: "#fbbf24", fire: "#ff3b3b", surface_change: "#c69aff", deformation: "#a855f7", climate_anomaly: "#38bdf8" };
 
 function marker(kind: string, color: string): string {
@@ -46,6 +52,12 @@ export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint
   alerts, fireCells, active, cutoff, orbitData, orbitVisible, satelliteFocus, selected, onSelect, onStatus, offline = false,
   realTimeLighting }: Props) {
   const {data: placeEvidence} = usePlaceEvidence(selected);
+  const [fieldRequest, setFieldRequest] = useState<FieldViewRequest>();
+  const [designStatus, setDesignStatus] = useState<"loading" | "ready" | "unavailable">();
+  const [aerialLoaded, setAerialLoaded] = useState(false);
+  const fieldMode = useRef(false);
+  const fieldClose = useRef<HTMLButtonElement>(null);
+  const fieldTrigger = useRef<HTMLElement | null>(null);
   const [openPhoto, setOpenPhoto] = useState<RealPhoto>();
   const host = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
@@ -399,7 +411,7 @@ export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint
       const delta = Math.min(.1, (now - lastFrame) / 1000);
       lastFrame = now;
       if (orbit.current) {
-        orbit.current.heading += delta * .025;
+        orbit.current.heading += delta * .07;
         const { target, heading, pitch, range } = orbit.current;
         v.camera.lookAt(target, new Cesium.HeadingPitchRange(heading, pitch, range));
       } else if (!aoi && !selected && now - lastInput.current > 20_000 && v.camera.positionCartographic.height > 4_000_000) {
@@ -417,7 +429,7 @@ export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint
 
   useEffect(() => {
     const v = viewer.current;
-    if (!v) return;
+    if (!v || fieldRequest) return;
     const overlays: Cesium.ImageryLayer[] = [];
     const sources: [string | undefined, Cesium.SplitDirection][] = beforeUrl && afterUrl
       ? [[beforeUrl, Cesium.SplitDirection.LEFT], [afterUrl, Cesium.SplitDirection.RIGHT]]
@@ -430,7 +442,7 @@ export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint
       overlays.push(layer);
     }
     return () => { if (!v.isDestroyed()) for (const layer of overlays) v.imageryLayers.remove(layer); };
-  }, [tileUrl, beforeUrl, afterUrl, aoi, offline]);
+  }, [tileUrl, beforeUrl, afterUrl, aoi, offline, fieldRequest]);
   useEffect(() => { if (viewer.current) viewer.current.scene.splitPosition = split / 100; }, [split, offline]);
 
   const contextUrl = contextOverlay?.url;
@@ -438,7 +450,7 @@ export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint
   const contextCredit = contextOverlay?.credit;
   useEffect(() => {
     const v = viewer.current;
-    if (!v || !contextUrl || !aoi) return;
+    if (!v || !contextUrl || !aoi || fieldRequest) return;
     let cancelled = false;
     const overlays: Cesium.ImageryLayer[] = [];
     const rectangle = Cesium.Rectangle.fromDegrees(...aoi.bbox);
@@ -459,7 +471,7 @@ export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint
       cancelled = true;
       if (!v.isDestroyed()) overlays.forEach(overlay => v.imageryLayers.remove(overlay));
     };
-  }, [aoi, contextUrl, contextBefore, contextCredit, offline]);
+  }, [aoi, contextUrl, contextBefore, contextCredit, offline, fieldRequest]);
 
   useEffect(() => {
     const v = viewer.current;
@@ -560,6 +572,10 @@ export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint
     }
     const rank = new Map(data.entities.values.map((entity, index) => [entity.id, index]));
     const visibility = () => {
+      data.show = !fieldMode.current;
+      if (polygons) polygons.show = !fieldMode.current;
+      if (points) points.show = !fieldMode.current;
+      if (fieldMode.current) return;
       const close = v.camera.positionCartographic.height < 220_000;
       const until = cutoffRef.current ?? Infinity;
       const progress = reduce ? 1 : Math.max(0, Math.min(1, (frameTime - arrival.current) / 1600));
@@ -637,15 +653,15 @@ export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint
       for (const entity of source.entities.values) {
         const feature = primary.find(item => item.properties.id === entity.id);
         entity.properties = new Cesium.PropertyBag({ alert: feature });
-        const colorHex = feature?.properties.remediation?.color_hex ?? COLORS.surface_change;
+        const colorHex = CAUSE_COLORS[feature?.properties.remediation?.risk_id ?? ""] ?? feature?.properties.remediation?.color_hex ?? COLORS.surface_change;
         if (entity.polygon) {
           entity.polygon.outlineColor = new Cesium.ConstantProperty(Cesium.Color.fromCssColorString(colorHex));
           if (!reduce) {
             entity.polygon.material = new Cesium.ColorMaterialProperty(
-              new Cesium.CallbackProperty((_time, result) => Cesium.Color.fromCssColorString(colorHex).withAlpha(.20 + .08 * Math.sin(phase() * Math.PI), result), false),
+              new Cesium.CallbackProperty((_time, result) => Cesium.Color.fromCssColorString(colorHex).withAlpha(.42 + .14 * Math.sin(phase() * Math.PI), result), false),
             );
           } else {
-            entity.polygon.material = new Cesium.ColorMaterialProperty(Cesium.Color.fromCssColorString(colorHex).withAlpha(.24));
+            entity.polygon.material = new Cesium.ColorMaterialProperty(Cesium.Color.fromCssColorString(colorHex).withAlpha(.5));
           }
         }
       }
@@ -687,26 +703,195 @@ export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint
     const lon = positions.reduce((sum, point) => sum + point[0], 0) / positions.length;
     const lat = positions.reduce((sum, point) => sum + point[1], 0) / positions.length;
     const elevation = v.scene.globe.getHeight(Cesium.Cartographic.fromDegrees(lon, lat)) ?? 0;
-    const target = Cesium.Cartesian3.fromDegrees(lon, lat, Math.max(0, elevation) * exaggeration);
+    // globe.getHeight already returns the exaggerated surface height; do not scale it twice.
+    const target = Cesium.Cartesian3.fromDegrees(lon, lat, Math.max(0, elevation));
     const radius = Cesium.BoundingSphere.fromPoints(positions.map(point => Cesium.Cartesian3.fromDegrees(point[0], point[1]))).radius;
-    const range = selected.properties.kind === "quake" ? 260_000 : Math.max(65_000, radius * 3.2);
+    // Small NISAR zones (a few ha) need a close, low camera so the slope and the outline are readable.
+    const zone = selected.properties.kind === "surface_change" && !!selected.properties.remediation;
+    const range = selected.properties.kind === "quake" ? 260_000
+      : zone ? Math.min(9_000, Math.max(3_200, radius * 9)) : Math.max(65_000, radius * 3.2);
     const heading = Cesium.Math.toRadians(-25);
-    const pitch = Cesium.Math.toRadians(-38);
+    const pitch = Cesium.Math.toRadians(zone ? -24 : -38);
     let cancelled = false;
-    v.camera.flyToBoundingSphere(new Cesium.BoundingSphere(target, 0), {
+    // Bright outline of the studied zone at the real (exaggerated) terrain height, plus a label.
+    // Ground-clamped primitives drift with verticalExaggeration, so heights are sampled and scaled here.
+    const outline: Cesium.Entity[] = [];
+    if (zone) {
+      const rings: number[][][] = selected.geometry.type === "Polygon" ? [(selected.geometry.coordinates as number[][][])[0]]
+        : (selected.geometry.coordinates as number[][][][]).map(poly => poly[0]);
+      const tone = Cesium.Color.fromCssColorString("#facc15");
+      const place = selected.properties.remediation?.nearby_places?.[0];
+      const lift = (c: Cesium.Cartographic) => (Number.isFinite(c.height)
+        ? c.height * v.scene.verticalExaggeration : v.scene.globe.getHeight(c) ?? elevation) + 8;
+      const cartos = rings.map(ring => ring.map(([x, y]) => Cesium.Cartographic.fromDegrees(x, y)));
+      const center = Cesium.Cartographic.fromDegrees(lon, lat);
+      sampleFieldSurface(v.terrainProvider, [...cartos.flat(), center]).then(() => {
+          if (cancelled || v.isDestroyed()) return;
+          for (const ring of cartos) {
+            const pts = ring.map(c => Cesium.Cartesian3.fromRadians(c.longitude, c.latitude, lift(c)));
+            outline.push(v.entities.add({ polyline: { positions: pts,
+              width: new Cesium.CallbackProperty(() => fieldMode.current ? 5 : 10, false),
+              arcType: Cesium.ArcType.NONE,
+              material: new Cesium.PolylineGlowMaterialProperty({ color: tone, glowPower: .45 }) } }));
+            outline.push(v.entities.add({ polygon: { hierarchy: pts, perPositionHeight: true,
+              material: new Cesium.ColorMaterialProperty(new Cesium.CallbackProperty(
+                () => tone.withAlpha(fieldMode.current ? 0 : .45), false,
+              )) } }));
+          }
+          outline.push(v.entities.add({ position: Cesium.Cartesian3.fromRadians(center.longitude, center.latitude, lift(center) + 40),
+            label: { text: `Zona ${selected.properties.id.slice(-3)}${place ? ` · ${place.name}` : ""}`, font: "700 15px sans-serif",
+              fillColor: Cesium.Color.fromCssColorString("#05070a"), showBackground: true, backgroundColor: tone,
+              backgroundPadding: new Cesium.Cartesian2(8, 5), pixelOffset: new Cesium.Cartesian2(0, -18),
+              disableDepthTestDistance: Number.POSITIVE_INFINITY } }));
+        });
+      const aoiId = selected.properties.aoi_id;
+      if (aoiId) api.climate(aoiId).then(climate => {
+        const text = climateSummary(climate);
+        if (cancelled || v.isDestroyed() || !climate?.anomalies?.length || /^Sin anomal|sin publicar|desactualizado|sin evaluar/i.test(text)) return;
+        const kind = /helada/i.test(text) ? "#38bdf8" : /calor/i.test(text) ? "#ff6b4a" : "#818cf8";
+        outline.push(v.entities.add({ position: Cesium.Cartesian3.fromRadians(center.longitude, center.latitude, lift(center) + 40),
+          label: { text: `${/helada/i.test(text) ? "❄ " : "▲ "}${text.replace(/(\d+)\.(\d)/g, "$1,$2")}`, font: "700 14px sans-serif",
+            show: new Cesium.CallbackProperty(() => !fieldMode.current, false),
+            fillColor: Cesium.Color.fromCssColorString("#05070a"), showBackground: true, backgroundColor: Cesium.Color.fromCssColorString(kind),
+            backgroundPadding: new Cesium.Cartesian2(8, 5), pixelOffset: new Cesium.Cartesian2(0, -52),
+            disableDepthTestDistance: Number.POSITIVE_INFINITY } }));
+      }).catch(() => undefined);
+    }
+    const fly = (aim: Cesium.Cartesian3) => v.camera.flyToBoundingSphere(new Cesium.BoundingSphere(aim, 0), {
       offset: new Cesium.HeadingPitchRange(heading, pitch, range), duration: reduceMotion ? 0 : 2.6,
       easingFunction: Cesium.EasingFunction.QUINTIC_IN_OUT,
       complete: () => {
-        if (!cancelled && !reduceMotion) { orbit.current = { target, heading, pitch, range }; setOrbiting(true); }
+        if (!cancelled && !reduceMotion && !fieldMode.current) { orbit.current = { target: aim, heading, pitch, range }; setOrbiting(true); }
       },
     });
+    // Before the terrain tiles load, getHeight is undefined and the aim falls inside the mountain.
+    // For close zone views, sample the real height first (raw metres × exaggeration).
+    if (zone) {
+      const spot = Cesium.Cartographic.fromDegrees(lon, lat);
+      sampleFieldSurface(v.terrainProvider, [spot]).then(() => {
+        if (cancelled || v.isDestroyed() || fieldMode.current) return;
+        fly(Number.isFinite(spot.height) ? Cesium.Cartesian3.fromDegrees(lon, lat, spot.height * v.scene.verticalExaggeration) : target);
+      });
+    } else fly(target);
     return () => {
       cancelled = true;
-      v.camera.cancelFlight();
-      if (orbit.current && !v.isDestroyed()) v.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
+      if (!v.isDestroyed()) {
+        outline.forEach(entity => v.entities.remove(entity));
+        v.camera.cancelFlight();
+        if (orbit.current) v.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
+      }
       orbit.current = undefined;
     };
   }, [selected, offline, active, reduceMotion]);
+
+  useEffect(() => {
+    const onFieldView = (event: Event) => {
+      const request = (event as CustomEvent<FieldViewRequest>).detail;
+      if (!active || request.zoneId !== selected?.properties.remediation?.alert_id) return;
+      if (document.activeElement instanceof HTMLElement) fieldTrigger.current = document.activeElement;
+      fieldMode.current = true;
+      stopOrbit();
+      updateVisibility.current();
+      setFieldRequest(request);
+    };
+    window.addEventListener(FIELD_VIEW, onFieldView);
+    return () => {
+      window.removeEventListener(FIELD_VIEW, onFieldView);
+      fieldMode.current = false;
+      updateVisibility.current();
+      setFieldRequest(undefined);
+    };
+  }, [selected, active]);
+
+  useEffect(() => {
+    const v = viewer.current;
+    const geometry = selected?.geometry;
+    if (!v || !active || !fieldRequest || !geometry ||
+        fieldRequest.zoneId !== selected.properties.remediation?.alert_id) return;
+    const plots = geometry.type === "Polygon" ? [geometry.coordinates as [number, number][][]]
+      : geometry.type === "MultiPolygon" ? geometry.coordinates as [number, number][][][] : [];
+    if (!plots.length) return;
+    const points = plots.flatMap(plot => plot[0].map(([lon, lat]) => Cesium.Cartesian3.fromDegrees(lon, lat)));
+    const sphere = Cesium.BoundingSphere.fromPoints(points);
+    const center = Cesium.Cartographic.fromCartesian(sphere.center);
+    const terrain = v.terrainProvider;
+    const fieldAoi = selected.properties.aoi_id;
+    let cancelled = false;
+    const entities: Cesium.Entity[] = [];
+    const imageryLayers: Cesium.ImageryLayer[] = [];
+    const aerial = placeEvidence?.field_aerial;
+    setAerialLoaded(false);
+    if (aerial) {
+      const padding = Math.max(1_500, sphere.radius * 5) / 6_370_000;
+      const around = new Cesium.Rectangle(center.longitude - padding, center.latitude - padding,
+        center.longitude + padding, center.latitude + padding);
+      for (const tile of aerial.tiles) {
+        const rectangle = Cesium.Rectangle.fromDegrees(...tile.bounds);
+        if (!Cesium.Rectangle.intersection(around, rectangle)) continue;
+        Cesium.SingleTileImageryProvider.fromUrl(api.localPhoto(tile.image_url),
+          {rectangle, credit: `Contains modified Copernicus Sentinel data ${aerial.date.slice(0, 4)}`})
+          .then(provider => {
+            if (cancelled || v.isDestroyed()) return;
+            imageryLayers.push(v.imageryLayers.addImageryProvider(provider));
+            setAerialLoaded(true);
+            v.scene.requestRender();
+          }).catch(() => undefined);
+      }
+    }
+    const flyDown = async () => {
+      await sampleFieldSurface(terrain, [center]);
+      if (!Number.isFinite(center.height) && fieldAoi) {
+        const [localHeight] = await fieldHeights(fieldAoi, [[Cesium.Math.toDegrees(center.longitude), Cesium.Math.toDegrees(center.latitude)]])
+          .catch(() => [NaN]);
+        center.height = localHeight;
+      }
+      if (cancelled || v.isDestroyed()) return;
+      const height = Number.isFinite(center.height)
+        ? center.height * v.scene.verticalExaggeration : v.scene.globe.getHeight(center) ?? 0;
+      const target = Cesium.Cartesian3.fromRadians(center.longitude, center.latitude, height);
+      v.camera.flyToBoundingSphere(new Cesium.BoundingSphere(target, 0), {
+        offset: new Cesium.HeadingPitchRange(0, -Math.PI / 2, Math.max(aerial ? 900 : 750, sphere.radius * 4)),
+        duration: reduceMotion ? 0 : 1.35,
+      });
+    };
+    void flyDown();
+    if (fieldRequest.design && fieldAoi) {
+      setDesignStatus("loading");
+      fieldContours(fieldAoi, plots, v.scene.verticalExaggeration).then(lines => {
+        if (cancelled || v.isDestroyed()) return;
+        for (const positions of lines) {
+          entities.push(v.entities.add({polyline: {positions, width: 3, arcType: Cesium.ArcType.NONE,
+            material: Cesium.Color.fromCssColorString("#5dffcf"), depthFailMaterial: Cesium.Color.fromCssColorString("#5dffcf")}}));
+        }
+        setDesignStatus(lines.length ? "ready" : "unavailable");
+        v.scene.requestRender();
+      }).catch(() => {if (!cancelled) setDesignStatus("unavailable");});
+    }
+    return () => {
+      cancelled = true;
+      if (!v.isDestroyed()) {
+        entities.forEach(entity => v.entities.remove(entity));
+        imageryLayers.forEach(layer => v.imageryLayers.remove(layer));
+      }
+    };
+  }, [fieldRequest, selected, active, reduceMotion, placeEvidence?.field_aerial]);
+
+  useEffect(() => {
+    if (fieldRequest && window.matchMedia("(max-width: 720px)").matches) fieldClose.current?.focus();
+  }, [fieldRequest]);
+
+  useEffect(() => {
+    const v = viewer.current;
+    if (!v || !fieldRequest || !active) return;
+    const entities = (placeEvidence?.nearby_settlements ?? []).map(place => v.entities.add({
+      position: Cesium.Cartesian3.fromDegrees(...place.center),
+      label: {text: place.name, font: "600 13px sans-serif", showBackground: true,
+        fillColor: Cesium.Color.WHITE, heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY},
+    }));
+    v.scene.requestRender();
+    return () => {if (!v.isDestroyed()) entities.forEach(entity => v.entities.remove(entity));};
+  }, [fieldRequest, placeEvidence, active]);
 
   useEffect(() => {
     setOpenPhoto(undefined);
@@ -727,6 +912,28 @@ export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint
   const metric = hover && observationMetric(hover.feature);
   return <>
     <div ref={host} className="globe" aria-label="Globo satelital de Sudamérica con observaciones georreferenciadas" />
+    {fieldRequest && <aside className="field-view-caption" aria-live="polite">
+      <strong>{fieldRequest.design ? "Diseño propuesto sobre el terreno" : "Chacra desde arriba"}</strong>
+      <small>{aerialLoaded && placeEvidence?.field_aerial
+        ? `${placeEvidence.field_aerial.source} · ${placeEvidence.field_aerial.date} · ${placeEvidence.field_aerial.resolution_m} m`
+        : "Imagen del globo · fecha variable según proveedor"}</small>
+      {fieldRequest.design && <small>{({
+        loading: "Consultando elevaciones reales…",
+        ready: "Líneas orientativas cada 25 m de desnivel. Requieren revisión en campo.",
+        unavailable: "Sin relieve suficiente o curvas dentro de esta mancha.",
+      }[designStatus ?? "loading"])}</small>}
+      {fieldRequest.design && designStatus === "ready" && <small>
+        <a href="https://registry.opendata.aws/terrain-tiles/" target="_blank" rel="noopener noreferrer">Relieve Mapzen · rejilla de ~30 m</a>
+      </small>}
+      <button ref={fieldClose} type="button" className="secondary-action" onClick={() => {
+        fieldMode.current = false;
+        stopOrbit();
+        updateVisibility.current();
+        setFieldRequest(undefined);
+        viewer.current?.scene.requestRender();
+        requestAnimationFrame(() => fieldTrigger.current?.focus());
+      }}>Cerrar vista</button>
+    </aside>}
     {!!placeEvidence?.pins.length && <details className="map-photo-index"><summary>Fotos del lugar · {placeEvidence.pins.length}</summary>
       <button type="button" onClick={() => {
         const v = viewer.current;

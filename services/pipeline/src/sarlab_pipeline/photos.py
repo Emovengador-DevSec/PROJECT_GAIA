@@ -24,6 +24,7 @@ from .settings import CONFIG_DIR, PUBLISHED
 
 COMMONS = "https://commons.wikimedia.org/w/api.php"
 INAT = "https://api.inaturalist.org/v1/observations"
+PERU_PLACE_ID = 7513  # iNaturalist place "Peru"
 USER_AGENT = "GAIA-PhotoCollector/1.0 (educational geographic evidence collector)"
 LICENSES = {
     "cc-by": "https://creativecommons.org/licenses/by/4.0/",
@@ -356,45 +357,37 @@ def publish(aoi: str, *, refresh: bool = False) -> dict:
     with httpx.Client(timeout=35, headers={"User-Agent": USER_AGENT}, follow_redirects=True) as client:
         collector = Collector(output, client, refresh)
         for item in species_config():
-            candidates = collector.commons(item["scientific"].replace(" spp.", ""))
-            if not candidates:
-                name = item["scientific"].replace(" spp.", "").strip()
-                taxa = collector.get_json("https://api.inaturalist.org/v1/taxa", {"q": name, "per_page": 10})
-                taxon = next(
-                    (
-                        t
-                        for t in taxa.get("results", [])
-                        if t.get("iconic_taxon_name") == "Plantae"
-                        and name.casefold()
-                        in {str(t.get("name", "")).casefold(), str(t.get("matched_term", "")).casefold()}
-                    ),
-                    None,
-                )
-                response = (
-                    collector.get_json(
-                        INAT,
-                        {
-                            "taxon_id": taxon["id"],
-                            "iconic_taxa": "Plantae",
-                            "quality_grade": "research",
-                            "photo_license": "cc-by,cc-by-sa,cc0",
-                            "per_page": 12,
-                            "order_by": "votes",
-                        },
-                    )
-                    if taxon
-                    else {}
-                )
-                candidates = [
+            name = item["scientific"].replace(" spp.", "").strip()
+            taxa = collector.get_json("https://api.inaturalist.org/v1/taxa", {"q": name, "per_page": 10})
+            taxon = next(
+                (
+                    t
+                    for t in taxa.get("results", [])
+                    if t.get("iconic_taxon_name") == "Plantae"
+                    and name.casefold()
+                    in {str(t.get("name", "")).casefold(), str(t.get("matched_term", "")).casefold()}
+                ),
+                None,
+            )
+
+            def inat(place: int | None, taxon: dict | None = taxon) -> list[dict]:
+                if not taxon:
+                    return []
+                params = {"taxon_id": taxon["id"], "iconic_taxa": "Plantae", "quality_grade": "research",
+                          "photo_license": "cc-by,cc-by-sa,cc0", "per_page": 12, "order_by": "votes"}
+                if place:
+                    params["place_id"] = place
+                response = collector.get_json(INAT, params)
+                return [
                     p
                     for o in response.get("results", [])
-                    if taxon
-                    and (
-                        o.get("taxon", {}).get("id") == taxon["id"]
-                        or taxon["id"] in o.get("taxon", {}).get("ancestor_ids", [])
-                    )
+                    if (o.get("taxon", {}).get("id") == taxon["id"]
+                        or taxon["id"] in o.get("taxon", {}).get("ancestor_ids", []))
                     and (p := inat_photo(o, "species"))
                 ]
+
+            # Peru first (people should recognise the plant), then Commons, then anywhere.
+            candidates = inat(PERU_PLACE_ID) or collector.commons(name) or inat(None)
             stored = next((p for candidate in candidates if (p := collector.store(candidate))), None)
             if stored:
                 photos[stored["id"]] = stored

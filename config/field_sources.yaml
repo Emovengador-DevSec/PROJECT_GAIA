@@ -1,0 +1,45 @@
+reports:
+  - id: ingemmet-ayacucho-2014
+    title: Zonas críticas por peligros geológicos en la región Ayacucho
+    institution: INGEMMET
+    year: 2014
+    license: CC BY-NC-SA 4.0
+    license_url: https://creativecommons.org/licenses/by-nc-sa/4.0/
+    record_url: https://alicia.concytec.gob.pe/vufind/Record/INGEMMET_4e198dde36a4c8755bc91df6925da97d/Details
+    url: https://repositorio.ingemmet.gob.pe/bitstream/20.500.12544/2029/1/2014-Zonas_cr%C3%ADticas_peligros_geol%C3%B3gicos_Ayacucho.pdf
+    md5: b380e755fd292daa156da756760d00fd
+    photos:
+      - {number: 13, page: 20, xref: 84, place: Quebrada Pamparque}
+      - {number: 14, page: 20, xref: 85, place: Quebrada Pamparque}
+      - {number: 15, page: 20, xref: 86, place: Urayparte, province: Huamanga}
+      - {number: 16, page: 21, xref: 89, place: Acoylla y Santa Lucía, match: Santa Lucia, province: Huamanga}
+      - {number: 17, page: 21, xref: 90, place: Pucaloma, province: Huamanga}
+  - id: ingemmet-challhuamayo-2020
+    title: Evaluación de peligro geológico por deslizamiento en Challhuamayo Alta
+    institution: INGEMMET
+    year: 2020
+    license: CC BY-NC-ND 4.0
+    license_url: https://creativecommons.org/licenses/by-nc-nd/4.0/
+    record_url: https://alicia.concytec.gob.pe/vufind/Record/INGEMMET_4e926329f44509fbaa40a2d66bd9292c/Details
+    url: https://repositorio.ingemmet.gob.pe/bitstream/20.500.12544/2792/1/A7070-Evaluaci%C3%B3n_deslizamiento_Challhuamayo_Alta-Ayacucho.pdf
+    md5: 6d22ca43f82171e5fb17f426426d1efd
+    photos:
+      # The community coordinates come from page 5 of A7070, WGS84.
+      - {label: Figura, number: 2, page: 8, xref: 80, place: Challhuamayo Alta, report_center: [-74.026825, -12.8688861]}
+      - {label: Figura, number: 5, page: 10, xref: 89, place: Challhuamayo Alta, report_center: [-74.026825, -12.8688861]}
+      - {label: Figura, number: 8, page: 12, xref: 94, place: Challhuamayo Alta, report_center: [-74.026825, -12.8688861]}
+      - {label: Figura, number: 11, page: 17, xref: 102, place: Challhuamayo Alta, report_center: [-74.026825, -12.8688861]}
+  - id: ingemmet-pacchancca
+    title: Evaluación de peligros geológicos en el centro poblado Pacchancca
+    institution: INGEMMET
+    year: 2024
+    license: CC BY-NC-ND 4.0
+    license_url: https://creativecommons.org/licenses/by-nc-nd/4.0/
+    record_url: https://alicia.concytec.gob.pe/vufind/Record/INGEMMET_1dac80e88ffec4a63c07ee0f9cef79e8/Details
+    url: https://repositorio.ingemmet.gob.pe/bitstream/20.500.12544/4965/1/A7474-Evaluacion_peligros_cp_Pacchancca-Ayacucho.pdf
+    md5: 94f79708bb7071fdb2660c08f66c45f3
+    photos:
+      - {label: Fotografía, number: 2, page: 12, xref: 114, place: Pacchancca, province: Huanta}
+      - {label: Fotografía, number: 5, page: 17, xref: 125, place: Pacchancca, province: Huanta}
+      - {label: Fotografía, number: 8, page: 19, xref: 130, place: Pacchancca, province: Huanta}
+      - {label: Fotografía, number: 9, page: 22, xref: 138, place: Pacchancca, province: Huanta}

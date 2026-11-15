@@ -3,8 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { api, type AlertFeature, type RemediationBulletinResponse } from "../../lib/api";
 import { formatDate } from "../../lib/formatDate";
 import { formatNumber as number } from "../../lib/formatNumber";
-import { ApplicationReference, LearnMore } from "./Resources";
-import { ZoneClimate, ZoneDiagnosis } from "./ZoneSheetPanels";
+import { ResourceLink, applicationLink } from "./Resources";
+import { ZoneActions, ZoneClimate, ZoneDiagnosis } from "./ZoneSheetPanels";
 import "./zone-sheet.css";
 import { BudgetSummary } from "./BudgetSummary";
 import { RecoveryScenario } from "./RecoveryScenario";
@@ -37,7 +37,6 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice, onChang
   const [minkaContact, setMinkaContact] = useState("");
   const [commitSuccess, setCommitSuccess] = useState(false);
   const [commitSubmitting, setCommitSubmitting] = useState(false);
-  const [offlineSaved, setOfflineSaved] = useState(false);
 
   useEffect(() => {
     if (!p.remediation) {
@@ -87,26 +86,8 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice, onChang
     }
   };
 
-  const handleSaveOffline = () => {
-    try {
-      const key = `gaia_offline_${p.id}`;
-      const payload = {
-        saved_at: new Date().toISOString(),
-        alert: p,
-        bulletin: bulletinData,
-      };
-      localStorage.setItem(key, JSON.stringify(payload));
-      setOfflineSaved(true);
-      setTimeout(() => setOfflineSaved(false), 3000);
-    } catch {
-      // Ignore
-    }
-  };
 
   const source = p.source_kind === "primary" ? "NISAR · fuente principal" : `${p.source} · complementario`;
-  const shareUrl = new URL(window.location.href);
-  shareUrl.searchParams.set("alert", p.id);
-  const message = ["GAIA Alerta", p.title, p.place, formatDate(p.date), source, p.note, shareUrl.href].join("\n");
   const external = httpsUrl(p.source_url);
   const exposure = p.exposure;
   const exposureSources = Object.values(exposure?.sources ?? {});
@@ -202,6 +183,7 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice, onChang
         {sheetTab === "place" && <section role="tabpanel" id="zone-panel-place" aria-labelledby="zone-tab-place"><PlaceEvidencePanel key={p.id} feature={feature} /></section>}
         {sheetTab === "diagnosis" && <section role="tabpanel" id="zone-panel-diagnosis" aria-labelledby="zone-tab-diagnosis">
           <ZoneDiagnosis feature={feature} />
+          <ZoneActions feature={feature} onVoice={() => setSheetTab("voice")} />
           <details className="zone-sheet-more"><summary>Ver más · diagnóstico y exposición</summary>
         <div className="source-row">
           <span className="source-label">Solución basada en la naturaleza (SbN)</span>
@@ -256,46 +238,6 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice, onChang
         {sheetTab === "future" && <section role="tabpanel" id="zone-panel-future" aria-labelledby="zone-tab-future">
         <BudgetSummary items={p.remediation.budget ?? []} />
 
-        <details className="technical-details">
-          <summary>Procedencia y fuentes de remediación</summary>
-          <ul className="source-list">
-            <li>
-              <strong>NISAR (fuente principal):</strong> {p.remediation.sources_nisar.product}
-              <br />
-              <small className="muted">
-                Fechas: {p.remediation.sources_nisar.dates?.join(" → ")}
-              </small>
-            </li>
-            {p.remediation.sources_complementary?.map((s, idx) => (
-              <li key={idx}>
-                <strong>Complementario:</strong> {s.source}
-                {s.license && ` · ${s.license}`}
-                {s.url && (
-                  <a href={s.url} target="_blank" rel="noopener noreferrer" className="source-link">
-                    ↗
-                  </a>
-                )}
-              </li>
-            ))}
-          </ul>
-        </details>
-
-        <section className="zone-optical-unavailable">
-          <h4>Imagen óptica de esta mancha</h4>
-          <p className="muted">No hay un recorte georreferenciado verificado para esta mancha.
-            Las imágenes HLS disponibles cubren toda la zona de estudio.</p>
-          {onChanges && <button type="button" className="secondary-action" onClick={onChanges}>
-            Ver imagen de toda la zona
-          </button>}
-        </section>
-
-        {p.remediation.recovery_scenario && <RecoveryScenario scenario={p.remediation.recovery_scenario} />}
-
-        {!p.remediation.cost_benefit && (
-          <p className="status-message">
-            Costo-beneficio por confirmar: los costos y el valor agrícola aún no tienen una fuente verificada.
-          </p>
-        )}
         {p.remediation.cost_benefit && (
           <div className="cost-benefit-box" style={{ marginTop: "1rem", padding: "10px", background: "var(--surface-subtle, #141b22)", borderRadius: "6px", border: "1px solid var(--border-subtle, #30363d)" }}>
             <h4>Evaluación costo-beneficio frente a inacción</h4>
@@ -325,32 +267,57 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice, onChang
           </div>
         )}
 
-        <div className="certificate-box" style={{ marginTop: "1rem", padding: "12px", background: "rgba(33, 150, 243, 0.08)", border: "1px solid rgba(33, 150, 243, 0.3)", borderRadius: "6px" }}>
-          <h4 style={{ margin: "0 0 6px 0", color: "#90caf9" }}>Constancia de evidencia satelital para respaldar un trámite</h4>
-          <p className="muted" style={{ fontSize: "0.8rem", margin: "0 0 8px 0" }}>
-            Expediente técnico con coordenadas, fechas NISAR, presupuesto y hash SHA-256 para presentar ante agencias agrarias o municipios.
-          </p>
-          <p className="status-message" style={{ fontSize: "0.78rem", margin: "0 0 10px 0" }}>
-            No es un certificado oficial ni garantiza el pago del Seguro Agrícola Catastrófico ni de MERESE o bonos de carbono; se presenta como evidencia técnica de apoyo.
-          </p>
-          <a
-            className="primary-action"
-            href={`/api/remediation/${p.aoi_id ?? "ayacucho-huanta"}/${p.remediation.alert_id}/certificate.pdf`}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ width: "100%", justifyContent: "center" }}
-          >
-            Descargar constancia (PDF)
-          </a>
-        </div>
+
+        <section className="future-block" data-tone="doc">
+          <h4>Constancia satelital (PDF)</h4>
+          <ul>
+            <li>Coordenadas y fechas del radar NISAR</li>
+            <li>Factores medidos y técnicas sugeridas</li>
+            <li>Huella SHA-256 para comprobar que no se alteró</li>
+          </ul>
+          <a className="future-button" href={`/api/remediation/${p.aoi_id ?? "ayacucho-huanta"}/${p.remediation.alert_id}/certificate.pdf`}
+            target="_blank" rel="noopener noreferrer">Descargar constancia (PDF)</a>
+        </section>
+
+        <section className="future-block" data-tone="photo">
+          <h4>Imagen de la zona</h4>
+          <ul><li>Sin recorte verificado de esta mancha</li><li>Imagen óptica HLS de toda la zona, antes y después</li></ul>
+          {onChanges && <button type="button" className="future-button" onClick={onChanges}>Ver imagen de toda la zona</button>}
+        </section>
+
+        {p.remediation.recovery_scenario && <RecoveryScenario scenario={p.remediation.recovery_scenario} />}
+
+        <details className="technical-details">
+          <summary>Fuentes</summary>
+          <ul className="source-list">
+            <li>
+              <strong>NISAR (fuente principal):</strong> {p.remediation.sources_nisar.product}
+              <br />
+              <small className="muted">
+                Fechas: {p.remediation.sources_nisar.dates?.join(" → ")}
+              </small>
+            </li>
+            {p.remediation.sources_complementary?.map((s, idx) => (
+              <li key={idx}>
+                <strong>Complementario:</strong> {s.source}
+                {s.license && ` · ${s.license}`}
+                {s.url && (
+                  <a href={s.url} target="_blank" rel="noopener noreferrer" className="source-link">
+                    ↗
+                  </a>
+                )}
+              </li>
+            ))}
+          </ul>
+        </details>
 
         </section>}
         {sheetTab === "voice" && <section role="tabpanel" id="zone-panel-voice" aria-labelledby="zone-tab-voice">
           {!bulletinData && <p role="status">Boletín sin cargar. Reabre la ficha para consultar el guion publicado.</p>}
         {bulletinData && (
           <div className="last-mile-section" ref={voiceSection} tabIndex={-1} aria-label="GAIA Voz y Minka" style={{ marginTop: "1rem", borderTop: "1px solid var(--border-subtle, #30363d)", paddingTop: "1rem" }}>
-            <h4 style={{ margin: "0 0 6px 0", color: "#f9a825", display: "flex", alignItems: "center", gap: "6px" }}>
-              <span>📻</span> Boletín radial «GAIA Voz» y Minka comunal
+            <h4 style={{ margin: "0 0 6px 0", color: "#e879f9", display: "flex", alignItems: "center", gap: "6px" }}>
+              <span>📻</span> GAIA Voz · Minka comunal
             </h4>
             <p className="muted" style={{ fontSize: "0.8rem", margin: "0 0 10px 0" }}>
               Último kilómetro: información que llega sin internet, por radioemisoras andinas y faena comunal minka.
@@ -360,19 +327,17 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice, onChang
             <div style={{ display: "flex", gap: "6px", marginBottom: "8px" }}>
               <button
                 type="button"
-                className={bulletinLang === "es" ? "primary-action" : "secondary-action"}
-                style={{ fontSize: "0.78rem", padding: "4px 10px" }}
+                className="lang-button" data-lang="es" aria-pressed={bulletinLang === "es"}
                 onClick={() => setBulletinLang("es")}
               >
-                Español ({bulletinData.bulletin.duration_es_seconds} s)
+                Español
               </button>
               <button
                 type="button"
-                className={bulletinLang === "qu" ? "primary-action" : "secondary-action"}
-                style={{ fontSize: "0.78rem", padding: "4px 10px" }}
+                className="lang-button" data-lang="qu" aria-pressed={bulletinLang === "qu"}
                 onClick={() => setBulletinLang("qu")}
               >
-                {bulletinData.audio_url_qu ? "Quechua · grabación de hablante" : "Quechua · borrador sin grabar"}
+                Quechua
               </button>
             </div>
 
@@ -396,21 +361,6 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice, onChang
                 />
                 Tu navegador no soporta el reproductor de audio.
               </audio>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "6px" }}>
-                <small className="muted" style={{ fontSize: "0.75rem" }}>
-                  {bulletinLang === "es"
-                    ? "Voz sintética de Windows, generada sin conexión"
-                    : `${bulletinData.bulletin.quechua_metadata.variant} · grabación de hablante`}
-                </small>
-                <a
-                  href={bulletinLang === "es" ? bulletinData.audio_url_es : bulletinData.audio_url_qu ?? undefined}
-                  download={`boletin_${bulletinLang}_${p.remediation.alert_id}.wav`}
-                  className="text-button"
-                  style={{ fontSize: "0.75rem" }}
-                >
-                  Descargar audio WAV ⬇
-                </a>
-              </div>
             </div>
             )}
 
@@ -455,14 +405,19 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice, onChang
 
             {/* Minka comunal */}
             <div className="minka-box" style={{ marginTop: "10px", padding: "10px", background: "rgba(76, 175, 80, 0.08)", border: "1px solid rgba(76, 175, 80, 0.3)", borderRadius: "6px" }}>
-              <h5 style={{ margin: "0 0 4px 0", color: "#81c784" }}>Minka Digital · Convocatoria comunal</h5>
-              <ul>{(bulletinData.minka.techniques ?? []).map(item => <li key={item.name}>
-                {item.name}{item.timing && ` · ${item.timing}`}
-              </li>)}</ul>
-              <p><strong>Poblados cercanos (sin convocatoria enviada):</strong>{" "}
-                {bulletinData.minka.target_communities.length ? bulletinData.minka.target_communities.join(" · ") : "Sin poblados publicados para esta mancha"}
-              </p>
-              {!!bulletinData.minka.recommended_tools.length && <p><strong>Herramientas sugeridas:</strong> {bulletinData.minka.recommended_tools.join(", ")}</p>}
+              <h5 style={{ margin: "0 0 4px 0", color: "#10b981" }}>Minka comunal</h5>
+              <dl className="minka-facts">
+                {(bulletinData.minka.techniques ?? []).map(item => <div key={item.name}>
+                  <dt>Trabajo</dt>
+                  <dd>{item.name}{item.timing?.match(/\(([^)]+)\)/) ? ` · ${item.timing.match(/\(([^)]+)\)/)![1]}` : ""}</dd>
+                </div>)}
+                <div><dt>Convocar a</dt><dd>{p.remediation.nearby_places?.length
+                  ? p.remediation.nearby_places.slice(0, 3).map(pl => `${pl.name} ${(pl.distance_m / 1000).toFixed(1).replace(".", ",")} km`).join(" · ")
+                  : "Sin poblados cercanos publicados"}</dd></div>
+                {!!bulletinData.minka.recommended_tools.length && <div><dt>Llevar</dt>
+                  <dd>{[...new Map(bulletinData.minka.recommended_tools.map(t => t.split(/,| o | y | para /)[0].trim())
+                    .map(t => [t.split(" ")[0].toLowerCase(), t] as const)).values()].slice(0, 4).join(" · ")}</dd></div>}
+              </dl>
 
               <div style={{ marginTop: "8px", display: "flex", gap: "6px" }}>
                 <a
@@ -550,33 +505,6 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice, onChang
               </details>
             </div>
 
-            {/* Celular básico SMS (Fase 4.2) */}
-            {bulletinData.minka.sms_verification ? <div className="sms-box" style={{ marginTop: "10px", padding: "10px", background: "rgba(255, 152, 0, 0.08)", border: "1px solid rgba(255, 152, 0, 0.3)", borderRadius: "6px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <h5 style={{ margin: 0, color: "#ffb74d" }}>Celular básico · SMS de verificación</h5>
-                <small style={{ color: "#ffb74d", fontSize: "0.7rem" }}>
-                  {bulletinData.minka.sms_verification.char_count} caracteres · vista previa
-                </small>
-              </div>
-              <p style={{ margin: "6px 0 0 0", fontFamily: "monospace", fontSize: "0.78rem", background: "rgba(0,0,0,0.3)", padding: "6px", borderRadius: "4px" }}>
-                {bulletinData.minka.sms_verification.text}
-              </p>
-              <p className="status-message" style={{ fontSize: "0.72rem", margin: "6px 0 0 0" }}>
-                {bulletinData.minka.sms_verification.notice}
-              </p>
-            </div> : <p className="status-message">SMS no disponible: falta un poblado cercano publicado.</p>}
-
-            {/* Yachaq se conserva como hoja de ruta en docs/23, fuera de la ficha. */}
-            <div style={{ marginTop: "8px" }}>
-              <button
-                type="button"
-                className="secondary-action"
-                onClick={handleSaveOffline}
-                style={{ width: "100%", justifyContent: "center", fontSize: "0.78rem", padding: "5px" }}
-              >
-                {offlineSaved ? "✓ Ficha guardada en caché local" : "Guardar ficha sin conexión (Tambos PAIS)"}
-              </button>
-            </div>
           </div>
         )}
 
@@ -585,37 +513,11 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice, onChang
       </section>
     )}
 
-    {p.remediation ? <details className="zone-sheet-more"><summary>Compartir, imprimir y fuentes</summary>
-        <div className="printable-qr" style={{ marginTop: "1rem", display: "flex", alignItems: "center", gap: "1rem" }}>
-          <img
-            src={`https://api.qrserver.com/v1/create-qr-code/?size=96x96&data=${encodeURIComponent(shareUrl.href)}`}
-            alt="Código QR de la ficha"
-            width="96"
-            height="96"
-            style={{ borderRadius: "4px", background: "#fff", padding: "4px" }}
-          />
-          <div>
-            <p style={{ margin: 0, fontWeight: "bold" }}>Acceso digital a la ficha</p>
-            <p className="muted" style={{ margin: 0, fontSize: "0.8rem" }}>Escanea el código QR para consultar las coordenadas y las capas de monitoreo en vivo.</p>
-          </div>
-        </div>
-    {!!p.granules?.length && <details className="technical-details"><summary>Gránulos de origen</summary><ul className="granule-list">{p.granules.map(granule => <li key={granule}>{granule}</li>)}</ul></details>}
-    <div className="detail-actions">
-      <a className="primary-action" href={`https://wa.me/?text=${encodeURIComponent(message)}`} target="_blank" rel="noopener noreferrer">Compartir alerta</a>
-      <button type="button" className="secondary-action" onClick={() => window.print()}>{p.remediation ? "Imprimir esta pestaña" : "Imprimir ficha"}</button>
-    </div>
-    {external && <a className="source-link" href={external} target="_blank" rel="noopener noreferrer">Consultar la observación original ↗</a>}
-    <ApplicationReference kind={p.kind} aoi={p.aoi_id} />
-    <LearnMore kind={p.kind} onResources={onResources} />
-    </details> : <>
-    {!!p.granules?.length && <details className="technical-details"><summary>Gránulos de origen</summary><ul className="granule-list">{p.granules.map(granule => <li key={granule}>{granule}</li>)}</ul></details>}
-    <div className="detail-actions">
-      <a className="primary-action" href={`https://wa.me/?text=${encodeURIComponent(message)}`} target="_blank" rel="noopener noreferrer">Compartir alerta</a>
-      <button type="button" className="secondary-action" onClick={() => window.print()}>{p.remediation ? "Imprimir esta pestaña" : "Imprimir ficha"}</button>
-    </div>
-    {external && <a className="source-link" href={external} target="_blank" rel="noopener noreferrer">Consultar la observación original ↗</a>}
-    <ApplicationReference kind={p.kind} aoi={p.aoi_id} />
-    <LearnMore kind={p.kind} onResources={onResources} />
-    </>}
+    <details className="zone-sheet-more"><summary>Fuentes</summary>
+      <ul className="resource-links">
+        <li><ResourceLink {...applicationLink(p.kind, p.aoi_id)} /></li>
+        {external && <li><a className="source-link" href={external} target="_blank" rel="noopener noreferrer">Consultar la observación original ↗</a></li>}
+      </ul>
+    </details>
   </article>;
 }

@@ -518,13 +518,17 @@ async def submit_report(request: Request):
         raise HTTPException(415, "Envía un reporte en JSON.")
     body = bytearray()
     async for chunk in request.stream():
-        if len(body) + len(chunk) > 4096:
+        if len(body) + len(chunk) > reports.MAX_PHOTO_ENCODED + 4096:
             raise HTTPException(413, "El reporte supera el tamaño permitido.")
         body.extend(chunk)
     try:
         report = reports.ReportIn.model_validate_json(body)
     except ValidationError as exc:
-        raise HTTPException(422, "Revisa el tipo, ubicación, fecha y nota. Evita datos de contacto.") from exc
+        raise HTTPException(
+            422, "Revisa la ubicación, la fecha y los datos de la foto. Omite datos de contacto.",
+        ) from exc
+    if report.photo is None and len(body) > 4096:
+        raise HTTPException(413, "El reporte supera el tamaño permitido.")
     west, south, east, north = _yaml(CONFIG / "aois" / "ayacucho-huanta.yaml")["bbox"]
     if not (west <= report.lon <= east and south <= report.lat <= north):
         raise HTTPException(422, "Selecciona una ubicación dentro de la zona de estudio de Ayacucho.")
@@ -534,7 +538,10 @@ async def submit_report(request: Request):
         )
     from starlette.concurrency import run_in_threadpool
 
-    ident = await run_in_threadpool(reports.create, _reports_db(), report)
+    try:
+        ident = await run_in_threadpool(reports.create, _reports_db(), report)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
     return {"id": ident, "status": "pending"}
 
 
@@ -552,6 +559,24 @@ def pending_reports(authorization: str | None = Header(None)):
     _require_moderator(authorization)
     return Response(json.dumps(reports.list_reports(_reports_db(), "pending"), ensure_ascii=False),
                     media_type="application/json", headers={"Cache-Control": "no-store"})
+
+
+def _report_photo(report_id: str, status: Literal["pending", "visible"]):
+    image = reports.get_photo(_reports_db(), report_id, status)
+    if image is None:
+        raise HTTPException(404, "Foto no disponible.")
+    return Response(image, media_type="image/jpeg", headers={"Cache-Control": "no-store"})
+
+
+@app.get("/api/reports/{report_id}/photo")
+def public_report_photo(report_id: str):
+    return _report_photo(report_id, "visible")
+
+
+@app.get("/api/reports/moderation/{report_id}/photo")
+def pending_report_photo(report_id: str, authorization: str | None = Header(None)):
+    _require_moderator(authorization)
+    return _report_photo(report_id, "pending")
 
 
 @app.patch("/api/reports/moderation/{report_id}", status_code=204)

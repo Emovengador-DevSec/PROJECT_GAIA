@@ -38,6 +38,15 @@ const topics = {
   forest: { title: "Perturbaciones forestales", document: "NISAR_Applications_Timber_and_Forest_Disturbance.pdf", text: "Una secuencia de observaciones permite seguir pérdidas de cobertura y estudiar su recuperación con datos independientes." },
 };
 
+/** NASA application document for this kind of observation, as a single link. */
+export function applicationLink(kind?: AlertKind, aoi?: string): Link {
+  const topic = kind === "quake" ? topics.quake
+    : kind === "fire" || aoi === "ayacucho-huanta" ? topics.fire
+    : aoi === "chosica-rimac" ? topics.landslide
+    : kind === "deformation" || aoi === "sabancaya" ? topics.volcano : topics.forest;
+  return { name: `${topic.title} · documento de NASA`, href: whitePapers + topic.document };
+}
+
 export function ApplicationReference({ kind, aoi }: { kind?: AlertKind; aoi?: string }) {
   const topic = kind === "quake" ? topics.quake
     : kind === "fire" || aoi === "ayacucho-huanta" ? topics.fire
@@ -116,7 +125,7 @@ const partnerResources: Resource[] = [
     reference: { about: "Archivo abierto del satélite canadiense operativo entre 1995 y 2013.", role: "Aporta una vista histórica del territorio.", method: "GAIA muestra una vista cualitativa con fecha y escena de origen. Las bandas, geometrías y épocas requieren tratamiento independiente para cualquier cálculo.", phases: "F5" } },
 ];
 
-function ResourceLink({ name, href }: Link) {
+export function ResourceLink({ name, href }: Link) {
   return <a href={href} target="_blank" rel="noopener noreferrer">{name}{" "}
     <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden="true">
       <path d="M5 11 12 4M6 4h6v6" />

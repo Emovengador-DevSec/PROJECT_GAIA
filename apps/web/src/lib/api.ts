@@ -409,14 +409,22 @@ export type CommunityDetail = CommunityPlace & { impact: CommunityImpact | null;
   rules: { fire_radius_km: number; quake_radius_km: number; quake_magnitude: number; heat_days: number; rain_ratio: number; rain_excess_ratio: number } };
 export type ReportKind = "fire" | "landslide" | "dry_water" | "crop_damage";
 export type CitizenReport = { id: string; kind: ReportKind; lon: number; lat: number; observed_at: string;
+  photo?: {author: string; license: string; license_url: string; image_url: string};
   firms_match: boolean; nisar_overlap: boolean };
 
 export type RealPhoto = {
+  caption?: string; page?: number;
   id: string; title: string; scientific?: string; author: string; author_role?: string; width?: number; height?: number; license: string; license_url: string;
   source_url: string; taken_at: string; lat: number | null; lon: number | null; accuracy_m: number | null;
   role: string; place: string; distance_km: number | null; location_label: string;
   image_url: string; thumbnail_url: string; modifications: string;
 };
+type FutureClimate = {
+  reference: [number, number]; future: [number, number];
+  models: {model: string; cell: {latitude: number; longitude: number; elevation: number};
+    months: Record<string, {min_c: number; rain_pct: number | null}>}[];
+};
+type StreetView = {url: string; date: string; distance_km: number};
 export type PlaceImage = {available: boolean; reason?: string; image_url?: string; date?: string;
   source: string; source_url?: string; scene?: string; scenes?: string[]; resolution_m?: number;
   scene_metadata?: {cloud_cover_pct: number; metadata_url: string}; author?: string; license?: string; license_url?: string; note?: string};
@@ -427,6 +435,17 @@ export type PlaceEvidence = {
   soil: {wrb_name: string; wrb_probability_pct?: number; source: string; source_date: string} | null;
   soil_photo: RealPhoto | null; techniques: {id: string; name: string; note: string; photos: RealPhoto[]}[];
   imagery: Partial<Record<"past" | "before" | "after", PlaceImage>>; pins: RealPhoto[]; warnings: string[];
+  field_photos?: RealPhoto[]; community_reports?: RealPhoto[];
+  nearby_settlements?: {name: string; center: [number, number]; distance_km: number}[];
+  field_references?: {source_url: string; page: number; place: string; author: string; taken_at: string}[];
+  future_climate?: FutureClimate | null;
+  greenness?: {product: string; source_url: string; resolution_m: number;
+    center: {latitude: number; longitude: number};
+    season: string; incomplete_years: number[];
+    years: {year: number; median: number; count: number; months: number}[]} | null;
+  field_aerial?: {source: string; date: string; license_url: string; resolution_m: number;
+    tiles: {bounds: [number, number, number, number]; image_url: string}[]} | null;
+  street_view_enabled?: boolean;
 };
 
 async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
@@ -438,10 +457,21 @@ async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
 export const api = {
   placeEvidence: (aoi: string, zone: string, signal?: AbortSignal) =>
     get<PlaceEvidence>(`/remediation/${encodeURIComponent(aoi)}/${encodeURIComponent(zone)}/place`, signal),
+  streetView: (aoi: string, zone: string) =>
+    get<StreetView | null>(`/remediation/${encodeURIComponent(aoi)}/${encodeURIComponent(zone)}/street-view`),
+  fieldElevation: async (aoi: string) => {
+    const path = `/field-dem/${encodeURIComponent(aoi)}`;
+    const metadata = await get<{bbox: [number, number, number, number]; width: number; height: number}>(`${path}/metadata`);
+    const response = await fetch(`${BASE}${path}/grid`);
+    if (!response.ok) throw new Error("Relieve sin publicar.");
+    return {...metadata, grid: new DataView(await response.arrayBuffer())};
+  },
   localPhoto: (path: string) => path.startsWith("/api/") ? `${BASE}${path.slice(4)}` : "",
 
   reports: (signal?: AbortSignal) => get<CitizenReport[]>("/reports", signal),
-  submitReport: async (report: Pick<CitizenReport, "kind" | "lon" | "lat" | "observed_at"> & { note: string }) => {
+  submitReport: async (report: Pick<CitizenReport, "kind" | "lon" | "lat" | "observed_at"> & {
+    note: string; photo?: {author: string; consent: true; base64: string};
+  }) => {
     const response = await fetch(`${BASE}/reports`, { method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(report) });
     if (!response.ok) {

@@ -1,9 +1,12 @@
 """Community rules and public report privacy with isolated test data."""
 
+import base64
 from datetime import UTC, datetime, timedelta
+from io import BytesIO
 
 import pytest
 from fastapi.testclient import TestClient
+from PIL import Image
 
 from app import community, live, main, reports
 
@@ -73,3 +76,38 @@ def test_report_privacy_and_moderation(tmp_path, monkeypatch):
     for _ in range(2):
         assert client.post(url, json=report).status_code == 201
     assert client.post(url, json=report).status_code == 429
+
+
+def test_report_photo_is_stripped_and_private_until_approved(tmp_path, monkeypatch):
+    monkeypatch.setattr(main, "PROCESSED", tmp_path / "03_processed")
+    monkeypatch.setattr(reports, "HISTORY", reports.OrderedDict())
+    monkeypatch.setattr(live, "collection", lambda _provider: feed())
+    monkeypatch.setenv("GAIA_REPORTS_ADMIN_TOKEN", "test-moderator")
+    client = TestClient(main.app)
+    moderator = {"Authorization": "Bearer test-moderator"}
+    image = BytesIO()
+    exif = Image.Exif()
+    exif[315] = "Private EXIF"
+    Image.new("RGB", (2, 2), "green").save(image, format="JPEG", exif=exif)
+    photo = {
+        "author": "Autor de prueba", "consent": True, "base64": base64.b64encode(image.getvalue()).decode(),
+    }
+    report = {"kind": "crop_damage", "lon": -74.1517, "lat": -13.1021,
+              "observed_at": (datetime.now(UTC) - timedelta(hours=1)).isoformat(), "photo": photo}
+    for invalid in ({"consent": False}, {"base64": "AAAA"}):
+        assert client.post("/api/reports", json={**report, "photo": {**photo, **invalid}}).status_code == 422
+    result = client.post("/api/reports", json=report)
+    assert result.status_code == 201
+    ident = result.json()["id"]
+    action = f"/api/reports/moderation/{ident}"
+    published = f"/api/reports/{ident}/photo"
+    assert client.get(published).status_code == 404
+    assert client.get(action + "/photo").status_code == 403
+    preview = client.get(action + "/photo", headers=moderator)
+    assert preview.status_code == 200
+    assert not Image.open(BytesIO(preview.content)).getexif()
+    assert client.patch(action + "?action=visible", headers=moderator).status_code == 204
+    assert client.get("/api/reports").json()[0]["photo"]["image_url"] == published
+    assert client.get(published).content == preview.content
+    assert client.patch(action + "?action=rejected", headers=moderator).status_code == 204
+    assert client.get(published).status_code == 404

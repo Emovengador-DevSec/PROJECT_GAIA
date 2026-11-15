@@ -1,4 +1,4 @@
-const formats = [0, 1, 2].map(maximumFractionDigits =>
+const formats = [0, 1, 2, 3].map(maximumFractionDigits =>
   new Intl.NumberFormat("es-PE", { maximumFractionDigits, useGrouping: false }),
 );
 

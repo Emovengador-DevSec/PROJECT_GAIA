@@ -20,5 +20,5 @@ export function RecoveryScenario({ scenario }: { scenario: RemediationRecoverySc
     {!!scenario.limiting_factors.length && <ul>{scenario.limiting_factors.map(item => <li key={item}>{item}</li>)}</ul>}
   </>;
   return verified ? <section className="recovery-scenario-box"><h4>Escenario de ganancia relativa</h4>{content}</section>
-    : <details className="recovery-scenario-box technical-details"><summary>Ver supuestos · escenario sin fuente verificada</summary>{content}</details>;
+    : <details className="recovery-scenario-box technical-details"><summary>Supuestos del escenario</summary>{content}</details>;
 }

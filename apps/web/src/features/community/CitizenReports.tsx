@@ -7,6 +7,15 @@ export const reportLabels: Record<ReportKind, string> = {
   dry_water: "Fuente de agua seca", crop_damage: "Cosecha dañada",
 };
 
+function encodePhoto(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("No se pudo leer la foto."));
+    reader.onload = () => resolve(String(reader.result).split(",")[1]);
+    reader.readAsDataURL(file);
+  });
+}
+
 export function CitizenReports({ reports, error, active, onLayer, onPick, picking, point, onLocate }: {
   reports?: CitizenReport[];
   error: boolean;
@@ -21,6 +30,9 @@ export function CitizenReports({ reports, error, active, onLayer, onPick, pickin
   const [kind, setKind] = useState<ReportKind>("fire");
   const [observed, setObserved] = useState("");
   const [note, setNote] = useState("");
+  const [photo, setPhoto] = useState<File>();
+  const [author, setAuthor] = useState("");
+  const [consent, setConsent] = useState(false);
   const [sending, setSending] = useState(false);
   const [status, setStatus] = useState("");
   return <section className="community-block citizen-reports">
@@ -31,11 +43,19 @@ export function CitizenReports({ reports, error, active, onLayer, onPick, pickin
         <button type="button" className="text-button" onClick={() => onLocate(report)}>{reportLabels[report.kind]} · {formatDate(report.observed_at)}</button>
         {report.firms_match && <p className="muted">Coincide en lugar y tiempo con un foco FIRMS.</p>}
         {report.nisar_overlap && <p className="muted">Se ubica en una zona HV del par histórico de Ayacucho.</p>}
+        {report.photo && <figure className="real-photo">
+          <img src={api.localPhoto(report.photo.image_url)} alt={`Foto del reporte: ${reportLabels[report.kind]}`} loading="lazy" />
+          <figcaption>{report.photo.author} · <a href={report.photo.license_url} target="_blank" rel="noopener noreferrer">{report.photo.license}</a></figcaption>
+        </figure>}
       </li>)}</ul> : <p>Aún no hay reportes.</p>}
     <div className="detail-actions">
       <button type="button" className="secondary-action" aria-pressed={active} onClick={onLayer}>{active ? "Ocultar capa" : "Mostrar capa"}</button>
       <button type="button" className="secondary-action" aria-expanded={open} onClick={() => {
-        if (open) onPick(false);
+      if (open) {
+        onPick(false);
+        setPhoto(undefined);
+        setConsent(false);
+      }
         setOpen(!open);
       }}>{open ? "Cerrar formulario" : "Enviar un reporte"}</button>
     </div>
@@ -45,11 +65,18 @@ export function CitizenReports({ reports, error, active, onLayer, onPick, pickin
       setStatus("");
       setSending(true);
       try {
-        await api.submitReport({ kind, lon: point[0], lat: point[1], observed_at: new Date(observed).toISOString(), note });
+        if (photo && photo.size > 2 * 1024 * 1024) throw new Error("La foto puede pesar hasta 2 MB.");
+        await api.submitReport({
+          kind, lon: point[0], lat: point[1], observed_at: new Date(observed).toISOString(), note,
+          photo: photo && consent ? {author, consent: true, base64: await encodePhoto(photo)} : undefined,
+        });
         setStatus("Reporte recibido. Queda pendiente de revisión.");
         setOpen(false);
         setNote("");
         setObserved("");
+        setPhoto(undefined);
+        setAuthor("");
+        setConsent(false);
       } catch (error) {
         setStatus(error instanceof Error ? error.message : "No se pudo enviar el reporte.");
       } finally {
@@ -67,7 +94,21 @@ export function CitizenReports({ reports, error, active, onLayer, onPick, pickin
         point ? `Punto seleccionado · ${point.map(value => value.toFixed(3)).join(", ")}` : "Selecciona una ubicación en Ayacucho."}</p>
       <label className="community-search">Nota privada para revisión. Omite nombres y direcciones.<textarea maxLength={280} rows={3} value={note}
         onChange={event => setNote(event.target.value)} /></label>
-      <button type="submit" className="primary-action community-search" disabled={!point || !observed || sending}>
+      <label className="community-search">Foto de la chacra o del poblado (opcional, hasta 2 MB)
+        <input type="file" accept="image/jpeg,image/png,image/webp" onChange={event => {
+          setPhoto(event.target.files?.[0]);
+          setConsent(false);
+        }} />
+      </label>
+      {photo && <>
+        <label className="community-search">Autor o seudónimo para el crédito público
+          <input required minLength={2} maxLength={80} value={author} onChange={event => setAuthor(event.target.value)} />
+        </label>
+        <label className="community-search">
+          <span><input type="checkbox" required checked={consent} onChange={event => setConsent(event.target.checked)} /> Soy titular de la foto y autorizo publicarla bajo <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>. Las personas identificables aceptaron aparecer.</span>
+        </label>
+      </>}
+      <button type="submit" className="primary-action community-search" disabled={!point || !observed || sending || (!!photo && !consent)}>
         {sending ? "Enviando…" : "Enviar a revisión"}
       </button>
     </form>}

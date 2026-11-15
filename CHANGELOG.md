@@ -4,9 +4,73 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- «Ver el lugar» más directo: las fotos de campo de INGEMMET van primero, las fotos de plantas se buscan primero en Perú (iNaturalist) y se quitan las notas técnicas repetidas (redimensionado, escena original, disponibilidad de fuentes).
+
+- Evidencia rural en «Ver el lugar»: fotos originales de INGEMMET, aportes moderados, vista cenital con diseño orientativo, proyección CMIP6 a 2050 y verdor histórico MODIS.
+
 - Fotos alternativas verificadas: dos ejemplos de andenería vía Openverse, tres perfiles WRB de Peter Schad y una foto georreferenciada de Quinua, con créditos, fechas y licencias; referencias servidas localmente y asociadas solo por proximidad comprobada.
 
 - R1–R5 del plan 27: recolector de fotos con licencia, recortes NASA georreferenciados, pestaña «Ver el lugar», escenario sin cifras no verificadas y pines de fotos con ubicación real; disponibilidad explícita cuando faltan fuentes o descargas.
+
+- Plan 27 ampliado: fotos de campo de informes técnicos oficiales (INGEMMET, INDECI, SENAMHI, ANA) con leyenda, licencia y distancia a cada zona; vista aérea de la chacra; predicción climática 2050.
+
+- Vista de zona más clara: contorno amarillo más grueso, zonas del mapa pintadas con el color de su causa (y su clave en la leyenda), giro de cámara más rápido, cámara que mide el terreno antes de volar (antes podía quedar dentro de la montaña) y etiqueta de aviso de clima (p. ej. helada) sobre la zona.
+
+- Al elegir una zona, la cámara se acerca a 2–9 km con vista inclinada del relieve y dibuja el contorno amarillo de la mancha con su etiqueta («Zona 359 · Lucas Pata»); se corrige la altura del objetivo, que se multiplicaba dos veces por la exageración del relieve y dejaba la zona fuera de cuadro.
+
+- Las listas desplegables muestran sus opciones sobre fondo oscuro (antes el texto claro no se leía sobre blanco).
+
+- La frase de entrada de «Sanar la tierra» usa el mismo fondo verde oscuro, borde esmeralda y texto claro que el filtro de diagnóstico.
+
+- La frase de entrada de «Sanar la tierra» late con el mismo pulso esmeralda del filtro de diagnóstico.
+
+- El filtro «Diagnóstico SbN» resalta con borde esmeralda y un pulso constante (fijo con movimiento reducido).
+
+- La frase de entrada de «Sanar la tierra» va en mayúsculas sobre un recuadro verde esmeralda a cian.
+
+- El poblado más cercano de cada zona se muestra como cápsula amarilla viva con punto de ubicación, en la ficha y en la lista.
+
+- Plegables del final de Futuro y costos más pequeños y discretos («Supuestos del escenario», «Fuentes») y aviso de monitoreo en letra menor.
+
+- Futuro y costos sin la cápsula de costo-beneficio pendiente ni la nota bajo la constancia PDF.
+
+- Futuro y costos con bloques de color y viñetas: técnicas con «Costo por confirmar» en cápsula, constancia PDF en cian con qué contiene, imagen de la zona en índigo y costo-beneficio pendiente en una sola línea.
+
+- Calendario agrícola visible y con color: pronóstico de 7 días en una línea y una tarjeta por cultivo y para el ganado con su estado (Sembrar, Esperar), guía, meses de siembra y altura en viñetas.
+
+- Pestaña Clima precisa y con color: aviso destacado (celeste helada, coral calor, índigo lluvia) con fecha legible, valores típicos de la estación en tres fichas de color y fuentes en una línea.
+
+- Título «GAIA Voz · Minka comunal» y botón Quechua en fucsia vivo en lugar de amarillo anaranjado.
+
+- Minka comunal en tres datos precisos: trabajo con meses, poblados a convocar con distancia y hasta cuatro herramientas en nombres cortos.
+
+- Botones de idioma del boletín: solo «Español» (cian) y «Quechua» (ámbar), con relleno vivo al estar activos.
+
+- Voz y Minka sin la vista previa de SMS ni el botón «Guardar ficha sin conexión»; se mantiene el aviso de monitoreo.
+
+- Se quita la nota de voz sintética y el enlace de descarga WAV bajo el reproductor del boletín.
+
+- Título de la pestaña Voz y Minka acortado a «GAIA Voz · Minka comunal».
+
+- El bloque «Compartir, imprimir y fuentes» pasa a «Fuentes» con solo dos enlaces: documento de NASA de la aplicación y observación original; se quitan el QR (que llamaba a un servicio externo), compartir, imprimir, «¿Para qué sirve esto?», «Aprende más» y gránulos.
+
+- Ruta para sanar: el paso 3 se llama «Alertas por radio» y «Convocatoria minka», y los pasos ya no llevan borde izquierdo de color.
+
+- «Qué hacer» pasa a «Ruta para sanar la zona»: cada paso con su color (celeste verificar, esmeralda sanar, ámbar avisar) y viñetas; la solución natural destaca técnica, especies, cuándo y quién.
+
+- La ficha omite la población cuando WorldPop no tiene dato en la mancha y resalta «Por qué», «Afecta» y «Poblados cercanos» en verde esmeralda.
+
+- Resumen de la ficha con valores y unidades: «Por qué» (evidencia medida con su fuente), «Afecta» (cultivo, pastizal y población, distinguiendo sin dato de cero), poblados cercanos con distancia y fechas NISAR legibles.
+
+- Títulos de causa con color vivo y barra lateral: coral incendio, ámbar erosión, violeta ladera tras sismo, celeste estrés hídrico y gris causa por verificar, en la ficha y en los grupos de «Sanar la tierra».
+
+- La ficha de zona abre con «Qué hacer» en tres pasos armados con sus datos: verificar en campo (con el poblado más cercano y qué revisar), sanar con la naturaleza (técnica, especies, temporada y quién) y avisar sin internet (radio y minka).
+
+- Al abrir una zona desde «Sanar la tierra» la app se queda en esa pestaña en vez de saltar a Alertas.
+
+- La pestaña Acción pasa a llamarse «Sanar la tierra» y abre con una sola frase directa, sin subtítulo.
+
+- Filtros de Acción apilados al ancho del panel para mostrar completos el nivel de riesgo y el diagnóstico SbN, con controles alineados y altura mínima de 44 px.
 
 - F7 del plan 25: ficha en Diagnóstico, Clima, Futuro y costos, y Voz y Minka; diagnóstico compacto con exposición resumida y detalle desplegable, conservando el acceso directo al boletín.
 

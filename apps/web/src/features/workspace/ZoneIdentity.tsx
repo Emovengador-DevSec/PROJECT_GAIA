@@ -43,7 +43,7 @@ export function groupZones(alerts: AlertFeature[]) {
 export function ZoneIdentity({ feature, compact = false }: { feature: AlertFeature; compact?: boolean }) {
   const rem = feature.properties.remediation!;
   const factors = leadingFactors(rem, compact ? 1 : 3);
-  return <div className="zone-identity" data-zone-id={feature.properties.id}>
+  return <div className="zone-identity" data-zone-id={feature.properties.id} data-risk={rem.risk_id}>
     <div className="zone-identity-title"><strong>{rem.risk_name}</strong>
       <span className="alert-level" data-level={rem.level}>Riesgo {rem.level}</span></div>
     <span>{number(rem.area_ha, 2)} ha · zona {feature.properties.id.split("_").at(-1)}</span>

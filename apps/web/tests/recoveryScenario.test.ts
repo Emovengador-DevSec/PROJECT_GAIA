@@ -12,7 +12,7 @@ describe.skipIf(!existsSync(path))("F4 actual published assumptions", () => {
       const html = renderToStaticMarkup(createElement(RecoveryScenario, { scenario: zone.recovery_scenario! }));
       expect(html).toContain("<details");
       expect(html).not.toMatch(/<details[^>]*\bopen/);
-      expect(html).toContain("Ver supuestos");
+      expect(html).toContain("Supuestos del escenario");
       expect(html).not.toContain("Año 0");
       expect(html).not.toContain("NDVI esperado");
       if (zone.recovery_scenario!.citation_status !== "verificado") expect(html).not.toContain("de NDVI relativo (supuesto)");

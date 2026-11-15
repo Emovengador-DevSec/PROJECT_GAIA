@@ -142,10 +142,7 @@ function ActionPanel({
 
   return (
     <div className="action-panel">
-      <div className="panel-subheading">
-        <p>Motor de riesgo y recetas naturales (SbN)</p>
-      </div>
-      <p className="panel-introduction">
+      <p className="panel-introduction action-lead">
         GAIA traduce la caída de señal radar de NISAR y datos de suelo, relieve y calor en acciones de restauración y bioingeniería con especies nativas.
       </p>
 
@@ -176,7 +173,7 @@ function ActionPanel({
         </label>
         <label>
           Diagnóstico SbN
-          <select value={riskFilter} onChange={e => setRiskFilter(e.target.value)}>
+          <select className="pulse-select" value={riskFilter} onChange={e => setRiskFilter(e.target.value)}>
             <option value="all">Todos los diagnósticos</option>
             <option value="incendio_sequia">Incendio o sequía</option>
             <option value="erosion_huaico">Erosión o huaico</option>
@@ -188,7 +185,7 @@ function ActionPanel({
       </div>
 
       <div className="case-list zone-cause-list">
-        {groupZones(remediationAlerts).map(group => <section className="zone-cause-group" key={group.id}>
+        {groupZones(remediationAlerts).map(group => <section className="zone-cause-group" key={group.id} data-risk={group.id}>
           <h3>{group.name}<span>{group.items.length}</span></h3>
           {group.items.map(feature => <button key={feature.properties.id} type="button" className="case"
             onClick={() => onSelect(feature)}><ZoneIdentity feature={feature} compact /></button>)}

@@ -100,7 +100,25 @@ def main(argv: list[str] | None = None) -> int:
     imagery = sub.add_parser("place-imagery", help="Publica recortes georreferenciados de cada mancha")
     imagery.add_argument("--aoi", required=True)
     imagery.add_argument("--zone", help="Opcional: una sola mancha publicada")
+    evidence_jobs = {
+        "field-photos": "Publica fotos de campo de informes oficiales",
+        "climate-future": "Publica proyecciones climáticas CMIP6 hasta 2050",
+        "greenness": "Publica la serie histórica de verdor MODIS",
+        "field-aerial": "Publica imagen Sentinel-2 de 10 m para la vista de chacra",
+    }
+    for command, help_text in evidence_jobs.items():
+        job = sub.add_parser(command, help=help_text)
+        job.add_argument("--aoi", required=True)
     a = ap.parse_args(argv)
+    if a.cmd in evidence_jobs:
+        from importlib import import_module
+        publish = import_module("." + a.cmd.replace("-", "_"), package=__package__).publish
+        try:
+            print(json.dumps(publish(a.aoi), ensure_ascii=False))
+        except (OSError, ValueError, KeyError) as exc:
+            ap.error(str(exc))
+        return 0
+
     if a.cmd in ("photos", "place-imagery"):
         from . import photos as photo_collector
         from . import place_imagery

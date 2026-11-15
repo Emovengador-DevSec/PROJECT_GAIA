@@ -522,3 +522,129 @@
 .shell[data-workspace] .orbit-card .orbit-source { margin: 8px 0 0; font-size: 11.5px; color: #8fa3b3; text-shadow: none; }
 .shell[data-workspace] .orbit-card .orbit-source a { display: inline; margin: 0; color: #9fd8e0; font-size: inherit; text-decoration: none; }
 .shell[data-workspace] .orbit-card .orbit-source a:hover { text-decoration: underline; }
+
+/* Action diagnoses need the full panel width for their longer names. */
+.shell[data-workspace] .action-panel .alert-filters {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+.shell[data-workspace] .action-panel .alert-filters label {
+  min-width: 0;
+  margin-bottom: 0;
+}
+.shell[data-workspace] .action-panel .alert-filters select {
+  min-width: 0;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+.zone-actions { margin: 10px 0; padding: 0; list-style: none; counter-reset: step; display: grid; gap: 8px; font-size: 13px; line-height: 1.4; color: #d7e4ee; }
+.zone-actions > li { counter-increment: step; position: relative; padding: 8px 10px 8px 34px; border: 1px solid #24394a; border-radius: 8px; background: #ffffff06; }
+.zone-actions > li::before { content: counter(step); position: absolute; left: 10px; top: 8px; width: 17px; height: 17px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 700; color: #05070a; background: #5eead4; }
+.zone-actions strong { color: #f4f7fb; }
+.zone-actions .text-button { padding: 0; font-size: 13px; }
+.zone-actions-title { margin: 12px 0 4px; font-size: 14px; color: #5eead4; }
+
+/* Vivid cause colours: fire coral, erosion amber, post-quake violet, water stress sky, unknown grey */
+[data-risk] { --risk: #9fb0bf; }
+[data-risk="incendio_sequia"] { --risk: #ff6b4a; }
+[data-risk="erosion_huaico"] { --risk: #ffc23d; }
+[data-risk="ladera_inestable_sismo"] { --risk: #c084fc; }
+[data-risk="estres_hidrico_agricola"] { --risk: #38bdf8; }
+.zone-identity-title strong { color: var(--risk); font-size: 16px; font-weight: 750; letter-spacing: -.01em;
+  padding-left: 8px; border-left: 3px solid var(--risk); }
+.zone-cause-group > h3 { color: var(--risk); font-weight: 750; padding-left: 8px; border-left: 3px solid var(--risk); }
+.zone-cause-group > h3 span { color: #05070a; background: var(--risk); }
+.zone-diagnosis-brief strong { color: #10b981; }
+/* Ruta para sanar: each step with its own vivid colour and bullet points */
+.zone-actions-title { color: #10b981; }
+.zone-actions > li { --step: #10b981; }
+.zone-actions > li[data-step="check"] { --step: #38bdf8; }
+.zone-actions > li[data-step="heal"] { --step: #10b981; background: rgb(16 185 129 / 9%); }
+.zone-actions > li[data-step="tell"] { --step: #f59e0b; }
+.zone-actions > li::before { background: var(--step); }
+.zone-actions > li > strong { display: block; color: var(--step); font-size: 13.5px; margin-bottom: 2px; }
+.zone-step-who { display: block; color: #c9d7e2; font-size: 12.5px; }
+.zone-actions ul { margin: 4px 0 2px; padding-left: 16px; display: grid; gap: 2px; }
+.zone-actions ul li { color: #e8f1f7; font-size: 12.5px; }
+.zone-actions ul li::marker { color: var(--step); }
+.zone-solutions li b { color: #6ee7b7; font-weight: 700; margin-right: 4px; }
+/* Bulletin language switch: vivid fills, outline when not selected */
+.lang-button { flex: 1; min-height: 36px; padding: 6px 12px; border-radius: 8px; font: 700 13.5px/1 var(--font-body); cursor: pointer;
+  --lang: #22d3ee; color: var(--lang); background: transparent; border: 2px solid var(--lang); }
+.lang-button[data-lang="qu"] { --lang: #e879f9; }
+.lang-button[aria-pressed="true"] { color: #05070a; background: var(--lang); box-shadow: 0 0 14px color-mix(in srgb, var(--lang) 45%, transparent); }
+.minka-facts { display: grid; gap: 6px; margin: 6px 0 0; font-size: 12.5px; }
+.minka-facts > div { display: grid; grid-template-columns: 72px 1fr; gap: 8px; }
+.minka-facts dt { color: #10b981; font-weight: 700; }
+.minka-facts dd { margin: 0; color: #e8f1f7; }
+/* Climate tab: vivid alert and three coloured value tiles */
+.zone-climate h4 { color: #10b981; margin: 6px 0 8px; }
+.zone-climate-alert { margin: 0 0 10px; padding: 8px 10px; border-radius: 8px; font-weight: 700; font-size: 13.5px; color: #05070a; background: #9fb0bf; }
+.zone-climate-alert[data-kind="frost"] { background: #38bdf8; box-shadow: 0 0 14px #38bdf855; }
+.zone-climate-alert[data-kind="heat"] { background: #ff6b4a; }
+.zone-climate-alert[data-kind="rain"] { background: #818cf8; }
+.zone-climate-season { margin: 0 0 6px; font-size: 12.5px; font-weight: 700; color: #e8f1f7; }
+.zone-climate-values { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 0 0 8px; }
+.zone-climate-values > div { --v: #10b981; padding: 7px 8px; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--v) 55%, transparent); background: color-mix(in srgb, var(--v) 12%, transparent); }
+.zone-climate-values > div[data-v="max"] { --v: #ff6b4a; }
+.zone-climate-values > div[data-v="min"] { --v: #38bdf8; }
+.zone-climate-values > div[data-v="rain"] { --v: #10b981; }
+.zone-climate-values dt { font-size: 11px; color: #c9d7e2; }
+.zone-climate-values dd { margin: 2px 0 0; font: 750 18px/1.1 var(--font-display); color: var(--v); }
+/* Agricultural calendar: one vivid card per crop */
+.agri-calendar h4 { color: #10b981; margin: 12px 0 4px; }
+.agri-outlook { margin: 0 0 8px; font-size: 12.5px; font-weight: 700; color: #e8f1f7; }
+.agri-cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.agri-cards > li { --s: #9fb0bf; padding: 7px 10px; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--s) 55%, transparent); background: color-mix(in srgb, var(--s) 10%, transparent); }
+.agri-cards > li[data-status="favorable"], .agri-cards > li[data-status="normal"] { --s: #10b981; }
+.agri-cards > li[data-status="precaucion"] { --s: #e879f9; }
+.agri-cards > li[data-status="desfavorable"] { --s: #ff6b4a; }
+.agri-cards > li > div { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.agri-cards strong { color: var(--s); font-size: 13.5px; }
+.agri-cards > li > div > span { padding: 2px 8px; border-radius: 999px; font: 750 11px/1.4 var(--font-body); color: #05070a; background: var(--s); }
+.agri-cards ul { margin: 4px 0 0; padding-left: 16px; display: grid; gap: 1px; font-size: 12px; color: #e8f1f7; }
+.agri-cards ul li::marker { color: var(--s); }
+/* Futuro y costos: vivid blocks with bullet facts */
+.future-block { --t: #10b981; margin: 10px 0; padding: 9px 11px; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--t) 50%, transparent); background: color-mix(in srgb, var(--t) 9%, transparent); }
+.future-block[data-tone="doc"] { --t: #22d3ee; }
+.future-block[data-tone="photo"] { --t: #818cf8; }
+.future-block h4 { margin: 0 0 4px; color: var(--t); font-size: 14px; }
+.future-block ul { margin: 2px 0; padding-left: 16px; display: grid; gap: 2px; font-size: 12.5px; color: #e8f1f7; }
+.future-block ul li::marker { color: var(--t); }
+.future-cards { list-style: none; padding: 0 !important; gap: 6px !important; }
+.future-cards > li { padding: 6px 8px; border-radius: 7px; background: #05070a66; }
+.future-cards > li > div { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.future-cards strong { color: #e8f1f7; font-size: 13px; }
+.future-cards > li > div > span { flex: none; padding: 2px 8px; border-radius: 999px; font: 750 11px/1.4 var(--font-body); color: #05070a; background: #e879f9; }
+.future-cards > li > div > span[data-verified] { background: #10b981; }
+.future-cards ul { padding-left: 16px; }
+.future-pill { margin: 6px 0; padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; color: #05070a; background: #e879f9; }
+.future-note { margin: 6px 0; font-size: 11.5px; color: #b9c9d6; }
+.future-button { display: block; width: 100%; margin-top: 6px; padding: 8px; border: 0; border-radius: 8px; text-align: center; font: 750 13px/1.2 var(--font-body); color: #05070a; background: var(--t); text-decoration: none; cursor: pointer; }
+.recovery-scenario-box > summary { color: #e879f9; font-weight: 700; }
+/* Secondary footers of the zone sheet: small and quiet */
+#zone-panel-future .recovery-scenario-box > summary,
+#zone-panel-future .technical-details > summary { color: #8fa3b3; font-size: 12px; font-weight: 500; }
+.zone-sheet-notice { font-size: 11px !important; color: #7f93a3 !important; line-height: 1.35; }
+/* Nearest settlement: vivid pin chip */
+.zone-identity-place { display: inline-flex; align-items: center; gap: 5px; justify-self: start; width: fit-content; margin-top: 2px;
+  padding: 2px 9px; border-radius: 999px; font-weight: 700; font-size: 12.5px; color: #05070a; background: #facc15; }
+.zone-identity-place::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #05070a; }
+/* "Sanar la tierra" lead sentence: uppercase, vivid */
+.action-lead { margin: 0 0 12px; padding: 10px 12px; border-radius: 8px; text-transform: uppercase; letter-spacing: .02em;
+  font: 800 13px/1.4 var(--font-display); color: #05070a; background: linear-gradient(120deg, #10b981, #22d3ee); }
+/* Diagnosis filter: vivid border with a constant soft pulse (still when reduced motion is on) */
+.shell[data-workspace] .inspector-content select.pulse-select { color: #e8fff7; font-weight: 700; border: 2px solid #10b981;
+  background: rgb(16 185 129 / 12%); animation: gaia-pulse 1.8s ease-in-out infinite; }
+@keyframes gaia-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgb(16 185 129 / 55%); } 50% { box-shadow: 0 0 0 6px rgb(16 185 129 / 0%), 0 0 14px rgb(16 185 129 / 45%); } }
+@media (prefers-reduced-motion: reduce) { .shell[data-workspace] .inspector-content select.pulse-select { animation: none; box-shadow: 0 0 10px rgb(16 185 129 / 40%); } }
+.action-lead { animation: gaia-pulse 1.8s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .action-lead { animation: none; box-shadow: 0 0 10px rgb(16 185 129 / 40%); } }
+.action-lead { color: #e8fff7; background: rgb(16 185 129 / 12%); border: 2px solid #10b981; }
+/* Native dropdown list: dark background so the light text stays readable */
+.shell[data-workspace] select option { color: #e8f1f7; background: #0b1a17; font-weight: 600; }
+.shell[data-workspace] select option:checked { color: #05070a; background: #10b981; }
+.shell[data-workspace] select { color-scheme: dark; }
+.map-legend .cause-key { width: 100%; gap: 5px; font-size: 12px; color: #c9d7e2; flex-wrap: wrap; }
+.map-legend .cause-key b { width: 10px; height: 10px; border-radius: 3px; background: var(--risk); margin-left: 4px; }
+.map-legend .cause-key b:first-child { margin-left: 0; }

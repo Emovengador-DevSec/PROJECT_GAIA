@@ -7,6 +7,10 @@ import { ActionSummary } from "../src/features/workspace/ActionSummary";
 import { climateSummary, priorityZone, riskSummary } from "../src/features/workspace/actionSummaryModel";
 import { formatNumber } from "../src/lib/formatNumber";
 
+it("formats measured NDVI at three decimal places", () => {
+  expect(formatNumber(0.12345, 3)).toBe("0,123");
+});
+
 // Use actual published observations; synthetic data stays in pipeline/API tests.
 const remediationPath = new URL("../../../data/04_published/remediation/ayacucho-huanta.json", import.meta.url);
 const climatePath = new URL("../../../data/04_published/climate/ayacucho-huanta.json", import.meta.url);

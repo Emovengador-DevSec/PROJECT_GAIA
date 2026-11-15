@@ -9,7 +9,7 @@ export const TABS: { id: TabId; label: string }[] = [
   { id: "quality", label: "Calidad" },
   { id: "terrain", label: "Relieve 3D" },
   { id: "alerts", label: "Alertas" },
-  { id: "action", label: "Acción" },
+  { id: "action", label: "Sanar la tierra" },
   { id: "resources", label: "Fuentes" },
   { id: "community", label: "Mi comunidad" },
 ];

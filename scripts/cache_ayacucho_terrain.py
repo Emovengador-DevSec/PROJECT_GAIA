@@ -1,6 +1,7 @@
 """Recorta alturas Mapzen Terrain Tiles para la vista local de los Andes."""
 from __future__ import annotations
 
+import argparse
 import json
 import math
 import warnings
@@ -21,9 +22,9 @@ GRID = 641
 URL = "https://elevation-tiles-prod.s3.amazonaws.com/terrarium"
 
 
-def download(tile: tuple[int, int]):
-    x, y = tile
-    with urlopen(f"{URL}/{ZOOM}/{x}/{y}.png", timeout=20) as response:
+def download(tile: tuple[int, int, int]):
+    zoom, x, y = tile
+    with urlopen(f"{URL}/{zoom}/{x}/{y}.png", timeout=20) as response:
         body = response.read(1_000_001)
     if len(body) > 1_000_000 or not body.startswith(b"\x89PNG"):
         raise ValueError(f"Tesela inválida {x}/{y}")
@@ -33,32 +34,47 @@ def download(tile: tuple[int, int]):
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--field-design", action="store_true", help="Recorta un DEM de 30 m para las fichas")
+    args = parser.parse_args()
+    if args.field_design:
+        from sarlab_pipeline.config import load_aois
+        from sarlab_pipeline.settings import PUBLISHED
+
+        bounds = load_aois()["ayacucho-huanta"].bbox
+        zoom, size = 13, 2048
+        output = PUBLISHED / "field-dem"
+        output.mkdir(parents=True, exist_ok=True)
+        stem = output / "ayacucho-huanta"
+    else:
+        bounds, zoom, size = BOUNDS, ZOOM, GRID
+        stem = ROOT / "ayacucho-terrain"
     warnings.filterwarnings("ignore", category=NotGeoreferencedWarning)
-    west, south, east, north = transform_bounds("EPSG:4326", "EPSG:3857", *BOUNDS)
-    span = 2 * RADIUS / 2**ZOOM
+    west, south, east, north = transform_bounds("EPSG:4326", "EPSG:3857", *bounds)
+    span = 2 * RADIUS / 2**zoom
     left, right = math.floor((west + RADIUS) / span), math.floor((east + RADIUS) / span)
     top, bottom = math.floor((RADIUS - north) / span), math.floor((RADIUS - south) / span)
     width, height = (right - left + 1) * SIZE, (bottom - top + 1) * SIZE
     mosaic = np.zeros((height, width), dtype=np.float32)
-    tiles = [(x, y) for y in range(top, bottom + 1) for x in range(left, right + 1)]
+    tiles = [(zoom, x, y) for y in range(top, bottom + 1) for x in range(left, right + 1)]
     with ThreadPoolExecutor(max_workers=8) as pool:
         for x, y, data in pool.map(download, tiles):
             dx, dy = (x - left) * SIZE, (y - top) * SIZE
             mosaic[dy:dy + SIZE, dx:dx + SIZE] = data
     transform = from_bounds(left * span - RADIUS, RADIUS - (bottom + 1) * span,
                             (right + 1) * span - RADIUS, RADIUS - top * span, width, height)
-    grid = np.zeros((GRID, GRID), dtype=np.float32)
+    grid = np.zeros((size, size), dtype=np.float32)
     reproject(mosaic, grid, src_crs="EPSG:3857", src_transform=transform, dst_crs="EPSG:4326",
-              dst_transform=from_bounds(*BOUNDS, GRID, GRID), resampling=Resampling.bilinear)
+              dst_transform=from_bounds(*bounds, size, size), resampling=Resampling.bilinear)
     if not np.isfinite(grid).all() or grid.max() < 3000:
         raise ValueError("Alturas incompletas o fuera de la zona esperada")
-    (ROOT / "ayacucho-terrain.bin").write_bytes(np.rint(grid).astype("<i2").tobytes())
-    metadata = {"bbox": BOUNDS, "width": GRID, "height": GRID, "unit": "m", "encoding": "int16le",
+    stem.with_suffix(".bin").write_bytes(np.rint(grid).astype("<i2").tobytes())
+    metadata = {"bbox": bounds, "width": size, "height": size, "unit": "m", "encoding": "int16le",
                 "retrieved_at": datetime.now(UTC).isoformat(), "source": "Mapzen Terrain Tiles",
                 "source_url": "https://registry.opendata.aws/terrain-tiles/",
                 "attribution_url": "https://github.com/tilezen/joerd/blob/master/docs/attribution.md"}
-    (ROOT / "ayacucho-terrain.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
-    print(f"Relieve Ayacucho: {len(tiles)} teselas, {GRID}×{GRID} alturas, "
+    stem.with_suffix(".json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
+    print(f"Relieve Ayacucho: {len(tiles)} teselas, {size}×{size} alturas, "
           f"rango {grid.min():.0f}–{grid.max():.0f} m")
 
 

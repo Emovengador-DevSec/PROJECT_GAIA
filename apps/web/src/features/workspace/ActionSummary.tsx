@@ -41,8 +41,8 @@ export function ActionSummary({ aoi, onOpen }: {
   const rows: { id: ActionDestination; label: string; icon: TabId; text: string; disabled?: boolean }[] = [
     { id: "risk", label: "Riesgo", icon: "quality", text: riskSummary(current?.data) },
     { id: "climate", label: "Clima", icon: "series", text: climateSummary(current?.climate) },
-    { id: "action", label: "Acción", icon: "action", text: priority
-      ? "Receta natural · consulta costos y fuentes" : "Recetas sin confirmar · abre Acción" },
+    { id: "action", label: "Sanar la tierra", icon: "action", text: priority
+      ? "Receta natural · consulta costos y fuentes" : "Recetas sin confirmar · abre Sanar la tierra" },
     { id: "voice", label: "Voz", icon: "resources", text: current?.bulletin?.bulletin.script_es
       ? "Guion de radio en español listo" : "Boletín no disponible · reintenta", disabled: !current?.bulletin?.bulletin.script_es },
   ];

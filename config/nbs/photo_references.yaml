@@ -101,7 +101,7 @@ references:
     indicada. No es una muestra de Ayacucho.
 - id: reference-4731a1bb8f99
   role: community
-  review: verified
+  review: excluded
   title: Tejados de Quinua, Ayacucho
   author: Randal Sheppard (-Chupacabras-)
   taken_at: '2012-05-19'
@@ -114,6 +114,4 @@ references:
   source_url: https://www.flickr.com/photos/25222005@N08/7271081812
   remote_url: https://api.openverse.org/v1/images/2b08f4bc-1164-4c7e-bfc8-30d98f0709e9/thumb/
   catalogue_url: https://api.openverse.org/v1/images/2b08f4bc-1164-4c7e-bfc8-30d98f0709e9/
-  review_note: Fecha, autor y coordenadas del archivo Commons Rooftops of Quinua (7271081812).jpg
-    contrastados con EXIF publicado; copia Openverse revisada. Solo se asocia a comunidades
-    a ≤ 2 km de la cámara.
+  review_note: La imagen encuadra artesanía en un tejado. Se excluye del catálogo de evidencia rural.

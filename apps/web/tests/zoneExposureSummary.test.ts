@@ -9,7 +9,7 @@ describe.skipIf(!existsSync(path))("F7 exposure from actual observations",()=>{
   for(const exposure of Object.values(data.alerts) as any[]){
    const feature={properties:{exposure:{...exposure,people:exposure.population,crop_ha:exposure.cropland_ha}}} as AlertFeature;
    const text=exposureSummary(feature);
-   if(exposure.population==null) expect(text).toContain("Población sin dato válido");
+   if(exposure.population==null) expect(text).not.toMatch(/persona|Población/);
    else expect(text).toContain("personas estimadas");
    expect(text).not.toContain("undefined");
   }
