@@ -148,12 +148,6 @@ export type RemediationOpticalContext = {
   source: string;
   dates: { before: string; after: string };
   scenes: string[];
-  ndvi_observed_approx: {
-    before: number;
-    after: number;
-    drop: number;
-    interpretation: string;
-  };
   image_urls: { before: string; after: string };
   terrain_3d_available: boolean;
 };
@@ -228,7 +222,7 @@ export type RemediationBulletinResponse = {
   minka: RemediationMinka;
   commitments: MinkaCommitment[];
   audio_url_es: string;
-  audio_url_qu: string;
+  audio_url_qu: string | null;
   roadmap_yachaq: {
     title: string;
     status: string;
@@ -248,16 +242,16 @@ export type RemediationAlert = {
   color_hex: string;
   index: number;
   factors: {
-    hv_drop_db: number;
+    hv_drop_db: number | null;
     hv_score: number;
     slope_deg?: number | null;
-    slope_score: number;
+    slope_score: number | null;
     heat_score: number;
     quake_score: number;
-    rain_score: number;
+    rain_score: number | null;
     rain_mm_7d?: number | null;
     soil_moisture_m3m3?: number | null;
-    soil_moisture_score: number;
+    soil_moisture_score: number | null;
     crop_ha?: number | null;
     crop_score: number;
     index_total: number;

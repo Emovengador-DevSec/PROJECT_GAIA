@@ -1,7 +1,7 @@
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { viteStaticCopy } from "vite-plugin-static-copy";
-import { spawn, type ChildProcess } from "node:child_process";
+import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
@@ -17,15 +17,20 @@ function gaiaApi(): Plugin {
     name: "gaia-api",
     apply: "serve",
     configureServer() {
-      if (process.env.GAIA_EXTERNAL_API === "1" || child) return;
+      if (process.env.GAIA_EXTERNAL_API === "1" || process.env.VITEST || child) return;
       child = spawn(
         "uv",
         ["run", "uvicorn", "app.main:app", "--app-dir", "services/api", "--host", "127.0.0.1", "--port", String(API_PORT), "--reload", "--reload-dir", "services/api"],
         { cwd: repoRoot, stdio: "inherit", shell: process.platform === "win32" },
       );
-      const stop = () => { if (child && !child.killed) child.kill(); };
+      // On Windows the child is a cmd shell; kill the whole tree so uvicorn does not keep port 8000.
+      const stop = () => {
+        if (!child?.pid || child.exitCode !== null) return;
+        if (process.platform === "win32") spawnSync("taskkill", ["/PID", String(child.pid), "/T", "/F"], { stdio: "ignore" });
+        else child.kill();
+      };
       process.once("exit", stop);
-      process.once("SIGINT", () => { stop(); process.exit(0); });
+      for (const sig of ["SIGINT", "SIGTERM", "SIGHUP"] as const) process.once(sig, () => { stop(); process.exit(0); });
     },
   };
 }

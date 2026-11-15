@@ -307,13 +307,7 @@ export function AlertDetails({ feature, onBack, onResources }: { feature: AlertF
                 <small className="muted">Después · 08-oct-2026</small>
               </div>
             </div>
-            {p.remediation.optical_context.ndvi_observed_approx && (
-              <p style={{ fontSize: "0.85rem", margin: "4px 0" }}>
-                <strong>NDVI estimado:</strong> Antes ~{p.remediation.optical_context.ndvi_observed_approx.before} → Después ~{p.remediation.optical_context.ndvi_observed_approx.after} (Caída: {p.remediation.optical_context.ndvi_observed_approx.drop})
-                <br />
-                <small className="muted">{p.remediation.optical_context.ndvi_observed_approx.interpretation}</small>
-              </p>
-            )}
+
           </div>
         )}
 
@@ -368,6 +362,11 @@ export function AlertDetails({ feature, onBack, onResources }: { feature: AlertF
           </div>
         )}
 
+        {!p.remediation.cost_benefit && (
+          <p className="status-message">
+            Costo-beneficio por confirmar: los costos y el valor agrícola aún no tienen una fuente verificada.
+          </p>
+        )}
         {p.remediation.cost_benefit && (
           <div className="cost-benefit-box" style={{ marginTop: "1rem", padding: "10px", background: "var(--surface-subtle, #141b22)", borderRadius: "6px", border: "1px solid var(--border-subtle, #30363d)" }}>
             <h4>Evaluación costo-beneficio frente a inacción</h4>
@@ -446,6 +445,12 @@ export function AlertDetails({ feature, onBack, onResources }: { feature: AlertF
             </div>
 
             {/* Reproductor de audio */}
+            {bulletinLang === "qu" && !bulletinData.audio_url_qu ? (
+              <p className="status-message">
+                Audio en quechua pendiente: debe grabarlo una persona hablante de quechua chanka.
+                El texto de abajo es un borrador sin revisar; no lo difundas todavía.
+              </p>
+            ) : (
             <div style={{ background: "rgba(0,0,0,0.3)", padding: "10px", borderRadius: "6px", border: "1px solid rgba(255,255,255,0.08)" }}>
               <audio
                 key={bulletinLang}
@@ -454,7 +459,7 @@ export function AlertDetails({ feature, onBack, onResources }: { feature: AlertF
                 style={{ width: "100%", height: "36px", outline: "none" }}
               >
                 <source
-                  src={bulletinLang === "es" ? bulletinData.audio_url_es : bulletinData.audio_url_qu}
+                  src={bulletinLang === "es" ? bulletinData.audio_url_es : bulletinData.audio_url_qu ?? undefined}
                   type="audio/wav"
                 />
                 Tu navegador no soporta el reproductor de audio.
@@ -462,11 +467,11 @@ export function AlertDetails({ feature, onBack, onResources }: { feature: AlertF
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "6px" }}>
                 <small className="muted" style={{ fontSize: "0.75rem" }}>
                   {bulletinLang === "es"
-                    ? "Voz sintetizada SAPI sin conexión externa"
-                    : `${bulletinData.bulletin.quechua_metadata.variant} · ${bulletinData.bulletin.quechua_metadata.review_status}`}
+                    ? "Voz sintética de Windows, generada sin conexión"
+                    : `${bulletinData.bulletin.quechua_metadata.variant} · grabación de hablante`}
                 </small>
                 <a
-                  href={bulletinLang === "es" ? bulletinData.audio_url_es : bulletinData.audio_url_qu}
+                  href={bulletinLang === "es" ? bulletinData.audio_url_es : bulletinData.audio_url_qu ?? undefined}
                   download={`boletin_${bulletinLang}_${p.remediation.alert_id}.wav`}
                   className="text-button"
                   style={{ fontSize: "0.75rem" }}
@@ -475,6 +480,7 @@ export function AlertDetails({ feature, onBack, onResources }: { feature: AlertF
                 </a>
               </div>
             </div>
+            )}
 
             {/* Guion para locutor */}
             <div style={{ marginTop: "8px", padding: "8px", background: "rgba(255,255,255,0.03)", borderRadius: "4px", fontSize: "0.82rem", lineHeight: 1.45 }}>

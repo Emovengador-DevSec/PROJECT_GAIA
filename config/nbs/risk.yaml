@@ -83,6 +83,7 @@ levels:
 
 # Umbral mínimo para incluir una mancha en la salida de remediación
 min_index_to_report: 0.10
+# Factores sin datos se excluyen y los pesos se reparten entre los disponibles.
 
 # Reglas de asignación de riesgo dominante
 # Si hay empate, se aplica el orden de esta lista (prioridad descendente).
@@ -91,3 +92,9 @@ risk_priority:
   - erosion_huaico
   - incendio_sequia
   - estres_hidrico_agricola
+
+# Evidencia mínima para atribuir una causa (sin ella: "causa por verificar", sin receta).
+# Ladera tras sismo exige un sismo USGS dentro de quake.max_distance_km.
+evidence:
+  erosion_min_slope_score: 0.33   # pendiente efectiva >= ~15° (con steep_deg 45°)
+  dry_soil_min_score: 0.8         # SME2 <= 0.15 m³/m³ con dry 0.10 y wet 0.35

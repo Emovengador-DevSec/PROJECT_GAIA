@@ -292,9 +292,17 @@ def _build_cost_benefit(
     area_ha: float,
     risk_index: float,
     budget: list[dict],
-) -> dict[str, Any]:
-    """Calculates cost vs. avoided loss and Benefit/Cost ratio (Fase 3.3)."""
+) -> dict[str, Any] | None:
+    """Calculates cost vs. avoided loss and Benefit/Cost ratio (Fase 3.3).
+
+    Returns None while the crop values or the intervention costs lack a verified
+    source: a ratio built on unverified numbers would look like evidence.
+    """
     val_cfg = _valuation()
+    if val_cfg.get("status") != "verificado":
+        return None
+    if not any(b.get("cost_total_soles") for b in budget):
+        return None
     crops_cfg = val_cfg.get("crops", {})
 
     if crop_ha and crop_ha > 0:
@@ -381,15 +389,6 @@ def _build_optical_context(aoi_id: str = "ayacucho-huanta") -> dict[str, Any]:
             "HLS.S30.T18LWL.2026281T150721.v2.0",
             "HLS.S30.T18LXL.2026281T150721.v2.0",
         ],
-        "ndvi_observed_approx": {
-            "before": 0.42,
-            "after": 0.21,
-            "drop": -0.21,
-            "interpretation": (
-                "Pérdida de vigor vegetal y reflectancia en infrarrojo "
-                "cercano coincidente con anomalía radar."
-            ),
-        },
         "image_urls": {
             "before": f"/api/context/{aoi_id}/hls-optical/2026-06-22.png",
             "after": f"/api/context/{aoi_id}/hls-optical/2026-10-08.png",
@@ -405,36 +404,36 @@ def _build_optical_context(aoi_id: str = "ayacucho-huanta") -> dict[str, Any]:
 def _dominant_risk(
     hv_score: float,
     heat_score: float,
-    rain_score: float,
+    rain_score: float | None,
     quake_score: float,
-    slope_score: float,
-    sm_score: float,
+    slope_score: float | None,
+    sm_score: float | None,
     crop_ha: float | None,
-) -> str:
-    """Return the dominant risk_id based on factor pattern."""
-    priority = _risk().get("risk_priority", [
-        "ladera_inestable_sismo",
-        "erosion_huaico",
-        "incendio_sequia",
-        "estres_hidrico_agricola",
-    ])
+) -> str | None:
+    """Return the dominant risk_id, or None when no factor supports a cause.
 
-    scores: dict[str, float] = {
-        "ladera_inestable_sismo": quake_score * 0.6 + slope_score * 0.4,
-        "erosion_huaico": slope_score * 0.5 + rain_score * 0.3 + hv_score * 0.2,
-        "incendio_sequia": heat_score * 0.5 + sm_score * 0.3 + hv_score * 0.2,
-        "estres_hidrico_agricola": sm_score * 0.5 + (
-            _clamp((crop_ha or 0) / 20.0) * 0.3
-        ) + (1.0 - rain_score) * 0.2,
-    }
-
-    # Follow priority order: pick the first with score > 0.15
-    for risk_id in priority:
-        if scores.get(risk_id, 0.0) > 0.15:
-            return risk_id
-
-    # If nothing clear, default to highest score
-    return max(scores, key=lambda k: scores[k])
+    A risk is only eligible when its own evidence exists: no "ladera tras sismo"
+    without a nearby quake, no "incendio" without heat or dry soil, no "estres
+    hidrico" without SME2 soil moisture and cropland, no "erosion" without slope.
+    """
+    cfg = _risk()
+    gates = cfg.get("evidence", {})
+    min_slope = gates.get("erosion_min_slope_score", 0.33)
+    dry = gates.get("dry_soil_min_score", 0.6)
+    rain = rain_score or 0.0
+    eligible: dict[str, float] = {}
+    if quake_score > 0 and slope_score is not None:
+        eligible["ladera_inestable_sismo"] = quake_score * 0.6 + slope_score * 0.4
+    if slope_score is not None and slope_score >= min_slope:
+        eligible["erosion_huaico"] = slope_score * 0.5 + rain * 0.3 + hv_score * 0.2
+    if heat_score > 0 or (sm_score is not None and sm_score >= dry):
+        eligible["incendio_sequia"] = heat_score * 0.5 + (sm_score or 0.0) * 0.3 + hv_score * 0.2
+    if sm_score is not None and sm_score >= dry and (crop_ha or 0) > 0:
+        eligible["estres_hidrico_agricola"] = sm_score * 0.5 + _clamp((crop_ha or 0) / 20.0) * 0.5
+    if not eligible:
+        return None
+    priority = cfg.get("risk_priority", [])
+    return max(eligible, key=lambda k: (eligible[k], -priority.index(k) if k in priority else 0))
 
 
 # ---------------------------------------------------------------------------
@@ -480,53 +479,45 @@ def compute_risk_for_alert(
     levels_cfg = cfg.get("levels", {})
 
     # --- Factor scores ---
-    hv_drop_db = alert.get("threshold_db", 0.0) or 0.0
+    # Mean HV loss measured inside the polygon (dB, positive = loss). The detection
+    # threshold is NOT a per-zone measurement and is never used as one.
+    hv_drop_db = alert.get("hv_drop_db")
     area_ha = alert.get("area_ha", 0.0) or 0.0
-    crop_ha = alert.get("cropland_ha") or alert.get("crop_ha")  # from exposure or agriculture
+    crop_ha = alert.get("cropland_ha") or alert.get("crop_ha")
 
-    hv_score = _normalize_hv_drop(hv_drop_db, factors_cfg.get("hv_drop", {}))
-    sm_score = _normalize_soil_moisture(soil_moisture, factors_cfg.get("soil_moisture", {}))
-    slope_score = _normalize_slope(slope_deg, factors_cfg.get("slope", {}))
+    hv_cfg = factors_cfg.get("hv_drop", {})
+    hv_score = _normalize_hv_drop(hv_drop_db, hv_cfg) if hv_drop_db is not None else 0.0
+    sm_cfg = factors_cfg.get("soil_moisture", {})
+    sm_score = _normalize_soil_moisture(soil_moisture, sm_cfg) if soil_moisture is not None else None
+    sl_cfg = factors_cfg.get("slope", {})
+    slope_score = _normalize_slope(slope_deg, sl_cfg) if slope_deg is not None else None
     heat_score = _normalize_heat(fires_nearby or [], factors_cfg.get("heat", {}))
     quake_score = _normalize_quake(quakes_nearby or [], factors_cfg.get("quake", {}))
-    rain_score = _normalize_rainfall(rain_mm_7d, factors_cfg.get("rainfall", {}))
+    rn_cfg = factors_cfg.get("rainfall", {})
+    rain_score = _normalize_rainfall(rain_mm_7d, rn_cfg) if rain_mm_7d is not None else None
     crop_score = _normalize_crop_exposure(crop_ha, factors_cfg.get("crop_exposure", {}))
 
-    # Soil modifiers
+    # Soil modifiers (only when SoilGrids classified the cell)
     wrb_code = (soil_info or {}).get("wrb_code", "DEFAULT")
     fire_mod, erosion_mod = _soil_modifiers(wrb_code)
-
-    # Apply modifiers to relevant factors
     effective_heat = _clamp(heat_score * fire_mod)
-    effective_slope = _clamp(slope_score * erosion_mod)
+    effective_slope = _clamp(slope_score * erosion_mod) if slope_score is not None else None
 
-    # --- Weights ---
+    # --- Weights: only factors with data take part; weights are renormalized ---
     w = factors_cfg
-    sm_weight = w.get("soil_moisture", {}).get("weight", 0.15)
-    if soil_moisture is None:
-        sm_weight = w.get("soil_moisture", {}).get("fallback_weight", 0.0)
-        # redistribute to hv_drop
-        extra = 0.15 - sm_weight
-    else:
-        extra = 0.0
-
-    hv_weight = w.get("hv_drop", {}).get("weight", 0.30) + extra
-    slope_weight = w.get("slope", {}).get("weight", 0.15)
-    heat_weight = w.get("heat", {}).get("weight", 0.15)
-    quake_weight = w.get("quake", {}).get("weight", 0.10)
-    rain_weight = w.get("rainfall", {}).get("weight", 0.10)
-    crop_weight = w.get("crop_exposure", {}).get("weight", 0.05)
-
-    index = (
-        hv_score * hv_weight
-        + sm_score * sm_weight
-        + effective_slope * slope_weight
-        + effective_heat * heat_weight
-        + quake_score * quake_weight
-        + rain_score * rain_weight
-        + crop_score * crop_weight
-    )
-    index = _clamp(index)
+    parts = [
+        ("caída HV", hv_score if hv_drop_db is not None else None, w.get("hv_drop", {}).get("weight", 0.30)),
+        ("humedad SME2", sm_score, w.get("soil_moisture", {}).get("weight", 0.15)),
+        ("pendiente", effective_slope, w.get("slope", {}).get("weight", 0.15)),
+        ("calor", effective_heat, w.get("heat", {}).get("weight", 0.15)),
+        ("sismo", quake_score, w.get("quake", {}).get("weight", 0.10)),
+        ("lluvia", rain_score, w.get("rainfall", {}).get("weight", 0.10)),
+        ("cultivo", crop_score, w.get("crop_exposure", {}).get("weight", 0.05)),
+    ]
+    used = [(v, wt) for _, v, wt in parts if v is not None]
+    total_w = sum(wt for _, wt in used) or 1.0
+    index = _clamp(sum(v * wt for v, wt in used) / total_w)
+    excluded = [name for name, v, _ in parts if v is None]
 
     # --- Level ---
     if index <= levels_cfg.get("low", {}).get("max", 0.33):
@@ -545,8 +536,8 @@ def compute_risk_for_alert(
         effective_slope, sm_score, crop_ha,
     )
 
-    # --- Recipe ---
-    recipe = _get_recipe(risk_id)
+    # --- Recipe (none when the cause is not supported by any factor) ---
+    recipe = _get_recipe(risk_id) if risk_id else None
     budget = _build_budget(recipe, area_ha) if recipe else []
 
     # Species from soil
@@ -554,10 +545,8 @@ def compute_risk_for_alert(
 
     # --- Factor explanation (human-readable) ---
     factor_details = []
-    if hv_drop_db > 0:
-        factor_details.append(
-            f"caída HV {hv_drop_db:.1f} dB (NISAR · umbral 3×MAD)"
-        )
+    if hv_drop_db is not None:
+        factor_details.append(f"caída HV media {hv_drop_db:.1f} dB en la mancha (NISAR)")
     if slope_deg is not None:
         factor_details.append(f"pendiente {slope_deg:.0f}°")
     if fires_nearby:
@@ -571,8 +560,8 @@ def compute_risk_for_alert(
         factor_details.append(f"lluvia 7 d: {rain_mm_7d:.1f} mm (GPM·IMERG)")
     if soil_moisture is not None:
         factor_details.append(f"humedad suelo: {soil_moisture:.3f} m³/m³ (NISAR·SME2·PROVISIONAL)")
-    elif soil_moisture is None:
-        factor_details.append("humedad suelo: sin datos SME2 (factor excluido)")
+    if excluded:
+        factor_details.append("sin datos, fuera del índice: " + ", ".join(excluded))
     if crop_ha:
         factor_details.append(f"{crop_ha:.1f} ha de cultivo expuesto (WorldCover 2021)")
 
@@ -585,7 +574,7 @@ def compute_risk_for_alert(
         "url": "https://nisar-docs.asf.alaska.edu/gcov/",
     }
     sources_complementary: list[dict] = []
-    if soil_info and soil_info.get("wrb_code") != "DEFAULT":
+    if soil_info and soil_info.get("wrb_name") not in (None, "No disponible", "No clasificado"):
         sources_complementary.append({
             "source": soil_info.get("source", "SoilGrids (ISRIC)"),
             "url": soil_info.get("source_url", ""),
@@ -617,31 +606,36 @@ def compute_risk_for_alert(
         "alert_id": alert.get("id"),
         "aoi_id": alert.get("aoi_id", "ayacucho-huanta"),
         "area_ha": area_ha,
-        "risk_id": risk_id,
-        "risk_name": recipe.get("risk_name", risk_id) if recipe else risk_id,
-        "risk_description": recipe.get("risk_description", "") if recipe else "",
+        "risk_id": risk_id or "causa_por_verificar",
+        "risk_name": recipe.get("risk_name", risk_id) if recipe else "Causa por verificar",
+        "risk_description": recipe.get("risk_description", "") if recipe else (
+            "Ningún factor disponible respalda una causa concreta. Verificar en campo antes de "
+            "recomendar una intervención."
+        ),
         "level": level,
         "color_hex": color_hex,
         "index": round(index, 4),
         "factors": {
-            "hv_drop_db": round(hv_drop_db, 2),
+            "hv_drop_db": round(hv_drop_db, 2) if hv_drop_db is not None else None,
             "hv_score": round(hv_score, 3),
             "slope_deg": round(slope_deg, 1) if slope_deg is not None else None,
-            "slope_score": round(slope_score, 3),
+            "slope_score": round(slope_score, 3) if slope_score is not None else None,
             "heat_score": round(heat_score, 3),
             "quake_score": round(quake_score, 3),
-            "rain_score": round(rain_score, 3),
+            "rain_score": round(rain_score, 3) if rain_score is not None else None,
             "rain_mm_7d": round(rain_mm_7d, 1) if rain_mm_7d is not None else None,
             "soil_moisture_m3m3": soil_moisture,
-            "soil_moisture_score": round(sm_score, 3),
+            "soil_moisture_score": round(sm_score, 3) if sm_score is not None else None,
             "crop_ha": crop_ha,
             "crop_score": round(crop_score, 3),
             "index_total": round(index, 4),
+            "excluded": excluded,
         },
         "factor_details": factor_details,
         "soil": {
             "wrb_code": wrb_code,
-            "wrb_name": (soil_info or {}).get("wrb_name", "No clasificado"),
+            "wrb_name": (soil_info or {}).get("wrb_name", "Sin datos de SoilGrids"),
+            "wrb_probability_pct": (soil_info or {}).get("wrb_probability_pct"),
             "clay_pct": (soil_info or {}).get("clay_pct"),
             "sand_pct": (soil_info or {}).get("sand_pct"),
             "soc_pct": (soil_info or {}).get("soc_pct"),
@@ -660,8 +654,8 @@ def compute_risk_for_alert(
             "source": recipe.get("source") if recipe else None,
         } if recipe else None,
         "budget": budget,
-        "cost_benefit": _build_cost_benefit(crop_ha, area_ha, index, budget),
-        "recovery_scenario": _build_recovery_scenario(risk_id),
+        "cost_benefit": _build_cost_benefit(crop_ha, area_ha, index, budget) if recipe else None,
+        "recovery_scenario": _build_recovery_scenario(risk_id) if risk_id else None,
         "optical_context": _build_optical_context(alert.get("aoi_id", "ayacucho-huanta")),
         "sources_nisar": sources_nisar,
         "sources_complementary": sources_complementary,

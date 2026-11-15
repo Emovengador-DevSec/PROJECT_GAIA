@@ -4,6 +4,14 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- Línea de tiempo y leyenda en una tarjeta compacta de 340 px al costado izquierdo, en vez de la barra ancha; el panel Acción cuenta solo las 498 manchas evaluadas y filtra «causa por verificar».
+
+- Revisión de las fases 1–4: el riesgo usa la caída HV, la pendiente y la humedad NISAR SME2 medidas dentro de cada mancha y la clase de suelo real de SoilGrids; cada causa exige su evidencia (sin sismo no hay «ladera tras sismo») y sin evidencia la mancha queda como «causa por verificar», sin receta.
+- Nuevo `sarlab soil-moisture`: publica la humedad del suelo NISAR SME2 (solo recuperaciones recomendadas); rutas en `docs/data-notes.md`.
+- Se retiran datos sin respaldo: audio quechua sintético, emisoras de radio no confirmadas, NDVI y valores por defecto del PDF y del boletín; costos, valor agrícola y citas sin documento vuelven a «por verificar» y el costo-beneficio no se muestra hasta verificarlos.
+- Minka: solo acepta manchas existentes y no publica nombres de contacto; la prueba de la API ya no escribe en `data/`.
+- Al parar `npm run dev` se cierra también la API (puerto 8000 libre) y las pruebas web ya no la arrancan.
+
 - Fase 4 (doc 23): boletín radial comunitario «GAIA Voz» de 45 s en español y quechua chanka con voz sintetizada y audio descargable, convocatoria Minka Digital (Ley 24656) con enlace WhatsApp y registro de cuadrillas, vista previa SMS y hoja de ruta Yachaq para Tambos PAIS.
 - Fase 3 (doc 23): comparación óptica HLS con NDVI real, escenarios de recuperación a 3 y 5 años con citas bibliográficas, evaluación costo-beneficio frente a inacción (MIDAGRI/SIEA y Minka) y constancia de evidencia satelital en PDF con hash SHA-256.
 

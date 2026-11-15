@@ -1,25 +1,9 @@
 # Configuración del Boletín Radial Comunitario «GAIA Voz»
 # Fase 4.1 del Plan Maestro (doc 23)
 
-stations:
-  - id: huanta_2000
-    name: Radio Huanta 2000
-    frequency: "104.5 FM"
-    reach: "Huanta, Luricocha, Santillana, Iguaín"
-    language: "Español y Quechua Chanka"
-    contact: "Cabina de prensa comunal"
-  - id: estacion_wari
-    name: Radio Estación Wari
-    frequency: "95.3 FM"
-    reach: "Huamanga, Huanta, San Miguel (La Mar)"
-    language: "Español y Quechua"
-    contact: "Red de comunicadores rurales"
-  - id: municipal_lamar
-    name: Radio Municipal San Miguel
-    frequency: "101.1 FM"
-    reach: "Valle de Torobamba, San Miguel, Tambo"
-    language: "Quechua y Español"
-    contact: "Gerencia de Desarrollo Social"
+# Emisoras: vacío a propósito. Agregar solo emisoras confirmadas por el equipo,
+# con nombre, frecuencia y fuente (licencia MTC o contacto directo).
+stations: []
 
 formats:
   radio_spot:
@@ -34,8 +18,10 @@ formats:
 
 quechua:
   variant: "Quechua Chanka (Ayacucho)"
-  review_status: "borrador_revisado_chanka"
-  disclaimer: "Traducción al quechua chanka. Revisada técnicamente; sujeta a validación comunitaria continua."
+  review_status: "pendiente"  # cambiar a "revisado" solo tras revisión de un hablante
+  disclaimer: "Borrador en quechua sin revisar por un hablante. No difundir hasta su revisión."
+  # Audio quechua: solo grabación de una persona hablante, nunca voz sintética.
+  recorded_audio: null  # p. ej. audio/qu/boletin_huanta.wav (en apps/web/public)
   vocabulary:
     satelite: "satélite radar"
     alerta: "qawapayana willakuy"

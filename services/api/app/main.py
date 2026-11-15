@@ -747,6 +747,22 @@ class MinkaCommitmentRequest(BaseModel):
     contact_name: str = Field("", max_length=120)
 
 
+def _recorded_quechua_audio() -> str | None:
+    cfg = yaml.safe_load((ROOT / "config" / "nbs" / "bulletin.yaml").read_text(encoding="utf-8")) or {}
+    rel = (cfg.get("quechua") or {}).get("recorded_audio")
+    if not rel or ".." in rel:
+        return None
+    return f"/{rel}" if (ROOT / "apps" / "web" / "public" / rel).is_file() else None
+
+
+def _remediation_zone_exists(aoi: str, zone_id: str) -> bool:
+    path = PROCESSED.parent / "04_published" / "remediation" / f"{aoi}.json"
+    if not path.is_file():
+        return False
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return any(a.get("alert_id") == zone_id for a in data.get("alerts", []))
+
+
 @app.get("/api/remediation/{aoi}/{zone_id}/bulletin")
 def remediation_bulletin(aoi: str, zone_id: str):
     if not re.fullmatch(AOI_PATTERN, aoi):
@@ -772,7 +788,7 @@ def remediation_bulletin(aoi: str, zone_id: str):
 
     bulletin = generate_radio_script(target_alert, aoi_id=aoi)
     minka = generate_minka_call(target_alert, aoi_id=aoi)
-    commitments = get_commitments(aoi, zone_id)
+    commitments = [{k: v for k, v in c.items() if k != "contact_name"} for c in get_commitments(aoi, zone_id)]
     m_cfg = load_minka_config()
     roadmap_yachaq = m_cfg.get("roadmap_yachaq", {})
 
@@ -783,7 +799,7 @@ def remediation_bulletin(aoi: str, zone_id: str):
         "minka": minka,
         "commitments": commitments,
         "audio_url_es": f"/api/remediation/{aoi}/{zone_id}/audio.wav?lang=es",
-        "audio_url_qu": "/audio/qu/boletin_quechua_intro.wav",
+        "audio_url_qu": _recorded_quechua_audio(),
         "roadmap_yachaq": roadmap_yachaq,
     }
 
@@ -794,9 +810,12 @@ def remediation_audio_wav(aoi: str, zone_id: str, lang: Literal["es", "qu"] = "e
         raise HTTPException(422, "Identificador de zona inválido.")
 
     if lang == "qu":
-        qu_file = ROOT / "apps" / "web" / "public" / "audio" / "qu" / "boletin_quechua_intro.wav"
-        if qu_file.is_file():
-            return Response(content=qu_file.read_bytes(), media_type="audio/wav")
+        # Never synthesize Quechua: only a recording by a speaker, declared in bulletin.yaml.
+        url = _recorded_quechua_audio()
+        if not url:
+            raise HTTPException(404, "Audio en quechua pendiente de grabación por un hablante.")
+        return Response(content=(ROOT / "apps" / "web" / "public" / url.lstrip("/")).read_bytes(),
+                        media_type="audio/wav")
 
     path = PROCESSED.parent / "04_published" / "remediation" / f"{aoi}.json"
     if not path.is_file():
@@ -833,6 +852,8 @@ def remediation_audio_wav(aoi: str, zone_id: str, lang: Literal["es", "qu"] = "e
 def remediation_minka_commit(aoi: str, zone_id: str, payload: MinkaCommitmentRequest):
     if not re.fullmatch(AOI_PATTERN, aoi):
         raise HTTPException(422, "Identificador de zona inválido.")
+    if not _remediation_zone_exists(aoi, zone_id):
+        raise HTTPException(404, "Mancha no encontrada en los datos de remediación.")
     from sarlab_pipeline.remediation.bulletin import add_commitment
 
     result = add_commitment(
@@ -843,6 +864,7 @@ def remediation_minka_commit(aoi: str, zone_id: str, payload: MinkaCommitmentReq
         tools=payload.tools,
         contact_name=payload.contact_name,
     )
+    result = {k: v for k, v in result.items() if k != "contact_name"}
     return result
 
 
@@ -852,7 +874,8 @@ def remediation_minka_commitments(aoi: str, zone_id: str):
         raise HTTPException(422, "Identificador de zona inválido.")
     from sarlab_pipeline.remediation.bulletin import get_commitments
 
-    return get_commitments(aoi, zone_id)
+    # Contact names stay on the server: the public list only shows community and help offered.
+    return [{k: v for k, v in c.items() if k != "contact_name"} for c in get_commitments(aoi, zone_id)]
 
 
 WEB_DIST = ROOT / "apps" / "web" / "dist"

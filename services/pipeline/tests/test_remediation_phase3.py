@@ -19,7 +19,19 @@ from sarlab_pipeline.remediation.risk import (
 )
 
 
-def test_build_cost_benefit_cropland():
+def test_cost_benefit_hidden_while_unverified():
+    budget = [{"cost_total_soles": 4750.0, "minka_discount_pct": 40}]
+    assert _build_cost_benefit(crop_ha=2.5, area_ha=4.0, risk_index=0.5, budget=budget) is None
+
+
+def _verified(monkeypatch):
+    from sarlab_pipeline.remediation import risk as r
+    cfg = {**r._valuation(), "status": "verificado"}
+    monkeypatch.setattr(r, "_valuation", lambda: cfg)
+
+
+def test_build_cost_benefit_cropland(monkeypatch):
+    _verified(monkeypatch)
     budget = [
         {"cost_total_soles": 4750.0, "minka_discount_pct": 40},
         {"cost_total_soles": 5000.0, "minka_discount_pct": 30},
@@ -41,7 +53,8 @@ def test_build_cost_benefit_cropland():
     assert "MIDAGRI" in cb["valuation_source"]
 
 
-def test_build_cost_benefit_default_rural():
+def test_build_cost_benefit_default_rural(monkeypatch):
+    _verified(monkeypatch)
     budget = [{"cost_total_soles": 3000.0, "minka_discount_pct": 35}]
     cb = _build_cost_benefit(crop_ha=0.0, area_ha=1.5, risk_index=0.4, budget=budget)
     assert cb["crop_ha_evaluated"] == 0.0
@@ -68,7 +81,7 @@ def test_optical_context_structure():
     assert opt["dates"]["before"] == "2026-06-22"
     assert opt["dates"]["after"] == "2026-10-08"
     assert len(opt["scenes"]) == 4
-    assert opt["ndvi_observed_approx"]["drop"] < 0
+    assert "ndvi_observed_approx" not in opt  # not measured per zone
     assert opt["terrain_3d_available"] is True
 
 
@@ -77,15 +90,15 @@ def test_compute_risk_includes_phase3_fields():
         "id": "synthetic_001",
         "aoi_id": "ayacucho-huanta",
         "area_ha": 3.0,
-        "threshold_db": 3.5,
+        "hv_drop_db": 3.5,
         "cropland_ha": 1.2,
     }
-    res = compute_risk_for_alert(synthetic_alert)
+    res = compute_risk_for_alert(synthetic_alert, slope_deg=30.0)
     assert "cost_benefit" in res
     assert "recovery_scenario" in res
     expected_label = "Escenario con supuestos. No es una observación ni una promesa."
     assert res["recovery_scenario"]["mandatory_label"] == expected_label
-    assert res["cost_benefit"]["loss_avoided_annual_pen"] > 0
+    assert res["cost_benefit"] is None  # costs and crop values are still por_verificar
 
 
 def test_generate_certificate_pdf_structure():
@@ -98,6 +111,7 @@ def test_generate_certificate_pdf_structure():
             "level": "alto",
             "metrics": {"area_ha": 5.2},
             "granules": ["NISAR_L2_PR_GCOV_SYNTH_01"],
+            "date_range": ["2026-06-24", "2026-10-10"],
             "remediation": {
                 "risk_name": "Ladera susceptible a erosión hídrica",
                 "index": 0.65,
@@ -136,6 +150,8 @@ def test_api_certificate_pdf_endpoint(tmp_path, monkeypatch):
                 "area_ha": 2.0,
                 "factors": {"hv_drop_db": 3.0, "crop_ha": 1.0},
                 "budget": [],
+                "sources_nisar": {"granules": ["NISAR_SYNTH_A", "NISAR_SYNTH_B"],
+                                  "dates": ["2026-06-24", "2026-10-10"]},
             }
         ],
     }

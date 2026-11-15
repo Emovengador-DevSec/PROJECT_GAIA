@@ -90,6 +90,10 @@ def main(argv: list[str] | None = None) -> int:
         help="No consulta SoilGrids ni APIs externas; usa valores neutros",
     )
 
+    smc = sub.add_parser("soil-moisture", help="Publica la humedad del suelo NISAR SME2 (recomendada)")
+    smc.add_argument("--aoi", required=True)
+    smc.add_argument("file", type=Path, help="Archivo SME2 .h5 en data/01_raw")
+
     a = ap.parse_args(argv)
     if a.cmd == "fire-history":
         from .fire_history import publish
@@ -185,6 +189,13 @@ def main(argv: list[str] | None = None) -> int:
         try:
             result = three_day_rain(a.aoi, a.files, a.variable, a.group)
         except (ValueError, OSError) as exc:
+            ap.error(str(exc))
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+    elif a.cmd == "soil-moisture":
+        from .workflows import publish_soil_moisture
+        try:
+            result = publish_soil_moisture(a.aoi, a.file)
+        except (ValueError, OSError, KeyError) as exc:
             ap.error(str(exc))
         print(json.dumps(result, ensure_ascii=False, indent=2))
     elif a.cmd == "remediation":

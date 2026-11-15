@@ -201,16 +201,28 @@ class TestComputeRiskForAlert:
                 assert item["cost_label"] == "costo por confirmar"
 
     def test_recipe_assigned(self):
-        result = compute_risk_for_alert(SYNTHETIC_ALERT)
+        result = compute_risk_for_alert(SYNTHETIC_ALERT, slope_deg=30.0)
         assert result["recipe"] is not None
-        assert result["recipe"]["risk_id"] in (
-            "incendio_sequia", "erosion_huaico",
-            "ladera_inestable_sismo", "estres_hidrico_agricola"
-        )
+        assert result["recipe"]["risk_id"] == "erosion_huaico"
+
+    def test_no_evidence_means_no_recipe(self):
+        result = compute_risk_for_alert({**SYNTHETIC_ALERT, "hv_drop_db": 3.0})
+        assert result["recipe"] is None
+        assert result["risk_id"] == "causa_por_verificar"
+        assert result["budget"] == []
+
+    def test_steep_slope_without_quake_is_not_seismic(self):
+        result = compute_risk_for_alert(SYNTHETIC_ALERT, slope_deg=35.0)
+        assert result["risk_id"] != "ladera_inestable_sismo"
+
+    def test_missing_factors_are_excluded_not_neutral(self):
+        result = compute_risk_for_alert({**SYNTHETIC_ALERT, "hv_drop_db": 5.0})
+        assert "humedad SME2" in result["factors"]["excluded"]
+        assert result["factors"]["soil_moisture_score"] is None
 
     def test_high_hv_drop_increases_index(self):
-        low_drop = {**SYNTHETIC_ALERT, "threshold_db": 1.0}
-        high_drop = {**SYNTHETIC_ALERT, "threshold_db": 9.0}
+        low_drop = {**SYNTHETIC_ALERT, "hv_drop_db": 1.0}
+        high_drop = {**SYNTHETIC_ALERT, "hv_drop_db": 9.0}
         r_low = compute_risk_for_alert(low_drop)
         r_high = compute_risk_for_alert(high_drop)
         assert r_high["index"] > r_low["index"]

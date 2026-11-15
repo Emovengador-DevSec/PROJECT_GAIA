@@ -141,6 +141,79 @@ def _date(name: str) -> str:
     return f"{m.group(1)[:4]}-{m.group(1)[4:6]}-{m.group(1)[6:]}" if m else "unknown"
 
 
+def publish_soil_moisture(aoi_id: str, path: Path) -> dict:
+    """Clip NISAR SME2 (recommended retrievals only) to the AOI and publish a COG."""
+    from rasterio.warp import transform_bounds
+    from rasterio.windows import from_bounds
+
+    from .readers.sme2 import read_soil_moisture
+
+    aois = load_aois()
+    if aoi_id not in aois:
+        raise ValueError(f"Zona desconocida: {aoi_id}")
+    if "SME2" not in path.name:
+        raise ValueError("Se esperaba un archivo NISAR SME2")
+    sm = read_soil_moisture(path)
+    w, s_, e, n = aois[aoi_id].bbox
+    left, bottom, right, top = transform_bounds("EPSG:4326", f"EPSG:{sm.epsg}", w, s_, e, n)
+    win = from_bounds(left, bottom, right, top, sm.transform).round_offsets().round_lengths()
+    r0, c0 = max(0, int(win.row_off)), max(0, int(win.col_off))
+    sub = sm.data[r0:r0 + int(win.height), c0:c0 + int(win.width)]
+    if sub.size == 0 or not np.isfinite(sub).any():
+        raise ValueError("El gránulo SME2 no tiene humedad recomendada sobre la zona")
+    from rasterio.windows import Window
+    from rasterio.windows import transform as win_transform
+    tr = win_transform(Window(c0, r0, sub.shape[1], sub.shape[0]), sm.transform)
+    out = S.DATA_DIR / "04_published" / "soil-moisture" / f"{aoi_id}.tif"
+    write_cog(out, sub, tr, sm.epsg)
+    vals = sub[np.isfinite(sub)]
+    meta = {
+        "aoi_id": aoi_id,
+        "source": "NISAR",
+        "product": "L3 SME2 PROVISIONAL",
+        "granule": path.stem,
+        "date": _date(path.name),
+        "units": "m3/m3",
+        "path": "science/LSAR/SME2/grids/soilMoisture",
+        "filter": "solo recuperaciones recomendadas (retrievalQualityFlag bit 0 = 0)",
+        "valid_pixels": int(vals.size),
+        "coverage_pct": round(100 * vals.size / sub.size, 1),
+        "median_m3m3": round(float(np.median(vals)), 3),
+        "pixel_m": 200,
+    }
+    out.with_suffix(".json").write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
+    return meta
+
+
+def _zonal_mean(features: list[dict], raster: Path, *, negative_only: bool = False) -> dict[str, float]:
+    """Mean raster value inside each polygon (EPSG:4326 GeoJSON). Missing raster -> {}."""
+    if not raster.exists():
+        return {}
+    import rasterio
+    from rasterio.mask import mask
+    from rasterio.warp import transform_geom
+
+    out: dict[str, float] = {}
+    with rasterio.open(raster) as src:
+        for feat in features:
+            fid = feat.get("properties", {}).get("id")
+            geom = transform_geom("EPSG:4326", src.crs, feat["geometry"])
+            try:
+                data, _ = mask(src, [geom], crop=True, all_touched=True, filled=False)
+            except ValueError:
+                continue
+            band = data[0].astype("float64")
+            vals = band.compressed() if hasattr(band, "compressed") else band.ravel()
+            vals = vals[np.isfinite(vals)]
+            if src.nodata is not None:
+                vals = vals[vals != src.nodata]
+            if negative_only:
+                vals = -vals[vals < 0]
+            if vals.size:
+                out[fid] = round(float(vals.mean()), 2)
+    return out
+
+
 def run_remediation(aoi_id: str, *, offline: bool = False) -> dict:
     """Compute weighted risk index and NbS recipes for all HV alert polygons.
 
@@ -195,14 +268,6 @@ def run_remediation(aoi_id: str, *, offline: bool = False) -> dict:
         agr_alerts = agr.get("alerts", {})
         if isinstance(agr_alerts, dict):
             for aid, v in agr_alerts.items():
-                if v.get("slope_mean_deg") is not None:
-                    slope_by_id[aid] = float(v["slope_mean_deg"])
-                elif v.get("slope_deg") is not None:
-                    slope_by_id[aid] = float(v["slope_deg"])
-                elif v.get("cropland_steep_ha", 0) > 0:
-                    slope_by_id[aid] = 22.0  # Ladera pronunciada > 15°
-                elif v.get("cropland_low_slope_ha", 0) > 0:
-                    slope_by_id[aid] = 10.0  # Ladera suave <= 15°
                 c_ha = (v.get("cropland_low_slope_ha") or 0.0) + (v.get("cropland_steep_ha") or 0.0)
                 if c_ha > 0:
                     crops_by_id[aid] = c_ha
@@ -210,10 +275,21 @@ def run_remediation(aoi_id: str, *, offline: bool = False) -> dict:
             for v in agr_alerts:
                 if "id" in v:
                     aid = v["id"]
-                    slope_by_id[aid] = v.get("slope_mean_deg") or v.get("slope_deg") or 12.0
                     c_ha = (v.get("cropland_low_slope_ha") or 0.0) + (v.get("cropland_steep_ha") or 0.0)
                     if c_ha > 0:
                         crops_by_id[aid] = c_ha
+
+    # --- Per-zone measurements from rasters (no invented defaults) ---
+    hv_by_id = _zonal_mean(features, S.PROCESSED / aoi_id / "gcov" / period / "diff_hvhv_db.tif",
+                           negative_only=True)
+    slope_tif = S.DATA_DIR / "02_interim" / aoi_id / "slope-30m.tif"
+    slope_by_id.update(_zonal_mean(features, slope_tif))
+
+    # --- SoilGrids cache (built beforehand; remediation never calls the API) ---
+    soil_path = S.DATA_DIR / "04_published" / "soil" / f"{aoi_id}.json"
+    soil_cells: dict = {}
+    if soil_path.exists():
+        soil_cells = json.loads(soil_path.read_text(encoding="utf-8")).get("cells", {})
 
     # --- Load live fires from catalog cache ---
     fires_cache = S.DATA_DIR / "catalog" / "live" / "fires.json"
@@ -251,8 +327,6 @@ def run_remediation(aoi_id: str, *, offline: bool = False) -> dict:
         except Exception:
             pass
 
-    # --- SoilGrids centroid cache (avoid one API call per polygon) ---
-    soil_cache: dict[str, dict] = {}
 
     def _centroid(geometry: dict) -> tuple[float, float]:
         """Return approximate centroid (lon, lat) of a polygon geometry."""
@@ -305,6 +379,13 @@ def run_remediation(aoi_id: str, *, offline: bool = False) -> dict:
                 result.append(q_copy)
         return result
 
+    # --- NISAR SME2 soil moisture (only if a published raster exists) ---
+    sme2_tif = S.DATA_DIR / "04_published" / "soil-moisture" / f"{aoi_id}.tif"
+    sme2_by_id = _zonal_mean(features, sme2_tif) if sme2_tif.exists() else {}
+    sme2_meta_path = sme2_tif.with_suffix(".json")
+    sme2_date = (json.loads(sme2_meta_path.read_text(encoding="utf-8")).get("date")
+                 if sme2_meta_path.exists() else None)
+
     # --- Process each alert ---
     results = []
     summary = {"total_alerts": 0, "high": 0, "medium": 0, "low": 0}
@@ -316,19 +397,8 @@ def run_remediation(aoi_id: str, *, offline: bool = False) -> dict:
 
         lon, lat = _centroid(geom)
 
-        # Soil: round to ~1 km grid to reduce API calls
-        grid_key = f"{round(lon, 2)},{round(lat, 2)}"
-        if offline or not grid_key:
-            soil_info = None
-        elif grid_key not in soil_cache:
-            if not offline:
-                from .remediation.soilgrids import fetch_soil
-                soil_info = fetch_soil(lon, lat)
-            else:
-                soil_info = None
-            soil_cache[grid_key] = soil_info
-        else:
-            soil_info = soil_cache[grid_key]
+        from .remediation.soilgrids import cell_key
+        soil_info = soil_cells.get(cell_key(lon, lat))
 
         # Merge exposure and crop data into props
         exp_data = exposure_by_id.get(alert_id)
@@ -341,6 +411,7 @@ def run_remediation(aoi_id: str, *, offline: bool = False) -> dict:
         exp_data = exp_data or {}
         cropland_val = crops_by_id.get(alert_id) or exp_data.get("cropland_ha") or props.get("cropland_ha")
         merged_props = {**props, **{
+            "hv_drop_db": hv_by_id.get(alert_id),
             "cropland_ha": cropland_val,
             "exposure": exp_data,
         }}
@@ -352,8 +423,13 @@ def run_remediation(aoi_id: str, *, offline: bool = False) -> dict:
             fires_nearby=_fires_near(lon, lat),
             quakes_nearby=_quakes_near(lon, lat),
             rain_mm_7d=rain_7d,
-            soil_moisture=None,  # SME2 not yet ingested; placeholder
+            soil_moisture=sme2_by_id.get(alert_id),
         )
+
+        if sme2_date and alert_id in sme2_by_id:
+            risk["factor_details"] = [
+                f"{d} · {sme2_date}" if d.startswith("humedad suelo") else d for d in risk["factor_details"]
+            ]
 
         # Attach geometry for GeoJSON output
         risk["geometry"] = geom
@@ -377,10 +453,10 @@ def run_remediation(aoi_id: str, *, offline: bool = False) -> dict:
         "period": period,
         "generated_at": datetime.now(tz=UTC).isoformat(),
         "nisar_revisit_days": 12,
-        "soil_moisture_available": False,
+        "soil_moisture_available": bool(sme2_by_id),
         "note": (
-            "NISAR SME2 (humedad del suelo) no disponible aún; factor excluido del índice. "
-            "El índice se apoya en caída HV, pendiente, focos y lluvia."
+            "Cada factor se mide dentro de la mancha. Los factores sin datos quedan fuera del "
+            "índice y los pesos se reparten entre los disponibles."
         ),
         "disclaimer": (
             "Aviso de monitoreo. No reemplaza a INDECI ni a la autoridad local. "

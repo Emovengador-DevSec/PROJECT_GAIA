@@ -35,7 +35,7 @@ interventions:
     source: "Sierra Azul-MIDAGRI, Manual de técnicas de siembra de agua (2022)"
     source_url: "https://sierraazul.gob.pe"
     retrieved_date: "2026-11-14"
-    status: verificado
+    status: por_verificar  # el enlace apunta a la portada, no al documento; confirmar
     applicable_risks: [incendio_sequia, estres_hidrico_agricola]
 
   - id: bioingenieria_ichu
@@ -86,7 +86,7 @@ interventions:
     source: "SERFOR, Guía de reforestación con especies nativas (2021)"
     source_url: "https://www.serfor.gob.pe"
     retrieved_date: "2026-11-14"
-    status: verificado
+    status: por_verificar  # el enlace apunta a la portada, no al documento; confirmar
     applicable_risks: [ladera_inestable_sismo]
 
   - id: agroforesteria
@@ -117,5 +117,5 @@ interventions:
     source: "Sierra Azul-MIDAGRI, Manual de técnicas de siembra de agua (2022)"
     source_url: "https://sierraazul.gob.pe"
     retrieved_date: "2026-11-14"
-    status: verificado
+    status: por_verificar  # el enlace apunta a la portada, no al documento; confirmar
     applicable_risks: [estres_hidrico_agricola, ladera_inestable_sismo]

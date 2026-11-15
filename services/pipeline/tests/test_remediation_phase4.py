@@ -70,7 +70,9 @@ def test_generate_radio_script_spanish_and_quechua():
     assert "Allillanchu ayllukuna" in script_data["script_qu"]
     assert "Kayqa qawapayana willakuymi" in script_data["script_qu"]
     assert "Chanka" in script_data["quechua_metadata"]["variant"]
-    assert len(script_data["stations"]) >= 2
+    # Unreviewed Quechua must say so; no unconfirmed radio stations are listed
+    assert script_data["quechua_metadata"]["reviewed"] is False
+    assert script_data["stations"] == []
 
 
 def test_generate_minka_call():
@@ -117,46 +119,35 @@ def test_commitments_storage():
             assert listed[0]["volunteers"] == 12
 
 
-def test_api_bulletin_endpoints():
-    client = TestClient(app)
-    zone_id = "alr_ayacucho-huanta_2026-06-24__2026-10-10_hvhv_000"
+def test_api_bulletin_endpoints(tmp_path, monkeypatch):
+    import json
 
-    # Bulletin endpoint
-    res = client.get(f"/api/remediation/ayacucho-huanta/{zone_id}/bulletin")
+    from app import main
+    from sarlab_pipeline.remediation import bulletin as b
+
+    published = tmp_path / "04_published" / "remediation"
+    published.mkdir(parents=True)
+    zone_id = "alr_synth_01"
+    (published / "test-zone.json").write_text(json.dumps({"alerts": [{**SAMPLE_ALERT, "alert_id": zone_id}]}),
+                                              encoding="utf-8")
+    monkeypatch.setattr(main, "PROCESSED", tmp_path / "03_processed")
+    monkeypatch.setattr(b, "COMMITMENTS_FILE", published / "commitments.json")
+    client = TestClient(app)
+
+    res = client.get(f"/api/remediation/test-zone/{zone_id}/bulletin")
     assert res.status_code == 200
     data = res.json()
-    assert "bulletin" in data
-    assert "minka" in data
-    assert "script_es" in data["bulletin"]
-    assert "script_qu" in data["bulletin"]
+    assert "script_es" in data["bulletin"] and "script_qu" in data["bulletin"]
+    assert data["audio_url_qu"] is None  # no speaker recording yet
 
-    # Audio endpoint (Spanish)
-    res_audio_es = client.get(f"/api/remediation/ayacucho-huanta/{zone_id}/audio.wav?lang=es")
-    assert res_audio_es.status_code == 200
-    assert res_audio_es.headers["content-type"] == "audio/wav"
-    assert res_audio_es.content[:4] == b"RIFF"
+    # Quechua is never synthesized
+    assert client.get(f"/api/remediation/test-zone/{zone_id}/audio.wav?lang=qu").status_code == 404
 
-    # Audio endpoint (Quechua)
-    res_audio_qu = client.get(f"/api/remediation/ayacucho-huanta/{zone_id}/audio.wav?lang=qu")
-    assert res_audio_qu.status_code == 200
-    assert res_audio_qu.headers["content-type"] == "audio/wav"
-    assert res_audio_qu.content[:4] == b"RIFF"
-
-    # Minka commit endpoint
-    res_commit = client.post(
-        f"/api/remediation/ayacucho-huanta/{zone_id}/minka/commit",
-        json={
-            "community": "Comunidad Pallja",
-            "volunteers": 15,
-            "tools": "Picos y barretas",
-            "contact_name": "Teniente Gobernador",
-        },
-    )
+    # Minka: unknown zones are rejected; contact names never leave the server
+    body = {"community": "Comunidad X", "volunteers": 15, "tools": "Picos", "contact_name": "Persona"}
+    assert client.post("/api/remediation/test-zone/zona-inventada/minka/commit", json=body).status_code == 404
+    res_commit = client.post(f"/api/remediation/test-zone/{zone_id}/minka/commit", json=body)
     assert res_commit.status_code == 200
-    c_data = res_commit.json()
-    assert c_data["volunteers"] == 15
-
-    # Commitments list
-    res_list = client.get(f"/api/remediation/ayacucho-huanta/{zone_id}/minka/commitments")
-    assert res_list.status_code == 200
-    assert len(res_list.json()) >= 1
+    assert "contact_name" not in res_commit.json()
+    listed = client.get(f"/api/remediation/test-zone/{zone_id}/minka/commitments").json()
+    assert len(listed) == 1 and "contact_name" not in listed[0]

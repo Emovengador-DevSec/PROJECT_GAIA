@@ -23,7 +23,7 @@ scenarios:
         gain_ndvi: 0.37
         description: "Estrato arbustivo y herbáceo denso (Festuca dolichophylla / Baccharis / Queñua); estabilización del ciclo hidrológico local."
     annual_rate_label: "+0.07 a +0.08 NDVI / año"
-    citation: "MINAM / SERFOR (2021) Lineamientos para la restauración de ecosistemas forestales andinos; CONDESAN (2020) Monitoreo hidrológico y vegetación en Ayacucho."
+    citation: "Por verificar · MINAM / SERFOR (2021) Lineamientos para la restauración de ecosistemas forestales andinos; CONDESAN (2020) Monitoreo hidrológico y vegetación en Ayacucho."
     citation_url: "https://www.gob.pe/institucion/serfor/informes-publicaciones"
     limiting_factors:
       - "Depende de la exclusión temporal del sobrepastoreo en los primeros 2 años."
@@ -47,7 +47,7 @@ scenarios:
         gain_ndvi: 0.30
         description: "Talud estabilizado biomecánicamente; infiltración recargando acuíferos locales y suelo con cobertura perenne."
     annual_rate_label: "+0.06 NDVI / año"
-    citation: "FAO / WOCAT (2018) Prácticas de Conservación de Suelos y Aguas en Laderas Andinas; Agro Rural / PRONAMACHCS (2020)."
+    citation: "Por verificar · FAO / WOCAT (2018) Prácticas de Conservación de Suelos y Aguas en Laderas Andinas; Agro Rural / PRONAMACHCS (2020)."
     citation_url: "https://www.wocat.net/"
     limiting_factors:
       - "Requiere mantenimiento y descolmatación comunal de zanjas tras la primera temporada de lluvias."
@@ -71,7 +71,7 @@ scenarios:
         gain_ndvi: 0.31
         description: "Bosquete protector ribereño o de ladera establecido; integración ecológica y estabilización geomecánica pasiva."
     annual_rate_label: "+0.06 NDVI / año"
-    citation: "SERFOR (2020) Catálogo de especies forestales nativas para bioingeniería; INGEMMET (2022) Boletín de peligros geológicos por movimientos en masa."
+    citation: "Por verificar · SERFOR (2020) Catálogo de especies forestales nativas para bioingeniería; INGEMMET (2022) Boletín de peligros geológicos por movimientos en masa."
     citation_url: "https://repositorio.ingemmet.gob.pe/"
     limiting_factors:
       - "No sustituye obras civiles mayores si existe falla geológica activa profunda."
@@ -95,7 +95,7 @@ scenarios:
         gain_ndvi: 0.38
         description: "Sistema agroecológico resiliente a veranillos y sequías intermitentes; rotación con leguminosas fijadoras de nitrógeno."
     annual_rate_label: "+0.07 a +0.08 NDVI / año"
-    citation: "INIA (2022) Manual técnico de siembra y cosecha de agua en cabeceras de cuenca andina; MIDAGRI (2023)."
+    citation: "Por verificar · INIA (2022) Manual técnico de siembra y cosecha de agua en cabeceras de cuenca andina; MIDAGRI (2023)."
     citation_url: "https://www.gob.pe/inia"
     limiting_factors:
       - "Requiere gestión comunal concertada del agua entre comunidades de cabecera y valle."

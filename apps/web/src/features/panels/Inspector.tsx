@@ -121,19 +121,20 @@ function ActionPanel({
     return <AlertDetails feature={selected} onBack={onClear} onResources={onResources} />;
   }
 
-  const nisarAlerts = alerts.filter(a => a.properties.kind === "surface_change" && a.properties.source === "NISAR");
+  // Only zones the remediation engine evaluated (HV); levels come from the engine, not the alert feed.
+  const nisarAlerts = alerts.filter(a => a.properties.source === "NISAR" && a.properties.remediation);
   const remediationAlerts = nisarAlerts.filter(a => {
     const rem = a.properties.remediation;
-    if (levelFilter !== "all" && (rem?.level ?? a.properties.level) !== levelFilter) return false;
+    if (levelFilter !== "all" && rem?.level !== levelFilter) return false;
     if (riskFilter !== "all" && rem?.risk_id !== riskFilter) return false;
     return true;
   });
 
   const counts = {
     total: nisarAlerts.length,
-    high: nisarAlerts.filter(a => (a.properties.remediation?.level ?? a.properties.level) === "alto").length,
-    medium: nisarAlerts.filter(a => (a.properties.remediation?.level ?? a.properties.level) === "medio").length,
-    low: nisarAlerts.filter(a => (a.properties.remediation?.level ?? a.properties.level) === "bajo").length,
+    high: nisarAlerts.filter(a => a.properties.remediation?.level === "alto").length,
+    medium: nisarAlerts.filter(a => a.properties.remediation?.level === "medio").length,
+    low: nisarAlerts.filter(a => a.properties.remediation?.level === "bajo").length,
   };
 
   return (
@@ -178,6 +179,7 @@ function ActionPanel({
             <option value="erosion_huaico">Erosión o huaico</option>
             <option value="ladera_inestable_sismo">Ladera inestable tras sismo</option>
             <option value="estres_hidrico_agricola">Estrés hídrico agrícola</option>
+            <option value="causa_por_verificar">Causa por verificar</option>
           </select>
         </label>
       </div>

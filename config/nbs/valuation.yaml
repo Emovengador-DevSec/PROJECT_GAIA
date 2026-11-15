@@ -1,6 +1,10 @@
 # Configuración de valoración económica y cálculo costo-beneficio (Fase 3.3)
 # Fuentes oficiales peruanas: MIDAGRI (SIEA), SERFOR, MINAM.
 
+# Los valores por hectárea enlazan a la portada de SIEA, no a la tabla concreta.
+# Mientras no se enlace la tabla, el costo-beneficio no se muestra.
+status: por_verificar
+
 currency: "PEN"
 currency_symbol: "S/"
 

@@ -293,3 +293,28 @@ de las consultas de cada día de 2001–2025; los huecos no se convierten en cer
 presupuesto FIRMS registra cada intento antes del HTTP, incluidos los reintentos, y
 consulta el contador oficial de transacciones antes de descargar, sin almacenar la
 clave o una URL que la contenga. Los focos no se convierten en área quemada.
+
+## NISAR L3 SME2 · humedad del suelo (Ayacucho, 14-nov-2026)
+
+Gránulos de la trayectoria 147 ascendente, marco 171, PROVISIONAL, del 24-jun y 16-sep de
+2026 (no hay SME2 del 10-oct en esa trayectoria). Rutas confirmadas con `sarlab inspect`:
+
+| Ruta | Tipo | Notas |
+|---|---|---|
+| `science/LSAR/SME2/grids/soilMoisture` | float32 | m³/m³, `_FillValue` −9999; promedio de recuperaciones recomendadas |
+| `science/LSAR/SME2/grids/retrievalQualityFlag` | int16 | bit 0: 0 = recomendada, 1 = no recomendada; bits 1–3: PMI, TSR, DSG |
+| `science/LSAR/SME2/grids/soilMoistureUncertainty` | float32 | m³/m³ |
+| `science/LSAR/SME2/grids/xCoordinates`, `yCoordinates` | float64 | centros de píxel en metros, 200,18 m |
+| `science/LSAR/SME2/grids/projection` | uint32 | atributo `epsg_code` = 6933 (EASE-Grid 2.0) |
+
+`uv run sarlab soil-moisture --aoi ayacucho-huanta <SME2 del 16-sep>` publica
+`data/04_published/soil-moisture/ayacucho-huanta.tif` solo con recuperaciones recomendadas:
+57,6 % de la caja con dato, mediana 0,175 m³/m³. Hay valor en 337 de las 498 manchas HV
+(p10–p90: 0,15–0,22 m³/m³). La fecha (16-sep) es anterior al par de cambio (24-jun → 10-oct)
+y así se rotula.
+
+## SoilGrids · clase WRB por mancha
+
+La API `properties/query` no tiene capa `wrb`; la clase sale de `classification/query`
+(`wrb_class_name`). Se consulta una vez por celda de 0,05° (~5,5 km) por el límite de uso
+justo de ISRIC y se guarda en `data/04_published/soil/ayacucho-huanta.json` (CC BY 4.0).

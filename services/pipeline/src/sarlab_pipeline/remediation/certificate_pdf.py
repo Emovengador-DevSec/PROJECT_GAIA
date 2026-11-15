@@ -338,16 +338,22 @@ def generate_certificate_pdf(
     pdf.draw_text(sec2, pdf.margin_x, pdf.y, font="F2", size=10, r=0.08, g=0.25, b=0.45)
     pdf.y -= 14.0
     nisar_sources = rem.get("sources_nisar", {})
-    granules = nisar_sources.get("granules") or p.get("granules", ["NISAR_L2_PR_GCOV_033_054_D_095"])
-    dates = nisar_sources.get("dates") or [p.get("date", "2026-10-10")]
+    granules = nisar_sources.get("granules") or p.get("granules") or []
+    dates = nisar_sources.get("dates") or p.get("date_range") or []
+    if not granules or not dates:
+        raise ValueError("Faltan gránulos o fechas NISAR: no se emite constancia sin procedencia")
     prod_name = f"{nisar_sources.get('product', 'NISAR GCOV L2')} (Dual HH/HV)"
     pdf.add_kv("Producto Satelital:", prod_name)
     pdf.add_kv("Fechas del Par de Analisis:", " -> ".join(dates) if isinstance(dates, list) else str(dates))
-    pdf.add_kv("Granulos de Origen:", ", ".join(granules[:2]))
+    for i, g in enumerate(granules[:2]):
+        pdf.add_kv("Granulo de Origen:" if i == 0 else "", str(g))
     pdf.add_kv("Superficie Afectada (Mancha):", f"{metrics.get('area_ha', 0):.2f} hectareas (ha)")
-    hv_drop = rem.get("factors", {}).get("hv_drop_db", 3.5)
-    pdf.add_kv("Magnitud de Cambio Radar:", f"Caida HV de {hv_drop:.1f} dB (umbral estadistico 3x MAD)")
-    lvl_str = f"{p.get('level', 'medio').upper()} (Indice: {rem.get('index', 0.5) * 100:.0f}%)"
+    hv_drop = rem.get("factors", {}).get("hv_drop_db")
+    pdf.add_kv(
+        "Magnitud de Cambio Radar:",
+        f"Caida HV media de {hv_drop:.1f} dB dentro de la mancha" if hv_drop is not None else "No medida",
+    )
+    lvl_str = f"{str(rem.get('level', '')).upper()} (Indice: {rem.get('index', 0) * 100:.0f}%)"
     pdf.add_kv("Nivel de Prioridad Calculado:", lvl_str)
     pdf.y -= 8.0
 
@@ -357,11 +363,11 @@ def generate_certificate_pdf(
     pdf.y -= 14.0
     pdf.add_kv("Sensor Optico Complementario:", "HLS S30 v2.0 (Sentinel-2, 30 m) - NASA / USGS LP DAAC")
     pdf.add_kv("Fechas Opticas de Referencia:", "2026-06-22 (Antes) y 2026-10-08 (Despues)")
-    pdf.add_kv("Reflectancia e Indice NDVI:", "Antes: NDVI ~0.42 -> Despues: NDVI ~0.21 (Caida: -0.21)")
+    pdf.add_kv("Indice NDVI:", "No calculado por mancha (solo imagen de color natural)")
     slope = rem.get("factors", {}).get("slope_deg")
     is_steep = slope and slope > 15
     slope_str = f"{slope:.1f} deg ({'Inclinada > 15 deg' if is_steep else 'Suave'})" if slope else "No medido"
-    pdf.add_kv("Pendiente Topografica Media:", f"{slope_str} (Fuente: Mapzen Terrain Tiles / DEM 30 m)")
+    pdf.add_kv("Pendiente Topografica Media:", f"{slope_str} (Mapzen Terrain Tiles, 30 m)")
     crop_exp = p.get("exposure", {}).get("crop_ha") if p.get("exposure") else None
     crop_ha = crop_exp or rem.get("factors", {}).get("crop_ha", 0)
     pdf.add_kv("Cultivos en Zona de Mancha:", f"{crop_ha or 0:.2f} ha expuesto (ESA WorldCover 2021)")
@@ -374,57 +380,45 @@ def generate_certificate_pdf(
     sec4 = "4. DIAGNOSTICO DE RIESGO Y RECETA DE RESTAURACION (SbN)"
     pdf.draw_text(sec4, pdf.margin_x, pdf.y, font="F2", size=10, r=0.08, g=0.25, b=0.45)
     pdf.y -= 14.0
-    pdf.add_kv("Diagnostico Principal:", str(rem.get("risk_name", "Erosion o degradacion de cobertura")))
+    pdf.add_kv("Diagnostico Principal:", str(rem.get("risk_name") or "Causa por verificar"))
     recipe = rem.get("recipe", {})
     if recipe:
         pdf.add_kv("Condicion del Terreno:", str(recipe.get("condition", "Laderas andinas")))
         species = recipe.get("species_primary", [])
-        pdf.add_kv("Especies Nativas Sugeridas:", ", ".join(species) if species else "Ichu, Queñua, Colle")
-        pdf.add_kv("Fuente Tecnica de la Receta:", str(recipe.get("source", "SERFOR / MINAM / CONDESAN")))
+        if species:
+            pdf.add_kv("Especies Nativas Sugeridas:", ", ".join(species))
+        if recipe.get("source"):
+            pdf.add_kv("Fuente Tecnica de la Receta:", str(recipe["source"]))
+    else:
+        pdf.add_kv("Receta:", "Sin receta: ningun factor respalda una causa. Verificar en campo.")
     pdf.y -= 8.0
 
     # Sección 5: Presupuesto Estimado y Análisis Costo-Beneficio
     sec5_title = "5. PRESUPUESTO DE INTERVENCION Y COSTO-BENEFICIO FRENTE A INACCION"
     pdf.draw_text(sec5_title, pdf.margin_x, pdf.y, font="F2", size=10, r=0.08, g=0.25, b=0.45)
     pdf.y -= 14.0
-    budget = rem.get("budget", [])
+    budget = rem.get("budget", []) or []
     cost_total = sum(b.get("cost_total_soles") or 0 for b in budget)
-    cost_benefit = rem.get("cost_benefit", {})
-    fallback_loss = round((crop_ha or 1.0) * 8500 * rem.get("index", 0.5), 2)
-    loss_annual = cost_benefit.get("loss_avoided_annual_pen", fallback_loss)
-    loss_3yr = cost_benefit.get("loss_avoided_3yr_pen", round(loss_annual * 2.8, 2))
-    loss_5yr = cost_benefit.get("loss_avoided_5yr_pen", round(loss_annual * 4.5, 2))
-    rbc_3yr = round(loss_3yr / cost_total, 2) if cost_total > 0 else 1.0
-
-    pdf.add_kv(
-        "Presupuesto Estimado SbN:",
-        f"S/ {cost_total:,.2f} PEN (Intervencion en {metrics.get('area_ha', 1):.1f} ha)",
-    )
-    pdf.add_kv(
-        "Fuente de Costos Referenciales:",
-        "Agro Rural / SERFOR (2022-2024) - Costos unitarios verificados",
-    )
-    pdf.add_kv(
-        "Perdida Anual Evitada Estimada:",
-        f"S/ {loss_annual:,.2f} PEN / ano (MIDAGRI-SIEA Ayacucho 2024)",
-    )
-    pdf.add_kv("Perdida Evitada Acumulada (3 anos):", f"S/ {loss_3yr:,.2f} PEN (Horizonte 3 campanas)")
-    pdf.add_kv("Perdida Evitada Acumulada (5 anos):", f"S/ {loss_5yr:,.2f} PEN (Horizonte 5 campanas)")
-    pdf.add_kv(
-        "Ratio Beneficio / Costo (RBC 3 a.):",
-        f"{rbc_3yr:.2f}x (Por cada sol invertido se protegen S/ {rbc_3yr:.2f})",
-    )
-    pdf.add_kv(
-        "Impacto con Minka Comunal:",
-        "Ahorro de hasta 40% en efectivo mediante jornadas tradicionales de faena",
-    )
+    cost_benefit = rem.get("cost_benefit")
+    if cost_total > 0:
+        pdf.add_kv("Presupuesto Estimado SbN:", f"S/ {cost_total:,.2f} PEN")
+        sources = sorted({str(b["source"]) for b in budget if b.get("cost_total_soles") and b.get("source")})
+        pdf.add_kv("Fuente de Costos:", "; ".join(sources) or "Sin fuente")
+    else:
+        pdf.add_kv("Presupuesto Estimado SbN:", "Costo por confirmar (sin fuente verificada)")
+    if cost_benefit:
+        loss = cost_benefit["loss_avoided_annual_pen"]
+        pdf.add_kv("Perdida Anual Evitada Estimada:", f"S/ {loss:,.2f} PEN")
+        pdf.add_kv("Fuente del Valor Agricola:", str(cost_benefit.get("valuation_source", "")))
+    else:
+        pdf.add_kv("Costo-Beneficio:", "No se calcula hasta verificar costos y valor agricola")
     pdf.y -= 8.0
 
     # Sección 6: Escenario Proyectado a 3 y 5 Años
     sec6_title = "6. PROYECCION DE RECUPERACION VEGETAL (NDVI A 3 Y 5 ANOS)"
     pdf.draw_text(sec6_title, pdf.margin_x, pdf.y, font="F2", size=10, r=0.08, g=0.25, b=0.45)
     pdf.y -= 14.0
-    rec_scen = rem.get("recovery_scenario", {})
+    rec_scen = rem.get("recovery_scenario") or {}
     scen_label = rec_scen.get(
         "mandatory_label",
         "Escenario con supuestos. No es una observacion ni una promesa.",
@@ -441,10 +435,15 @@ def generate_certificate_pdf(
         b=0.1,
     )
     pdf.y -= 20.0
-    pdf.add_kv("NDVI Actual (Ano 0):", "0.20 (Suelo disturbado o bajo estres)")
-    pdf.add_kv("NDVI Proyectado a 3 anos:", "0.42 (Consolidacion de zanjas y cobertura herbacea)")
-    pdf.add_kv("NDVI Proyectado a 5 anos:", "0.55 (Estrato arbustivo y herbaceo perenne consolidado)")
-    pdf.add_kv("Cita Bibliografica de Soporte:", "MINAM / SERFOR (2021); CONDESAN (2020); FAO / WOCAT (2018)")
+    proj = (rec_scen or {}).get("projected", {})
+    if rec_scen:
+        pdf.add_kv("NDVI Supuesto (Ano 0):", f"{rec_scen.get('baseline_ndvi', 0):.2f} (supuesto, no medido)")
+        for key, label in (("year_3", "3"), ("year_5", "5")):
+            if proj.get(key):
+                pdf.add_kv(f"NDVI Escenario a {label} anos:", f"{proj[key]['ndvi']:.2f}")
+        pdf.add_kv("Cita:", str(rec_scen.get("citation", "")))
+    else:
+        pdf.add_kv("Escenario:", "No aplica: causa por verificar")
     pdf.y -= 12.0
 
     pdf.add_rect(pdf.margin_x, pdf.y - 36, pdf.content_width, 40, r=0.95, g=0.95, b=0.95, fill=True)

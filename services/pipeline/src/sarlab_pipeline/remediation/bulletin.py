@@ -59,7 +59,7 @@ def _get_places_str(alert_data: dict[str, Any]) -> tuple[str, str]:
         primary = str(places[0])
         top3 = [str(p) for p in places[:3]]
         return ", ".join(top3), primary
-    return "Huanta y La Mar", "Huanta"
+    return "", ""
 
 
 def generate_radio_script(alert_data: dict[str, Any], aoi_id: str = "ayacucho-huanta") -> dict[str, Any]:
@@ -76,43 +76,48 @@ def generate_radio_script(alert_data: dict[str, Any], aoi_id: str = "ayacucho-hu
     )
 
     alert_id = alert_data.get("alert_id") or alert_data.get("id", "alr_001")
-    area_ha = float(alert_data.get("area_ha") or alert_data.get("metrics", {}).get("area_ha") or 1.0)
-    risk_info = alert_data.get("risk") or {}
-    risk_name = risk_info.get("dominant_risk_name") or alert_data.get("level", "Riesgo moderado")
-    level = alert_data.get("level", "medio").lower()
+    area_ha = alert_data.get("area_ha") or alert_data.get("metrics", {}).get("area_ha")
+    if not area_ha:
+        raise ValueError("La mancha no tiene área medida: no se genera boletín")
+    area_ha = float(area_ha)
+    risk_name = alert_data.get("risk_name") or "causa por verificar"
+    level = str(alert_data.get("level", "")).lower()
     factors = alert_data.get("factors") or {}
-    slope_deg = float(factors.get("slope_deg") or 14.0)
-    crop_ha = float(factors.get("crop_ha") or factors.get("cropland_ha") or 0.0)
+    slope_deg = factors.get("slope_deg")
+    crop_ha = factors.get("crop_ha") or factors.get("cropland_ha")
 
     recipe = alert_data.get("recipe") or {}
-    recipe_name = recipe.get("risk_name") or "Receta natural de conservación"
-    species = recipe.get("species_primary") or ["Queñua", "Colle", "Molle", "Ichu"]
-    species_str = ", ".join(species[:3]) if isinstance(species, list) else "especies nativas"
+    species = recipe.get("species_primary") or []
+    species_str = ", ".join(species[:3])
 
     places_top3, primary_place = _get_places_str(alert_data)
+    where = f"cerca de {places_top3}" if places_top3 else "en la zona de Huanta y La Mar"
 
-    # Guion en español (estilo radioemisora comunitaria andina)
-    script_es = (
-        f"Atención, comunidades de Huanta y La Mar. GAIA Voz informa: "
-        f"El radar satelital NISAR detectó cambios de cobertura en {area_ha:.1f} hectáreas "
-        f"en el sector de {places_top3}. "
-        f"Diagnóstico técnico: {risk_name}, en laderas de {slope_deg:.0f} grados con {crop_ha:.1f} "
-        f"hectáreas de cultivo próximas. "
-        f"Se recomienda aplicar la receta natural: {recipe_name}, priorizando {species_str} "
-        f"y zanjas de infiltración. "
-        f"Llamado a faena comunal minka con las autoridades de {primary_place}. "
-        f"{mandatory_notice}"
-    )
+    # Guion en español: solo frases respaldadas por datos de la mancha
+    parts = [
+        "Atención, comunidades de Huanta y La Mar. GAIA Voz informa:",
+        f"el radar NISAR detectó cambios en {area_ha:.1f} hectáreas {where}.",
+    ]
+    if slope_deg is not None:
+        parts.append(f"La ladera tiene una pendiente media de {slope_deg:.0f} grados.")
+    if crop_ha:
+        parts.append(f"Hay {float(crop_ha):.1f} hectáreas de cultivo dentro de la zona.")
+    if recipe:
+        parts.append(f"Posible situación: {risk_name}.")
+        if species_str:
+            parts.append(f"Si en campo se confirma, se recomienda sembrar {species_str}.")
+    else:
+        parts.append("La causa aún no se conoce. Autoridades: verificar en campo.")
+    parts.append(mandatory_notice)
+    script_es = " ".join(parts)
 
-    # Guion en quechua chanka (revisado, regla 6: con aviso de validación continua)
+    # Quechua: solo se usa cuando un hablante lo revisó (config/nbs/bulletin.yaml)
+    q_cfg = b_cfg.get("quechua", {})
+    reviewed = q_cfg.get("review_status") == "revisado"
     script_qu = (
-        f"Allillanchu ayllukuna, Huantawan La Mar llaqtamasikuna. GAIA Voz willakuytam apamun: "
-        f"NISAR radar satélitemi allpapi tikrakuykunata rikurun {area_ha:.1f} hectáreas tupupi "
-        f"kay {places_top3} suyukunapi. "
-        f"Chakrakunapa hichpanpim kachkan, urqu kinraykunapi. "
-        f"Aylluntin minkapi llankaspa allpata sayachisun: {species_str} tarpuspa, "
-        f"yaku purinan zanjakunata allaspa. "
-        f"Umalliqkuna, kikin allpapi qawaykuychik. "
+        "Allillanchu ayllukuna, Huantawan La Mar llaqtamasikuna. GAIA Voz willakuytam apamun: "
+        f"NISAR radar satélitemi allpapi tikrakuykunata rikurun {area_ha:.1f} hectáreas tupupi. "
+        "Umalliqkuna, kikin allpapi qawaykuychik. "
         f"{quechua_mandatory}"
     )
 
@@ -137,9 +142,10 @@ def generate_radio_script(alert_data: dict[str, Any], aoi_id: str = "ayacucho-hu
         "nearby_places": places_top3,
         "stations": stations,
         "quechua_metadata": {
-            "variant": "Quechua Chanka (Ayacucho)",
-            "review_status": "revisado_chanka_borrador",
-            "disclaimer": "Traducción en quechua chanka. Sujeta a validación comunitaria continua en campo.",
+            "variant": q_cfg.get("variant", "Quechua Chanka (Ayacucho)"),
+            "review_status": q_cfg.get("review_status", "pendiente"),
+            "reviewed": reviewed,
+            "disclaimer": q_cfg.get("disclaimer", "Borrador sin revisar por un hablante. No difundir."),
         },
         "disclaimer_mandatory": mandatory_notice,
     }
@@ -150,7 +156,7 @@ def generate_minka_call(alert_data: dict[str, Any], aoi_id: str = "ayacucho-huan
     m_cfg = load_minka_config()
     defaults = m_cfg.get("minka", {}).get("defaults_by_intervention", {})
     alert_id = alert_data.get("alert_id") or alert_data.get("id", "alr_001")
-    area_ha = float(alert_data.get("area_ha") or alert_data.get("metrics", {}).get("area_ha") or 1.0)
+    area_ha = float(alert_data.get("area_ha") or alert_data.get("metrics", {}).get("area_ha") or 0.0)
     level = alert_data.get("level", "medio").lower()
 
     places_top3, primary_place = _get_places_str(alert_data)
@@ -170,11 +176,8 @@ def generate_minka_call(alert_data: dict[str, Any], aoi_id: str = "ayacucho-huan
 
     cost_data = alert_data.get("cost_benefit") or {}
     minka_savings = cost_data.get("minka_savings_soles")
-    if not minka_savings:
-        cost_total = alert_data.get("costs", {}).get("cost_total_soles") or 4500.0
-        minka_savings = round(cost_total * 0.40, 2)
 
-    recipe_title = recipe.get("risk_name") or "Restauración de ladera"
+    recipe_title = recipe.get("risk_name") or "Verificación en campo (causa por confirmar)"
 
     wa_text = (
         f"🌿 *CONVOCATORIA MINKA COMUNAL - GAIA ALERTA* 🌿\n\n"
@@ -184,9 +187,10 @@ def generate_minka_call(alert_data: dict[str, Any], aoi_id: str = "ayacucho-huan
         f"👥 *Meta comunal:* {total_workers} comuneros durante {days_est} días\n"
         f"🛠️ *Herramientas:* {', '.join(tools[:3])}\n"
         f"🍲 *Apoyo:* {traditional_support}\n"
-        f"💰 *Ahorro comunal estimado:* S/ {minka_savings:,.0f} (hasta 40% del costo total)\n\n"
-        f"🔗 *Evidencia satelital:* http://localhost:5173\n"
-        f"⚠️ *Aviso de monitoreo. No reemplaza a INDECI. Verificar en campo.*"
+        + (f"💰 *Ahorro comunal estimado:* S/ {minka_savings:,.0f}\n" if minka_savings else "")
+        + "\n"
+        "🔗 *Evidencia satelital:* http://localhost:5173\n"
+        "⚠️ *Aviso de monitoreo. No reemplaza a INDECI. Verificar en campo.*"
     )
     wa_url = f"https://wa.me/?text={urllib.parse.quote(wa_text)}"
 
