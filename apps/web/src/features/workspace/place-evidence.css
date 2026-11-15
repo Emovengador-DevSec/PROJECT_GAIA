@@ -42,3 +42,17 @@
   .field-view-caption { top: calc(142px + env(safe-area-inset-top)); }
 }
 @media print { .place-timeline, .map-photo-index, .map-photo-popup, .field-view-caption { display: none; } }
+/* Native species cards: what it does and against what */
+.species-card h4 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; color: #10b981; }
+.species-card h4 em { color: #9fb0bf; font-size: 12px; font-weight: 500; }
+.native-badge { padding: 1px 7px; border-radius: 999px; font: 700 10.5px/1.5 var(--font-body); color: #05070a; background: #10b981; }
+.species-benefit { margin: 2px 0 4px; font-size: 13px; color: #e8f1f7; }
+.species-tags { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 6px; }
+.species-tags span { padding: 1px 7px; border-radius: 999px; font: 700 11px/1.5 var(--font-body); color: #05070a; background: #9fb0bf; }
+.species-tags [data-help="erosion"] { background: #ffc23d; }
+.species-tags [data-help="huaico"] { background: #fb923c; }
+.species-tags [data-help="incendio"] { background: #ff6b4a; }
+.species-tags [data-help="helada"] { background: #38bdf8; }
+.species-tags [data-help="sequia"] { background: #e879f9; }
+.species-tags [data-help="agua"] { background: #22d3ee; }
+.species-tags [data-help="alt"] { background: transparent; color: #c9d7e2; border: 1px solid #3b4d5c; }

@@ -1,0 +1,81 @@
+# Especies nativas andinas para sanar laderas, quebradas y chacras (Ayacucho, 2 500–4 500 m)
+# Cada especie dice en una línea cómo ayuda y contra qué fenómeno.
+# helps: erosion | huaico | incendio | helada | sequia | agua
+# Referencia general de árboles: Reynel, C. y Marcelo, J. (2009). Árboles de los ecosistemas
+# forestales andinos. Manual de identificación de especies. Programa ECOBONA–Intercooperation.
+# Estado de las fuentes: por_verificar página por página; la interfaz no muestra la cita hasta verificarla.
+source_status: por_verificar
+
+species:
+  - name: Queñua
+    scientific: Polylepis racemosa
+    native: true
+    altitude_m: [3000, 4500]
+    benefit: Sus raíces amarran la ladera y su bosque guarda humedad que alimenta los puquios.
+    helps: [erosion, agua, helada]
+  - name: Quishuar
+    scientific: Buddleja incana
+    native: true
+    altitude_m: [2800, 4200]
+    benefit: Árbol de cerco vivo que frena el viento y la erosión en bordes de chacra.
+    helps: [erosion, helada]
+  - name: Colle
+    scientific: Buddleja coriacea
+    native: true
+    altitude_m: [3200, 4300]
+    benefit: Resiste la helada; se planta en las partes altas para cubrir suelo desnudo.
+    helps: [helada, erosion]
+  - name: Aliso
+    scientific: Alnus acuminata
+    native: true
+    altitude_m: [2200, 3600]
+    benefit: Fija nitrógeno y fertiliza el suelo; protege orillas de quebradas y canales.
+    helps: [huaico, erosion, agua]
+  - name: Chachacomo
+    scientific: Escallonia resinosa
+    native: true
+    altitude_m: [2700, 4000]
+    benefit: Cerco vivo resistente a la sequía que estabiliza taludes y bordes de camino.
+    helps: [erosion, sequia]
+  - name: Mutuy
+    scientific: Senna birostris
+    native: true
+    altitude_m: [2500, 3800]
+    benefit: Arbusto que fija nitrógeno y cubre laderas secas degradadas.
+    helps: [erosion, sequia]
+  - name: Chilca
+    scientific: Baccharis latifolia
+    native: true
+    altitude_m: [2000, 3900]
+    benefit: Crece rápido en quebradas y cárcavas; frena el arrastre de tierra en lluvias.
+    helps: [huaico, erosion]
+  - name: Tara
+    scientific: Caesalpinia spinosa
+    native: true
+    altitude_m: [1500, 3200]
+    benefit: Soporta la sequía y da vainas para vender; recupera suelos pobres.
+    helps: [sequia, erosion]
+  - name: Molle
+    scientific: Schinus molle
+    native: true
+    altitude_m: [1500, 3400]
+    benefit: Árbol que aguanta la sequía y forma barreras verdes en bordes de chacra.
+    helps: [sequia, incendio]
+  - name: Cabuya
+    scientific: Furcraea andina
+    native: true
+    altitude_m: [1500, 3500]
+    benefit: Planta suculenta poco inflamable; en franjas frena el fuego y amarra taludes.
+    helps: [incendio, erosion]
+  - name: Ichu
+    scientific: Stipa ichu
+    native: true
+    altitude_m: [3500, 5000]
+    benefit: Sus macollas cubren el suelo y frenan el agua de lluvia en laderas de puna.
+    helps: [erosion, agua]
+  - name: Chillihua
+    scientific: Festuca dolichophylla
+    native: true
+    altitude_m: [3500, 4800]
+    benefit: Pasto nativo de raíz densa para zanjas y bordes de qocha; alimenta al ganado.
+    helps: [erosion, agua]

@@ -7,7 +7,7 @@ interventions:
 
   - id: cortafuego_verde
     name: Cortafuego vivo con especies nativas
-    description: Banda de 10 m de molle, tara, maguey y tuna como barrera ignífuga
+    description: Banda de 10 m de molle, tara, cabuya y chachacomo nativos como barrera ignífuga
     unit: S/ por km
     unit_en: PEN per km
     cost_min: 8000
@@ -39,8 +39,8 @@ interventions:
     applicable_risks: [incendio_sequia, estres_hidrico_agricola]
 
   - id: bioingenieria_ichu
-    name: Bioingeniería con ichu y vetiver
-    description: Estaquillado de ichu y siembra de vetiver en surcos para anclar suelo
+    name: Bioingeniería con ichu y chillihua
+    description: Estaquillado de ichu y chillihua nativos en surcos para anclar suelo
     unit: S/ por ha
     unit_en: PEN per ha
     cost_min: 2500

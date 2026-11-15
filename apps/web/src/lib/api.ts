@@ -430,7 +430,7 @@ export type PlaceImage = {available: boolean; reason?: string; image_url?: strin
   scene_metadata?: {cloud_cover_pct: number; metadata_url: string}; author?: string; license?: string; license_url?: string; note?: string};
 export type PlaceEvidence = {
   aoi_id: string; zone_id: string; available: boolean; generated_at?: string;
-  species: {name: string; scientific: string; function?: string; photo: RealPhoto | null}[];
+  species: {name: string; scientific: string; function?: string; benefit?: string; helps?: string[]; native?: boolean; altitude_m?: [number, number]; photo: RealPhoto | null}[];
   nearby: RealPhoto[]; community: {name: string; center: [number, number]} | null; community_photos: RealPhoto[];
   soil: {wrb_name: string; wrb_probability_pct?: number; source: string; source_date: string} | null;
   soil_photo: RealPhoto | null; techniques: {id: string; name: string; note: string; photos: RealPhoto[]}[];

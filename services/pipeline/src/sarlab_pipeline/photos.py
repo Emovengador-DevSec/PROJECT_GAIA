@@ -317,9 +317,13 @@ def species_config() -> list[dict]:
     recipes = yaml.safe_load((CONFIG_DIR / "nbs/recipes.yaml").read_text(encoding="utf-8"))
     soils = yaml.safe_load((CONFIG_DIR / "nbs/soils.yaml").read_text(encoding="utf-8"))
     species = {}
+    native_path = CONFIG_DIR / "nbs/native_species.yaml"
+    if native_path.exists():
+        for item in yaml.safe_load(native_path.read_text(encoding="utf-8")).get("species", []):
+            species[item["scientific"]] = {**item, "function": item["benefit"]}
     for soil in soils["groups"]:
         for item in soil.get("species", []):
-            species[item["scientific"]] = dict(item)
+            species.setdefault(item["scientific"], dict(item))
     for recipe in recipes["recipes"]:
         for item in recipe.get("species_primary", []):
             match = re.fullmatch(r"(.+?)\s*\((.+)\)", item)
@@ -388,6 +392,14 @@ def publish(aoi: str, *, refresh: bool = False) -> dict:
 
             # Peru first (people should recognise the plant), then Commons, then anywhere.
             candidates = inat(PERU_PLACE_ID) or collector.commons(name) or inat(None)
+            if not candidates and " " in name:
+                # No licensed photo of the species: fall back to its genus observed in Peru.
+                genus = collector.get_json("https://api.inaturalist.org/v1/taxa",
+                                           {"q": name.split()[0], "rank": "genus", "per_page": 5})
+                genus_taxon = next((t for t in genus.get("results", [])
+                                    if t.get("name") == name.split()[0]
+                                    and t.get("iconic_taxon_name") == "Plantae"), None)
+                candidates = inat(PERU_PLACE_ID, genus_taxon) if genus_taxon else []
             stored = next((p for candidate in candidates if (p := collector.store(candidate))), None)
             if stored:
                 photos[stored["id"]] = stored

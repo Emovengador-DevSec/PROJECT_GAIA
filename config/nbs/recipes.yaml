@@ -26,8 +26,8 @@ recipes:
     species_primary:
       - Molle (Schinus molle)
       - Tara / Guarango (Caesalpinia spinosa)
-      - Maguey (Agave americana)
-      - Tuna (Opuntia ficus-indica)
+      - Cabuya (Furcraea andina)
+      - Chachacomo (Escallonia resinosa)
     executor: ["Minka comunal", "Municipio distrital", "AGRORURAL"]
     source: "SERFOR, Guía técnica de cortafuegos (2021) · Sierra Azul-MIDAGRI (2022)"
     disclaimer: >
@@ -57,8 +57,9 @@ recipes:
           Incluir revisión de bocatomas y canales de derivación.
     species_primary:
       - Ichu (Stipa ichu)
-      - Vetiver (Chrysopogon zizanioides)
-      - Queñua (Polylepis spp.)
+      - Chillihua (Festuca dolichophylla)
+      - Queñua (Polylepis racemosa)
+      - Chilca (Baccharis latifolia)
       - Quishuar (Buddleja incana)
     executor: ["Minka comunal", "Municipio distrital", "AGRORURAL", "Sierra Azul-MIDAGRI"]
     source: "AGRORURAL, Programa de recuperación de andenes (2020) · SERFOR (2021)"
@@ -89,8 +90,9 @@ recipes:
           taludes después del sismo.
     species_primary:
       - Aliso (Alnus acuminata)
-      - Queñua (Polylepis spp.)
-      - Tara / Guarango (Caesalpinia spinosa)
+      - Queñua (Polylepis racemosa)
+      - Chilca (Baccharis latifolia)
+      - Mutuy (Senna birostris)
     executor: ["Municipio distrital", "AGRORURAL", "INDECI (coordinación)", "Minka comunal"]
     source: "SERFOR (2021) · Sierra Azul-MIDAGRI (2022)"
     disclaimer: >
@@ -125,6 +127,7 @@ recipes:
       - Tara / Guarango (Caesalpinia spinosa)
       - Aliso (Alnus acuminata)
       - Molle (Schinus molle)
+      - Colle (Buddleja coriacea)
     executor: ["Minka comunal", "AGRORURAL", "Sierra Azul-MIDAGRI", "Agencia Agraria local"]
     source: "Sierra Azul-MIDAGRI, Manual de técnicas de siembra de agua (2022)"
     disclaimer: >

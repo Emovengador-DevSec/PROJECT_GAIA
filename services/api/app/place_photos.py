@@ -206,6 +206,17 @@ def place_catalog(aoi: str, zone_id: str):
         if match:
             species_names.add(match.group(1))
     species_names.update(s["scientific"] for s in (zone.get("soil") or {}).get("species", []))
+    # Also every native species that helps against this zone's cause (config/nbs/native_species.yaml).
+    cause_helps = {
+        "erosion_huaico": {"erosion", "huaico"},
+        "incendio_sequia": {"incendio", "sequia"},
+        "estres_hidrico_agricola": {"sequia", "agua"},
+        "ladera_inestable_sismo": {"erosion", "huaico"},
+    }
+    wanted = cause_helps.get(zone.get("risk_id", ""), set())
+    species_names.update(
+        s["scientific"] for s in data.get("species", []) if wanted & set(s.get("helps") or [])
+    )
     species = [
         {**s, "photo": photo(s.get("photo_id"))}
         for s in data.get("species", [])

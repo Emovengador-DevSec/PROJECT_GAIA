@@ -4,6 +4,7 @@ import {formatNumber as number} from "../../lib/formatNumber";
 import "./place-evidence.css";
 
 export const FIELD_VIEW = "gaia:field-view";
+const HELP_LABEL: Record<string, string> = { erosion: "Erosión", huaico: "Huaicos", incendio: "Incendios", helada: "Heladas", sequia: "Sequía", agua: "Agua" };
 export type FieldViewRequest = {zoneId: string; design: boolean};
 
 export function usePlaceEvidence(feature?: AlertFeature) {
@@ -159,9 +160,14 @@ export function PlaceEvidencePanel({feature}: {feature: AlertFeature}) {
       </section>) : <p className="place-empty">Esta mancha no tiene una técnica con fotografías verificadas.</p>}
     </section>}
     <Greenness data={data.greenness} />
-    <details className="place-block" open><summary>Plantas de la receta y del suelo</summary>
-      <p className="place-note">Fotos de referencia de cada especie.</p>
-      {data.species.map(species => <section key={species.scientific}><h4>{species.name} <em>{species.scientific}</em></h4><p>{species.function}</p>
+    <details className="place-block" open><summary>Plantas nativas que sanan esta zona</summary>
+      <p className="place-note">Plantas nativas que ayudan contra el problema de esta zona. Fotos tomadas en Perú cuando existen.</p>
+      {data.species.map(species => <section key={species.scientific} className="species-card"><h4>{species.name} <em>{species.scientific}</em>{species.native && <span className="native-badge">Nativa</span>}</h4>
+        <p className="species-benefit">{species.benefit ?? species.function}</p>
+        {(!!species.helps?.length || species.altitude_m) && <p className="species-tags">
+          {species.helps?.map(h => <span key={h} data-help={h}>{HELP_LABEL[h] ?? h}</span>)}
+          {species.altitude_m && <span data-help="alt">{number(species.altitude_m[0], 0)}–{number(species.altitude_m[1], 0)} m</span>}
+        </p>}
         {species.photo ? <PhotoFigure photo={species.photo} /> : <p className="place-empty">Foto con autor, fecha y licencia aún no disponible.</p>}
       </section>)}
     </details>

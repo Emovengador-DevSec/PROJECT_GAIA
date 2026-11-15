@@ -130,7 +130,7 @@ export function Community({ onLocate, reports, reportError, reportLayer, onRepor
           <div className="case-list" style={{ marginTop: "0.5rem" }}>
             <div className="case" style={{ flexDirection: "column", alignItems: "flex-start", gap: "6px" }}>
               <strong>Cortafuegos vivos y zanjas de infiltración</strong>
-              <small className="muted">Especies: Molle, Tara, Maguey y Tuna · Temporada seca (abril–agosto)</small>
+              <small className="muted">Especies nativas: Molle, Tara, Cabuya y Chachacomo · Temporada seca (abril–agosto)</small>
               <small>Presupuesto unitario: S/ 4,750 a 11,500 por km · <span className="badge-provisional">costo por confirmar (SERFOR / Sierra Azul)</span></small>
               <small className="muted">Minka comunal: hasta 40% de reducción en efectivo con trabajo comunitario.</small>
             </div>
