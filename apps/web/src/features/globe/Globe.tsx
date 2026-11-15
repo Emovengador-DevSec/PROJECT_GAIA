@@ -9,6 +9,8 @@ import { formatDate } from "../../lib/formatDate";
 import { formatNumber } from "../../lib/formatNumber";
 import type { CitizenReport } from "../../lib/api";
 import { addNisarOrbit } from "./nisarOrbit";
+import { PhotoPopup, usePlaceEvidence } from "../workspace/PlaceEvidence";
+import { api, type RealPhoto } from "../../lib/api";
 import { FIRE_AGE_ALPHA, FIRE_AGE_COLORS, fireAge } from "./fireAge";
 
 type Props = {
@@ -43,6 +45,8 @@ export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint
   afterUrl, radarBounds, contextOverlay, split, exaggeration, camera = "oblique",
   alerts, fireCells, active, cutoff, orbitData, orbitVisible, satelliteFocus, selected, onSelect, onStatus, offline = false,
   realTimeLighting }: Props) {
+  const {data: placeEvidence} = usePlaceEvidence(selected);
+  const [openPhoto, setOpenPhoto] = useState<RealPhoto>();
   const host = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
   const viewer = useRef<Cesium.Viewer | null>(null);
@@ -273,6 +277,8 @@ export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint
         return;
       }
       const picked = v.scene.pick(event.position);
+      const realPhoto = picked?.id?.properties?.realPhoto?.getValue(v.clock.currentTime) as RealPhoto | undefined;
+      if (realPhoto) { setOpenPhoto(realPhoto); return; }
       const feature = picked?.id?.properties?.alert?.getValue(v.clock.currentTime) as AlertFeature | undefined;
       if (feature) selectRef.current(feature);
     }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
@@ -702,9 +708,37 @@ export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint
     };
   }, [selected, offline, active, reduceMotion]);
 
+  useEffect(() => {
+    setOpenPhoto(undefined);
+    const v = viewer.current;
+    if (!v || !active || !placeEvidence?.pins.length) return;
+    const entities = placeEvidence.pins.map(photo => v.entities.add({
+      id: `real-photo-${photo.id}`, name: photo.title,
+      position: Cesium.Cartesian3.fromDegrees(photo.lon!, photo.lat!), properties: {realPhoto: photo},
+      billboard: {image: api.localPhoto(photo.thumbnail_url), width: 40, height: 40,
+        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND, verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        pixelOffset: new Cesium.Cartesian2(0, -8),
+        scaleByDistance: new Cesium.NearFarScalar(1000, 1, 100000, .6)},
+    }));
+    return () => {if (!v.isDestroyed()) entities.forEach(entity => v.entities.remove(entity));};
+  }, [placeEvidence, active, offline]);
+
   const metric = hover && observationMetric(hover.feature);
   return <>
     <div ref={host} className="globe" aria-label="Globo satelital de Sudamérica con observaciones georreferenciadas" />
+    {!!placeEvidence?.pins.length && <details className="map-photo-index"><summary>Fotos del lugar · {placeEvidence.pins.length}</summary>
+      <button type="button" onClick={() => {
+        const v = viewer.current;
+        if (!v) return;
+        stopOrbit();
+        const positions = placeEvidence.pins.map(photo => Cesium.Cartesian3.fromDegrees(photo.lon!, photo.lat!));
+        const sphere = Cesium.BoundingSphere.fromPoints(positions);
+        v.camera.flyToBoundingSphere(sphere, {offset: new Cesium.HeadingPitchRange(0, -Math.PI / 2, Math.max(20_000, sphere.radius * 3)), duration: reduceMotion ? 0 : 1.4});
+      }}>Ver ubicaciones en el mapa</button>
+      {placeEvidence.pins.map(photo => <button type="button" data-photo-id={photo.id} key={photo.id} onClick={() => setOpenPhoto(photo)}>{photo.title} · {photo.location_label}</button>)}
+    </details>}
+    {openPhoto && <PhotoPopup photo={openPhoto} onClose={() => { setOpenPhoto(undefined); document.querySelector<HTMLElement>(".map-photo-index summary")?.focus(); }} />}
     {orbiting && <button type="button" className="camera-tour" onClick={stopOrbit}>Detener recorrido <kbd>Esc</kbd></button>}
     {hover && metric && <div className="map-tooltip" role="tooltip" data-kind={hover.feature.properties.kind}
       data-observation={hover.feature.properties.id}

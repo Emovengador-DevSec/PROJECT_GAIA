@@ -411,6 +411,24 @@ export type ReportKind = "fire" | "landslide" | "dry_water" | "crop_damage";
 export type CitizenReport = { id: string; kind: ReportKind; lon: number; lat: number; observed_at: string;
   firms_match: boolean; nisar_overlap: boolean };
 
+export type RealPhoto = {
+  id: string; title: string; scientific?: string; author: string; author_role?: string; width?: number; height?: number; license: string; license_url: string;
+  source_url: string; taken_at: string; lat: number | null; lon: number | null; accuracy_m: number | null;
+  role: string; place: string; distance_km: number | null; location_label: string;
+  image_url: string; thumbnail_url: string; modifications: string;
+};
+export type PlaceImage = {available: boolean; reason?: string; image_url?: string; date?: string;
+  source: string; source_url?: string; scene?: string; scenes?: string[]; resolution_m?: number;
+  scene_metadata?: {cloud_cover_pct: number; metadata_url: string}; author?: string; license?: string; license_url?: string; note?: string};
+export type PlaceEvidence = {
+  aoi_id: string; zone_id: string; available: boolean; generated_at?: string;
+  species: {name: string; scientific: string; function?: string; photo: RealPhoto | null}[];
+  nearby: RealPhoto[]; community: {name: string; center: [number, number]} | null; community_photos: RealPhoto[];
+  soil: {wrb_name: string; wrb_probability_pct?: number; source: string; source_date: string} | null;
+  soil_photo: RealPhoto | null; techniques: {id: string; name: string; note: string; photos: RealPhoto[]}[];
+  imagery: Partial<Record<"past" | "before" | "after", PlaceImage>>; pins: RealPhoto[]; warnings: string[];
+};
+
 async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
   const r = await fetch(`${BASE}${path}`, { signal });
   if (!r.ok) throw new Error(`La API respondió ${r.status} en ${path}`);
@@ -418,6 +436,10 @@ async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
 }
 
 export const api = {
+  placeEvidence: (aoi: string, zone: string, signal?: AbortSignal) =>
+    get<PlaceEvidence>(`/remediation/${encodeURIComponent(aoi)}/${encodeURIComponent(zone)}/place`, signal),
+  localPhoto: (path: string) => path.startsWith("/api/") ? `${BASE}${path.slice(4)}` : "",
+
   reports: (signal?: AbortSignal) => get<CitizenReport[]>("/reports", signal),
   submitReport: async (report: Pick<CitizenReport, "kind" | "lon" | "lat" | "observed_at"> & { note: string }) => {
     const response = await fetch(`${BASE}/reports`, { method: "POST", headers: { "Content-Type": "application/json" },

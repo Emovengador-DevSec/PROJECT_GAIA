@@ -881,6 +881,12 @@ def remediation_minka_commitments(aoi: str, zone_id: str):
     return [{k: v for k, v in c.items() if k != "contact_name"} for c in get_commitments(aoi, zone_id)]
 
 
+# Real-photo evidence is published by the pipeline; HTTP requests never query remote photo services.
+from .place_photos import router as place_photo_router  # noqa: E402
+
+app.include_router(place_photo_router)
+
+
 WEB_DIST = ROOT / "apps" / "web" / "dist"
 if WEB_DIST.is_dir():
     app.mount("/", StaticFiles(directory=WEB_DIST, html=True), name="web")

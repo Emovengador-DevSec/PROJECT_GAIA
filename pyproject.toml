@@ -21,6 +21,7 @@ dependencies = [
   "python-dotenv>=1",
   "shapely>=2.1",
   "pyproj>=3.6",
+  "pillow>=11",
 ]
 
 [project.scripts]

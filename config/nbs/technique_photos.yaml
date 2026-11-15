@@ -1,0 +1,62 @@
+# Fotos reales revisadas; no equivalen a validación agronómica.
+techniques:
+- id: restauracion_andenes
+  name: Andenería
+  note: Ejemplos de andenería existente en otro lugar; no documentan el resultado
+    de intervenir esta mancha.
+  photos:
+  - id: commons-curated-c6bb77400074
+    title: Andenería existente
+    place: Cabanaconde, Arequipa, Perú
+    lat: -15.626674
+    lon: -71.978474
+    accuracy_m: null
+    author: Pethrus
+    taken_at: '2009-12-14'
+    license: CC-BY-SA-4.0
+    license_url: https://creativecommons.org/licenses/by-sa/4.0/
+    source_url: https://commons.wikimedia.org/wiki/File:Agricultural_terraces,_Cabanaconde,_Peru.jpg
+    remote_url: https://upload.wikimedia.org/wikipedia/commons/c/c6/Agricultural_terraces,_Cabanaconde,_Peru.jpg
+    review: verified
+    review_note: Autor, fecha, licencia y lugar contrastados con la página del archivo.
+      Andenería existente, no ensayo de restauración.
+  - id: commons-curated-0610762f3cd4
+    title: Andenería existente
+    place: Písac, Cusco, Perú
+    lat: -13.413642
+    lon: -71.842886
+    accuracy_m: null
+    author: Unukorno
+    taken_at: '2013-09-21'
+    license: CC-BY-3.0
+    license_url: https://creativecommons.org/licenses/by/3.0/
+    source_url: https://commons.wikimedia.org/wiki/File:Pisac_Peru_Incan_Terraces.jpg
+    remote_url: https://upload.wikimedia.org/wikipedia/commons/0/06/Pisac_Peru_Incan_Terraces.jpg
+    review: verified
+    review_note: Autor, fecha, licencia y lugar contrastados con la página del archivo.
+      Andenería existente, no ensayo de restauración.
+- id: zanjas_infiltracion
+  name: Zanjas de infiltración
+  note: Faltan fotografías con licencia y lugar andino verificados. El equipo debe
+    revisar los archivos antes de añadirlos.
+  photos: []
+- id: qochas
+  name: Qochas
+  note: Faltan fotografías con licencia y lugar andino verificados. El equipo debe
+    revisar los archivos antes de añadirlos.
+  photos: []
+- id: cortafuego_verde
+  name: Cortafuegos vivos
+  note: Faltan fotografías con licencia y lugar andino verificados. El equipo debe
+    revisar los archivos antes de añadirlos.
+  photos: []
+- id: agroforesteria
+  name: Agroforestería
+  note: Faltan fotografías con licencia y lugar andino verificados. El equipo debe
+    revisar los archivos antes de añadirlos.
+  photos: []
+- id: bioingenieria_ichu
+  name: Bioingeniería con ichu
+  note: Faltan fotografías con licencia y lugar andino verificados. El equipo debe
+    revisar los archivos antes de añadirlos.
+  photos: []

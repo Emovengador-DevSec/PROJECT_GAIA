@@ -4,6 +4,8 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- R1–R5 del plan 27: recolector de fotos con licencia, recortes NASA georreferenciados, pestaña «Ver el lugar», escenario sin cifras no verificadas y pines de fotos con ubicación real; disponibilidad explícita cuando faltan fuentes o descargas.
+
 - F7 del plan 25: ficha en Diagnóstico, Clima, Futuro y costos, y Voz y Minka; diagnóstico compacto con exposición resumida y detalle desplegable, conservando el acceso directo al boletín.
 
 - F6 del plan 25: botón «Descargar constancia (PDF)», radios ocultas cuando no hay registros, Yachaq fuera de la ficha y quechua etiquetado como borrador sin grabar, sin duración supuesta.

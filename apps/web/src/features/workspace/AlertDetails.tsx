@@ -1,3 +1,4 @@
+import { PlaceEvidencePanel } from "./PlaceEvidence";
 import { useEffect, useRef, useState } from "react";
 import { api, type AlertFeature, type RemediationBulletinResponse } from "../../lib/api";
 import { formatDate } from "../../lib/formatDate";
@@ -186,18 +187,19 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice, onChang
     </>}
     {!p.remediation && observationDetails}
     {p.remediation && <div className="zone-sheet-tabs" role="tablist" aria-label="Secciones de la ficha">
-      {[["diagnosis", "Diagnóstico"], ["climate", "Clima"], ["future", "Futuro y costos"], ["voice", "Voz y Minka"]].map(([id, label]) =>
+      {[["diagnosis", "Diagnóstico"], ["climate", "Clima"], ["future", "Futuro y costos"], ["voice", "Voz y Minka"], ["place", "Ver el lugar"]].map(([id, label]) =>
         <button key={id} type="button" role="tab" id={`zone-tab-${id}`} aria-selected={sheetTab === id}
           aria-controls={`zone-panel-${id}`} onClick={() => { setSheetTab(id); document.querySelector(".inspector-content")?.scrollTo(0, 0); }}
           onKeyDown={event => {
-            const ids = ["diagnosis", "climate", "future", "voice"];
-            const next = event.key === "ArrowRight" ? (ids.indexOf(id) + 1) % 4
-              : event.key === "ArrowLeft" ? (ids.indexOf(id) + 3) % 4 : event.key === "Home" ? 0 : event.key === "End" ? 3 : -1;
+            const ids = ["diagnosis", "climate", "future", "voice", "place"];
+            const next = event.key === "ArrowRight" ? (ids.indexOf(id) + 1) % ids.length
+              : event.key === "ArrowLeft" ? (ids.indexOf(id) + ids.length - 1) % ids.length : event.key === "Home" ? 0 : event.key === "End" ? ids.length - 1 : -1;
             if (next >= 0) { event.preventDefault(); setSheetTab(ids[next]); document.getElementById(`zone-tab-${ids[next]}`)?.focus(); }
           }} tabIndex={sheetTab === id ? 0 : -1}>{label}</button>)}
     </div>}
     {p.remediation && (
       <section className="remediation-section">
+        {sheetTab === "place" && <section role="tabpanel" id="zone-panel-place" aria-labelledby="zone-tab-place"><PlaceEvidencePanel key={p.id} feature={feature} /></section>}
         {sheetTab === "diagnosis" && <section role="tabpanel" id="zone-panel-diagnosis" aria-labelledby="zone-tab-diagnosis">
           <ZoneDiagnosis feature={feature} />
           <details className="zone-sheet-more"><summary>Ver más · diagnóstico y exposición</summary>

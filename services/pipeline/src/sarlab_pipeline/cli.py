@@ -94,7 +94,24 @@ def main(argv: list[str] | None = None) -> int:
     smc.add_argument("--aoi", required=True)
     smc.add_argument("file", type=Path, help="Archivo SME2 .h5 en data/01_raw")
 
+    photos = sub.add_parser("photos", help="Descarga fotos reales con autor, fecha y licencia")
+    photos.add_argument("--aoi", required=True)
+    photos.add_argument("--refresh", action="store_true", help="Renueva las consultas de metadatos")
+    imagery = sub.add_parser("place-imagery", help="Publica recortes georreferenciados de cada mancha")
+    imagery.add_argument("--aoi", required=True)
+    imagery.add_argument("--zone", help="Opcional: una sola mancha publicada")
     a = ap.parse_args(argv)
+    if a.cmd in ("photos", "place-imagery"):
+        from . import photos as photo_collector
+        from . import place_imagery
+        try:
+            result = (photo_collector.publish(a.aoi, refresh=a.refresh) if a.cmd == "photos"
+                      else place_imagery.publish(a.aoi, zone_id=a.zone))
+        except (OSError, ValueError, KeyError) as exc:
+            ap.error(str(exc))
+        print(json.dumps(result, ensure_ascii=False))
+        return 0
+
     if a.cmd == "fire-history":
         from .fire_history import publish
 

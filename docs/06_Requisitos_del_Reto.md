@@ -49,3 +49,13 @@ La demo abre el globo con imagen satelital, sismos de USGS y focos de NASA FIRMS
 1. Cambiar el `status` de cada hipótesis a `confirmada` o `descartada`, con la evidencia.
 2. Ayacucho tiene caja y cobertura confirmadas. Verificar las demás zonas antes de activarlas como casos cuantitativos.
 3. Escribir en `docs/science/` los hallazgos y las limitaciones.
+
+
+## Evidencia visual complementaria (doc 27, R1–R5)
+
+- La ficha de cada mancha conserva Diagnóstico, Clima, Futuro y costos, y Voz y Minka. Añade **Ver el lugar**: imágenes ópticas georreferenciadas, plantas de las recetas, observaciones cercanas, comunidad y suelo estimado.
+- Las imágenes HLS son complementarias; sus fechas ópticas son distintas del par NISAR. Cada recorte conserva la solicitud WMS, CRS, extensión, resolución y escena o lista de escenas. El contorno procede de la geometría publicada de la mancha.
+- Las observaciones iNaturalist son de grado de investigación, con licencia abierta y coordenadas públicas; se excluyen posiciones ocultas/privadas y precisión peor que 100 m. La distancia se mide al polígono NISAR. Las fotos de especies propuestas se identifican como referencias, no como vegetación presente en la mancha.
+- Los pines de fotografías usan las coordenadas de la fuente. Un índice accesible permite abrirlas con teclado y ajustar el mapa a sus ubicaciones.
+- Los escenarios siguen siendo supuestos. No muestran ganancias numéricas mientras la cita no esté verificada. Ninguna foto representa el futuro de esta ladera; las técnicas en otro lugar requieren revisión de autor, fecha, licencia y localización.
+- Las fotos se sirven desde archivos del servidor. Wikimedia puede rechazar la descarga automática: los bloques sin imágenes publicadas informan de la ausencia; no se rellenan con fotografías regionales ni imágenes generadas. El mapa radar, los relatos, las hipótesis, HH/HV, las series y la calidad conservan sus ubicaciones y cálculos.
