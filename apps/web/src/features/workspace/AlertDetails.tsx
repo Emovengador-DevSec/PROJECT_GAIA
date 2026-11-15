@@ -183,7 +183,8 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice }: { fea
         </div>
         <h4>Qué pasa y diagnóstico</h4>
         <p><strong>{p.remediation.risk_name}</strong></p>
-        <p className="observation-note">{p.remediation.risk_description}</p>
+        <p className="observation-note zone-diagnosis-summary">{p.remediation.summary ?? "Diagnóstico por zona sin publicar. Actualiza el análisis de este territorio."}</p>
+        {p.remediation.cause_explanation && <p className="zone-diagnosis-cause">{p.remediation.cause_explanation}</p>}
 
         <h4>Por qué · factores ponderados</h4>
         <ul className="source-list">
@@ -195,7 +196,6 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice }: { fea
         {p.remediation.recipe && (
           <div className="remediation-recipe">
             <h4>Receta recomendada</h4>
-            <p className="muted">Condición física: <code>{p.remediation.recipe.condition}</code></p>
             {p.remediation.recipe.disclaimer && (
               <p className="status-message">{p.remediation.recipe.disclaimer}</p>
             )}

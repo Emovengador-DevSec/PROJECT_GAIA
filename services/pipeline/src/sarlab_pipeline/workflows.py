@@ -424,12 +424,8 @@ def run_remediation(aoi_id: str, *, offline: bool = False) -> dict:
             quakes_nearby=_quakes_near(lon, lat),
             rain_mm_7d=rain_7d,
             soil_moisture=sme2_by_id.get(alert_id),
+            soil_moisture_date=sme2_date,
         )
-
-        if sme2_date and alert_id in sme2_by_id:
-            risk["factor_details"] = [
-                f"{d} · {sme2_date}" if d.startswith("humedad suelo") else d for d in risk["factor_details"]
-            ]
 
         # Attach geometry for GeoJSON output
         risk["geometry"] = geom

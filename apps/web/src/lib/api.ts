@@ -238,6 +238,10 @@ export type RemediationAlert = {
   risk_id: string;
   risk_name: string;
   risk_description: string;
+  summary?: string;
+  cause_explanation?: string;
+  summary_factor_ids?: string[];
+  cause_factor_ids?: string[];
   level: "alto" | "medio" | "bajo";
   color_hex: string;
   index: number;
@@ -247,10 +251,14 @@ export type RemediationAlert = {
     slope_deg?: number | null;
     slope_score: number | null;
     heat_score: number;
+    heat_count?: number | null;
     quake_score: number;
+    quake_magnitude?: number | null;
+    quake_distance_km?: number | null;
     rain_score: number | null;
     rain_mm_7d?: number | null;
     soil_moisture_m3m3?: number | null;
+    soil_moisture_date?: string | null;
     soil_moisture_score: number | null;
     crop_ha?: number | null;
     crop_score: number;

@@ -4,6 +4,8 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- F1 del plan 25: diagnóstico compuesto con las mediciones y las evidencias de cada mancha; se retiran el texto fijo de causa y la condición interna de la receta de la ficha.
+
 - P1 del plan 24: tarjeta «Del radar a la acción» con riesgo y clima publicados, acceso a recetas y al guion español de la zona prioritaria; estados vacíos, fuentes y fechas visibles sin inventar costos ni audio.
 
 - Línea de tiempo y leyenda en una tarjeta compacta de 340 px al costado izquierdo, en vez de la barra ancha; el panel Acción cuenta solo las 498 manchas evaluadas y filtra «causa por verificar».

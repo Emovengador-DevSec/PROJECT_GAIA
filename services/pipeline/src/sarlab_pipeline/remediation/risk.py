@@ -43,6 +43,7 @@ _risk_cfg: dict | None = None
 _recipes_cfg: list | None = None
 _costs_cfg: list | None = None
 _soils_cfg: list | None = None
+_diagnosis_cfg: dict | None = None
 
 
 def _risk() -> dict:
@@ -75,6 +76,13 @@ def _soils() -> list[dict]:
 
 _valuation_cfg: dict | None = None
 _recovery_cfg: dict | None = None
+
+
+def _diagnosis() -> dict:
+    global _diagnosis_cfg
+    if _diagnosis_cfg is None:
+        _diagnosis_cfg = _load_yaml(CONFIG_NBS / "diagnosis.yaml")
+    return _diagnosis_cfg
 
 
 def _valuation() -> dict:
@@ -440,6 +448,58 @@ def _dominant_risk(
 # Main compute function
 # ---------------------------------------------------------------------------
 
+def _zone_diagnosis(risk_id: str | None, factors: dict, *, dry_soil: bool) -> dict:
+    """Describe measured factors and only the evidence supporting this cause.
+
+    Missing inputs and zero event counts never become claims of a detection or
+    of its absence. The index and its evidence gates are not changed here.
+    """
+    cfg = _diagnosis()
+    templates = cfg["measurements"]
+    facts: dict[str, str] = {}
+    precision = {"hv_drop_db": 1, "slope_deg": 1, "soil_moisture_m3m3": 3,
+                 "heat_count": 0, "quake_magnitude": 1, "rain_mm_7d": 1, "crop_ha": 2}
+    for key, digits in precision.items():
+        value = factors.get(key)
+        if value is None or (key in ("heat_count", "quake_magnitude", "crop_ha") and value <= 0):
+            continue
+        values = {"value": f"{value:.{digits}f}".replace(".", ",")}
+        if key == "quake_magnitude":
+            distance = factors.get("quake_distance_km")
+            if distance is None or factors["quake_score"] <= 0:
+                continue
+            values["distance"] = f"{distance:.1f}".replace(".", ",")
+        text = templates[key].format(**values)
+        if key == "soil_moisture_m3m3" and factors.get("soil_moisture_date"):
+            text += f" · {factors['soil_moisture_date']}"
+        facts[key] = text
+
+    cause_keys: list[str] = []
+    if risk_id == "erosion_huaico":
+        cause_keys = ["slope_deg"]
+        if (factors.get("rain_score") or 0) > 0:
+            cause_keys.append("rain_mm_7d")
+    elif risk_id == "incendio_sequia":
+        if factors["heat_score"] > 0:
+            cause_keys.append("heat_count")
+        if dry_soil:
+            cause_keys.append("soil_moisture_m3m3")
+    elif risk_id == "estres_hidrico_agricola":
+        if dry_soil:
+            cause_keys += ["soil_moisture_m3m3", "crop_ha"]
+    elif risk_id == "ladera_inestable_sismo":
+        cause_keys = ["quake_magnitude", "slope_deg"]
+    cause_keys = [key for key in cause_keys if key in facts]
+    return {
+        "summary": " · ".join(facts.values()) or cfg["no_measurements"],
+        "summary_factor_ids": list(facts),
+        "cause_factor_ids": cause_keys,
+        "cause_explanation": cfg["supported_cause"].format(
+            evidence="; ".join(facts[key] for key in cause_keys)
+        ) if cause_keys else cfg["unattributed"],
+    }
+
+
 def compute_risk_for_alert(
     alert: dict,
     *,
@@ -449,6 +509,7 @@ def compute_risk_for_alert(
     quakes_nearby: list[dict] | None = None,
     rain_mm_7d: float | None = None,
     soil_moisture: float | None = None,
+    soil_moisture_date: str | None = None,
 ) -> dict:
     """Compute the risk index and NbS recipe for a single alert polygon.
 
@@ -468,6 +529,8 @@ def compute_risk_for_alert(
         Accumulated rainfall in mm over 7 days (from rainfall.py).
     soil_moisture:
         NISAR SME2 soil moisture (m³/m³) or None if unavailable.
+    soil_moisture_date:
+        Observation date from the published SME2 metadata, when available.
 
     Returns
     -------
@@ -543,6 +606,35 @@ def compute_risk_for_alert(
     # Species from soil
     soil_species = _soil_species(wrb_code)
 
+    # Preserve measured values alongside scores for auditable per-zone prose.
+    quake = max(quakes_nearby or [], key=lambda q: _normalize_quake(
+        [q], factors_cfg.get("quake", {})
+    ), default=None) if quake_score > 0 else None
+    factors = {
+        "hv_drop_db": round(hv_drop_db, 2) if hv_drop_db is not None else None,
+        "hv_score": round(hv_score, 3),
+        "slope_deg": round(slope_deg, 1) if slope_deg is not None else None,
+        "slope_score": round(slope_score, 3) if slope_score is not None else None,
+        "heat_score": round(heat_score, 3),
+        "heat_count": len(fires_nearby) if fires_nearby is not None else None,
+        "quake_score": round(quake_score, 3),
+        "quake_magnitude": quake.get("properties", {}).get("mag") if quake else None,
+        "quake_distance_km": quake.get("_distance_km") if quake else None,
+        "rain_score": round(rain_score, 3) if rain_score is not None else None,
+        "rain_mm_7d": round(rain_mm_7d, 1) if rain_mm_7d is not None else None,
+        "soil_moisture_m3m3": soil_moisture,
+        "soil_moisture_date": soil_moisture_date if soil_moisture is not None else None,
+        "soil_moisture_score": round(sm_score, 3) if sm_score is not None else None,
+        "crop_ha": crop_ha,
+        "crop_score": round(crop_score, 3),
+        "index_total": round(index, 4),
+        "excluded": excluded,
+    }
+    diagnosis = _zone_diagnosis(
+        risk_id, factors,
+        dry_soil=sm_score is not None and sm_score >= cfg.get("evidence", {}).get("dry_soil_min_score", 0.6),
+    )
+
     # --- Factor explanation (human-readable) ---
     factor_details = []
     if hv_drop_db is not None:
@@ -550,16 +642,16 @@ def compute_risk_for_alert(
     if slope_deg is not None:
         factor_details.append(f"pendiente {slope_deg:.0f}°")
     if fires_nearby:
-        factor_details.append(f"{len(fires_nearby)} focos de calor a < 2 km (FIRMS·VIIRS)")
-    if quakes_nearby:
-        q = quakes_nearby[0]
-        mag = q.get("properties", {}).get("mag", "?")
-        dist = q.get("_distance_km", "?")
+        factor_details.append(f"{len(fires_nearby)} focos de calor cercanos (FIRMS·VIIRS)")
+    if quake:
+        mag = factors["quake_magnitude"]
+        dist = factors["quake_distance_km"]
         factor_details.append(f"sismo M{mag} a {dist:.0f} km (USGS)")
     if rain_mm_7d is not None:
         factor_details.append(f"lluvia 7 d: {rain_mm_7d:.1f} mm (GPM·IMERG)")
     if soil_moisture is not None:
-        factor_details.append(f"humedad suelo: {soil_moisture:.3f} m³/m³ (NISAR·SME2·PROVISIONAL)")
+        date = f" · {soil_moisture_date}" if soil_moisture_date else ""
+        factor_details.append(f"humedad suelo: {soil_moisture:.3f} m³/m³ (NISAR·SME2·PROVISIONAL){date}")
     if excluded:
         factor_details.append("sin datos, fuera del índice: " + ", ".join(excluded))
     if crop_ha:
@@ -608,29 +700,12 @@ def compute_risk_for_alert(
         "area_ha": area_ha,
         "risk_id": risk_id or "causa_por_verificar",
         "risk_name": recipe.get("risk_name", risk_id) if recipe else "Causa por verificar",
-        "risk_description": recipe.get("risk_description", "") if recipe else (
-            "Ningún factor disponible respalda una causa concreta. Verificar en campo antes de "
-            "recomendar una intervención."
-        ),
+        **diagnosis,
+        "risk_description": diagnosis["cause_explanation"],
         "level": level,
         "color_hex": color_hex,
         "index": round(index, 4),
-        "factors": {
-            "hv_drop_db": round(hv_drop_db, 2) if hv_drop_db is not None else None,
-            "hv_score": round(hv_score, 3),
-            "slope_deg": round(slope_deg, 1) if slope_deg is not None else None,
-            "slope_score": round(slope_score, 3) if slope_score is not None else None,
-            "heat_score": round(heat_score, 3),
-            "quake_score": round(quake_score, 3),
-            "rain_score": round(rain_score, 3) if rain_score is not None else None,
-            "rain_mm_7d": round(rain_mm_7d, 1) if rain_mm_7d is not None else None,
-            "soil_moisture_m3m3": soil_moisture,
-            "soil_moisture_score": round(sm_score, 3) if sm_score is not None else None,
-            "crop_ha": crop_ha,
-            "crop_score": round(crop_score, 3),
-            "index_total": round(index, 4),
-            "excluded": excluded,
-        },
+        "factors": factors,
         "factor_details": factor_details,
         "soil": {
             "wrb_code": wrb_code,

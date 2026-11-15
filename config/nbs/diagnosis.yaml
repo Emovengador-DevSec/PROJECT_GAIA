@@ -1,0 +1,16 @@
+# Descriptions interpolate only measurements present in each zone.
+measurements:
+  hv_drop_db: "Caída media de señal HV de {value} dB (NISAR)"
+  slope_deg: "Pendiente de {value}° (DEM)"
+  soil_moisture_m3m3: "Humedad del suelo de {value} m³/m³ (NISAR SME2 provisional)"
+  heat_count: "{value} focos de calor cercanos (FIRMS)"
+  quake_magnitude: "Sismo M{value} a {distance} km (USGS)"
+  rain_mm_7d: "Lluvia acumulada de {value} mm en 7 días (GPM)"
+  crop_ha: "Cultivo expuesto: {value} ha (WorldCover 2021)"
+supported_cause: >-
+  Esta evaluación se apoya en: {evidence}. Es una hipótesis de monitoreo;
+  la causa requiere verificación en campo.
+unattributed: >-
+  Ninguna evidencia disponible permite asignar una causa concreta.
+  Verificar en campo antes de recomendar una intervención.
+no_measurements: "No hay mediciones por zona publicadas para describir el cambio."
