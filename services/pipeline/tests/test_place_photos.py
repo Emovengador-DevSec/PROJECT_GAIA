@@ -214,3 +214,32 @@ def test_local_api_catalogue_and_traversal_protection(tmp_path, monkeypatch):
     with pytest.raises(HTTPException):
         photo_file("..\\..\\secret.jpg")
     assert client.get("/api/photos/images/missing.jpg").status_code == 404
+
+
+def test_reviewed_reference_sources_are_supported_without_opening_arbitrary_hosts(tmp_path):
+    stream = BytesIO()
+    Image.new("RGB", (30, 30), "brown").save(stream, "JPEG")
+    with httpx.Client(
+        transport=httpx.MockTransport(lambda _: httpx.Response(200, content=stream.getvalue()))
+    ) as client:
+        collector = photos.Collector(tmp_path, client)
+        reference = {
+            **photos.inat_photo(observation(), "nearby"),
+            "id": "reference-aaaaaaaaaaaa",
+            "role": "soil",
+            "source_url": "https://wrb.isric.org/picture-gallery.html",
+            "remote_url": "https://wrb.isric.org/images/example.jpg",
+        }
+        assert collector.store(reference)["image_url"].endswith("reference-aaaaaaaaaaaa.jpg")
+        reference.update(
+            id="reference-bbbbbbbbbbbb",
+            source_url="https://www.flickr.com/photos/example/1",
+            remote_url="https://api.openverse.org/v1/images/example/thumb/",
+        )
+        assert collector.store(reference)
+        assert (
+            collector.store(
+                {**reference, "id": "reference-cccccccccccc", "remote_url": "https://evil.test/photo.jpg"}
+            )
+            is None
+        )

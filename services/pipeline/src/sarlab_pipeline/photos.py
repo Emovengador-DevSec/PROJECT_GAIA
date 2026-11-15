@@ -31,6 +31,8 @@ LICENSES = {
     "cc0": "https://creativecommons.org/publicdomain/zero/1.0/",
 }
 IMAGE_HOSTS = {
+    "api.openverse.org",
+    "wrb.isric.org",
     "upload.wikimedia.org",
     "thumb.wikimedia.org",
     "static.inaturalist.org",
@@ -238,12 +240,17 @@ class Collector:
             return None
         if not photo_license(photo["license"], photo["license_url"]):
             return None
-        if not re.fullmatch(r"(?:inat-\d+|commons-\d+|commons-curated-[a-f0-9]{12})", photo.get("id", "")):
+        if not re.fullmatch(
+            r"(?:inat-\d+|commons-\d+|commons-curated-[a-f0-9]{12}|reference-[a-f0-9]{12})",
+            photo.get("id", ""),
+        ):
             return None
         source_url = urlparse(photo["source_url"])
         if source_url.scheme != "https" or source_url.hostname not in (
             "commons.wikimedia.org",
             "www.inaturalist.org",
+            "www.flickr.com",
+            "wrb.isric.org",
         ):
             return None
         url = photo.get("remote_url", "")
@@ -511,6 +518,42 @@ def publish(aoi: str, *, refresh: bool = False) -> dict:
             if stored:
                 photos[stored["id"]] = stored
             soil_photos.append({"name": soil, "photo_id": stored["id"] if stored else None})
+        reference_file = CONFIG_DIR / "nbs/photo_references.yaml"
+        references = (
+            yaml.safe_load(reference_file.read_text(encoding="utf-8")).get("references", [])
+            if reference_file.exists()
+            else []
+        )
+        for candidate in references:
+            if candidate.get("review") != "verified" or candidate.get("role") not in (
+                "soil",
+                "technique",
+                "community",
+            ):
+                continue
+            stored = collector.store(candidate)
+            if not stored:
+                continue
+            photos[stored["id"]] = stored
+            if candidate["role"] == "soil":
+                for item in soil_photos:
+                    if item["name"] in candidate.get("soil_names", []):
+                        item["photo_id"] = stored["id"]
+            elif candidate["role"] == "technique":
+                for item in techniques:
+                    if item["id"] in candidate.get("technique_ids", []):
+                        item["photo_ids"].append(stored["id"])
+            elif candidate.get("lat") is not None and candidate.get("lon") is not None:
+                for community in communities.values():
+                    if (
+                        zone_distance_km(
+                            {"type": "Point", "coordinates": community["center"]},
+                            candidate["lon"],
+                            candidate["lat"],
+                        )
+                        <= 2
+                    ):
+                        community["photo_ids"].append(stored["id"])
     result = {
         "version": 1,
         "aoi_id": aoi,
@@ -528,8 +571,10 @@ def publish(aoi: str, *, refresh: bool = False) -> dict:
         "species_with_photo": sum(bool(s["photo_id"]) for s in species),
         "species_total": len(species),
         "nearby_observations": len({pid for ids in cell_photos.values() for pid in ids}),
-        "community_photos": sum(len(c["photo_ids"]) for c in communities.values()),
+        "community_photos": len({pid for c in communities.values() for pid in c["photo_ids"]}),
+        "communities_with_photos": sum(bool(c["photo_ids"]) for c in communities.values()),
         "technique_photos": sum(len(t["photo_ids"]) for t in techniques),
+        "soil_photos": sum(bool(s["photo_id"]) for s in soil_photos),
         "licensed_photos": len(photos),
         "warnings": result["warnings"],
     }

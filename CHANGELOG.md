@@ -4,6 +4,8 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- Fotos alternativas verificadas: dos ejemplos de andenería vía Openverse, tres perfiles WRB de Peter Schad y una foto georreferenciada de Quinua, con créditos, fechas y licencias; referencias servidas localmente y asociadas solo por proximidad comprobada.
+
 - R1–R5 del plan 27: recolector de fotos con licencia, recortes NASA georreferenciados, pestaña «Ver el lugar», escenario sin cifras no verificadas y pines de fotos con ubicación real; disponibilidad explícita cuando faltan fuentes o descargas.
 
 - F7 del plan 25: ficha en Diagnóstico, Clima, Futuro y costos, y Voz y Minka; diagnóstico compacto con exposición resumida y detalle desplegable, conservando el acceso directo al boletín.

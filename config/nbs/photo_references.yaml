@@ -1,0 +1,119 @@
+references:
+- review: verified
+  lat: null
+  lon: null
+  accuracy_m: null
+  distance_km: null
+  id: reference-6fa85c71ef66
+  role: technique
+  technique_ids:
+  - restauracion_andenes
+  title: Andenería existente en Moray
+  author: McKay Savage
+  license: CC-BY-2.0
+  license_url: https://creativecommons.org/licenses/by/2.0/
+  source_url: https://www.flickr.com/photos/56796376@N00/7094833217
+  remote_url: https://api.openverse.org/v1/images/0e6c2a67-a96d-4110-9e44-6a117ad7af50/thumb/
+  taken_at: '2012-04-14'
+  place: Moray, Cusco, Perú
+  catalogue_url: https://api.openverse.org/v1/images/0e6c2a67-a96d-4110-9e44-6a117ad7af50/
+  review_note: Imagen revisada visualmente; fecha, autor, lugar y licencia contrastados
+    con el archivo Commons correspondiente al ID de Flickr. Copia pública Openverse.
+- review: verified
+  lat: null
+  lon: null
+  accuracy_m: null
+  distance_km: null
+  id: reference-7bc093173452
+  role: technique
+  technique_ids:
+  - restauracion_andenes
+  title: Andenería existente en Písac
+  author: McKay Savage
+  license: CC-BY-2.0
+  license_url: https://creativecommons.org/licenses/by/2.0/
+  source_url: https://www.flickr.com/photos/56796376@N00/8114559846
+  remote_url: https://api.openverse.org/v1/images/3088cc68-c99a-47f4-81c2-7026a2a79cb3/thumb/
+  taken_at: '2012-07-06'
+  place: Písac, Cusco, Perú
+  catalogue_url: https://api.openverse.org/v1/images/3088cc68-c99a-47f4-81c2-7026a2a79cb3/
+  review_note: Imagen revisada visualmente; fecha, autor, lugar y licencia contrastados
+    con el archivo Commons correspondiente al ID de Flickr. Copia pública Openverse.
+- review: verified
+  lat: null
+  lon: null
+  accuracy_m: null
+  distance_km: null
+  id: reference-a14c6f4ae511
+  role: soil
+  soil_names:
+  - Cambisols
+  title: Perfil de referencia · Cambisols
+  author: Peter Schad
+  license: CC-BY
+  license_url: https://wrb.isric.org/picture-gallery.html
+  source_url: https://wrb.isric.org/picture-gallery.html
+  remote_url: https://wrb.isric.org/images/29_Calcaric_Endoleptic_Cambisol__Clayic__Humic__Germany.jpg
+  taken_at: '2013-10-03'
+  place: Alemania · fuera de los Andes
+  review_note: Autor visible en la fotografía; fecha DateTimeOriginal EXIF; clase
+    y país del catálogo WRB. Licencia Attribution declarada por la galería, sin versión
+    indicada. No es una muestra de Ayacucho.
+- review: verified
+  lat: null
+  lon: null
+  accuracy_m: null
+  distance_km: null
+  id: reference-40d39705e7d6
+  role: soil
+  soil_names:
+  - Andosols
+  title: Perfil de referencia · Andosols
+  author: Peter Schad
+  license: CC-BY
+  license_url: https://wrb.isric.org/picture-gallery.html
+  source_url: https://wrb.isric.org/picture-gallery.html
+  remote_url: https://wrb.isric.org/images/10_Eutric_Mollic_Silandic_Andosol__Hyperhumic__Epiloamic__Melanic__Katosiltic__Mexico.jpg
+  taken_at: '2016-10-06'
+  place: México · fuera de los Andes
+  review_note: Autor visible en la fotografía; fecha DateTimeOriginal EXIF; clase
+    y país del catálogo WRB. Licencia Attribution declarada por la galería, sin versión
+    indicada. No es una muestra de Ayacucho.
+- review: verified
+  lat: null
+  lon: null
+  accuracy_m: null
+  distance_km: null
+  id: reference-8664e5f17526
+  role: soil
+  soil_names:
+  - Luvisols
+  title: Perfil de referencia · Luvisols
+  author: Peter Schad
+  license: CC-BY
+  license_url: https://wrb.isric.org/picture-gallery.html
+  source_url: https://wrb.isric.org/picture-gallery.html
+  remote_url: https://wrb.isric.org/images/28_Endocalcic_Luvisol__Cutanic__Hungary.jpg
+  taken_at: '2009-09-17'
+  place: Hungría · fuera de los Andes
+  review_note: Autor visible en la fotografía; fecha DateTimeOriginal EXIF; clase
+    y país del catálogo WRB. Licencia Attribution declarada por la galería, sin versión
+    indicada. No es una muestra de Ayacucho.
+- id: reference-4731a1bb8f99
+  role: community
+  review: verified
+  title: Tejados de Quinua, Ayacucho
+  author: Randal Sheppard (-Chupacabras-)
+  taken_at: '2012-05-19'
+  place: Quinua, Ayacucho, Perú
+  lat: -13.048675
+  lon: -74.138194
+  accuracy_m: null
+  license: CC-BY-SA-2.0
+  license_url: https://creativecommons.org/licenses/by-sa/2.0/
+  source_url: https://www.flickr.com/photos/25222005@N08/7271081812
+  remote_url: https://api.openverse.org/v1/images/2b08f4bc-1164-4c7e-bfc8-30d98f0709e9/thumb/
+  catalogue_url: https://api.openverse.org/v1/images/2b08f4bc-1164-4c7e-bfc8-30d98f0709e9/
+  review_note: Fecha, autor y coordenadas del archivo Commons Rooftops of Quinua (7271081812).jpg
+    contrastados con EXIF publicado; copia Openverse revisada. Solo se asocia a comunidades
+    a ≤ 2 km de la cámara.
