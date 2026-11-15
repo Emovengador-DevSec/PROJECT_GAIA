@@ -1,5 +1,5 @@
 # Escenarios de recuperación de cobertura vegetal (NDVI) a 3 y 5 años (Fase 3.2)
-# Basados en bibliografía científica y técnica de restauración en los Andes peruanos.
+# Supuestos ilustrativos: sus referencias están pendientes de verificación.
 # AVISO OBLIGATORIO: «Escenario con supuestos. No es una observación ni una promesa».
 
 mandatory_label: "Escenario con supuestos. No es una observación ni una promesa."
@@ -8,21 +8,17 @@ scenarios:
   incendio_sequia:
     risk_id: "incendio_sequia"
     risk_name: "Área afectada por incendio o sequía extrema"
-    baseline_ndvi: 0.18
     projected:
       year_1:
-        ndvi: 0.28
         gain_ndvi: 0.10
         description: "Rebrote inicial de pastos naturales y gramíneas nativas (ichu); germinación de estacas y semilla protegida en micro-cuencas."
       year_3:
-        ndvi: 0.42
         gain_ndvi: 0.24
         description: "Consolidación de macollas de Stipa ichu y cobertura herbácea continua; reducción de suelo desnudo en más del 60%."
       year_5:
-        ndvi: 0.55
         gain_ndvi: 0.37
         description: "Estrato arbustivo y herbáceo denso (Festuca dolichophylla / Baccharis / Queñua); estabilización del ciclo hidrológico local."
-    annual_rate_label: "+0.07 a +0.08 NDVI / año"
+    citation_status: "por_verificar"
     citation: "Por verificar · MINAM / SERFOR (2021) Lineamientos para la restauración de ecosistemas forestales andinos; CONDESAN (2020) Monitoreo hidrológico y vegetación en Ayacucho."
     citation_url: "https://www.gob.pe/institucion/serfor/informes-publicaciones"
     limiting_factors:
@@ -32,21 +28,17 @@ scenarios:
   erosion_huaico:
     risk_id: "erosion_huaico"
     risk_name: "Ladera susceptible a erosión hídrica y deslizamiento"
-    baseline_ndvi: 0.20
     projected:
       year_1:
-        ndvi: 0.29
         gain_ndvi: 0.09
         description: "Sedimentación de suelo fértil en zanjas de infiltración y fijación de taludes con barreras vivas (fitoestabilización)."
       year_3:
-        ndvi: 0.39
         gain_ndvi: 0.19
         description: "Retención de escorrentía superficial en más del 70%; densificación de cobertura radicular en cárcavas y laderas."
       year_5:
-        ndvi: 0.50
         gain_ndvi: 0.30
         description: "Talud estabilizado biomecánicamente; infiltración recargando acuíferos locales y suelo con cobertura perenne."
-    annual_rate_label: "+0.06 NDVI / año"
+    citation_status: "por_verificar"
     citation: "Por verificar · FAO / WOCAT (2018) Prácticas de Conservación de Suelos y Aguas en Laderas Andinas; Agro Rural / PRONAMACHCS (2020)."
     citation_url: "https://www.wocat.net/"
     limiting_factors:
@@ -56,21 +48,17 @@ scenarios:
   ladera_inestable_sismo:
     risk_id: "ladera_inestable_sismo"
     risk_name: "Ladera fracturada o inestable tras sismicidad"
-    baseline_ndvi: 0.15
     projected:
       year_1:
-        ndvi: 0.23
         gain_ndvi: 0.08
         description: "Enraizamiento de estacas vivas de aliso y sauce andino en grietas y bordes de escarpe; control de desprendimiento de clastos."
       year_3:
-        ndvi: 0.34
         gain_ndvi: 0.19
         description: "Estructura radicular profunda anclando suelo superficial; reducción drástica de micro-deslizamientos inducidos por gravedad."
       year_5:
-        ndvi: 0.46
         gain_ndvi: 0.31
         description: "Bosquete protector ribereño o de ladera establecido; integración ecológica y estabilización geomecánica pasiva."
-    annual_rate_label: "+0.06 NDVI / año"
+    citation_status: "por_verificar"
     citation: "Por verificar · SERFOR (2020) Catálogo de especies forestales nativas para bioingeniería; INGEMMET (2022) Boletín de peligros geológicos por movimientos en masa."
     citation_url: "https://repositorio.ingemmet.gob.pe/"
     limiting_factors:
@@ -80,21 +68,17 @@ scenarios:
   estres_hidrico_agricola:
     risk_id: "estres_hidrico_agricola"
     risk_name: "Parcelas agrícolas bajo estrés hídrico severo"
-    baseline_ndvi: 0.24
     projected:
       year_1:
-        ndvi: 0.36
         gain_ndvi: 0.12
         description: "Aumento de humedad edáfica mediante qochas (micro-reservorios) y enmiendas orgánicas que incrementan retención hídrica."
       year_3:
-        ndvi: 0.48
         gain_ndvi: 0.24
         description: "Recarga de manantiales y puquios comunales; estabilización del rendimiento en campañas agrícolas de secano."
       year_5:
-        ndvi: 0.62
         gain_ndvi: 0.38
         description: "Sistema agroecológico resiliente a veranillos y sequías intermitentes; rotación con leguminosas fijadoras de nitrógeno."
-    annual_rate_label: "+0.07 a +0.08 NDVI / año"
+    citation_status: "por_verificar"
     citation: "Por verificar · INIA (2022) Manual técnico de siembra y cosecha de agua en cabeceras de cuenca andina; MIDAGRI (2023)."
     citation_url: "https://www.gob.pe/inia"
     limiting_factors:

@@ -4,6 +4,8 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- F4 del plan 25: escenarios solo como ganancias relativas bajo «Ver supuestos» mientras sus citas no estén verificadas; sin NDVI «actual» ni valores absolutos en la publicación o el PDF.
+
 - F3 del plan 25: se retiran las fotos HLS regionales de las fichas por falta de georreferencia archivada verificable; acceso a la imagen regional en Cambios, sin presentarla como foto de cada mancha.
 
 - F2 del plan 25: cabecera por mancha con área y principales factores medidos; lista Acción agrupada por causa y ordenada por índice, sin especies ni presupuesto en sus tarjetas.

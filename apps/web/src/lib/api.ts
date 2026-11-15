@@ -131,13 +131,9 @@ export type RemediationRecoveryScenario = {
   mandatory_label: string;
   risk_id: string;
   risk_name: string;
-  baseline_ndvi: number;
-  projected: {
-    year_1: { ndvi: number; gain_ndvi: number; description: string };
-    year_3: { ndvi: number; gain_ndvi: number; description: string };
-    year_5: { ndvi: number; gain_ndvi: number; description: string };
-  };
-  annual_rate_label: string;
+  basis?: "relative_gain_assumption";
+  citation_status?: "verificado" | "por_verificar";
+  projected: Partial<Record<"year_1" | "year_3" | "year_5", { gain_ndvi: number }>>;
   citation: string;
   citation_url?: string;
   limiting_factors: string[];

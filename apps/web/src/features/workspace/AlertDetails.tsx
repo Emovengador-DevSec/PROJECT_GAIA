@@ -3,6 +3,7 @@ import { api, type AlertFeature, type RemediationBulletinResponse } from "../../
 import { formatDate } from "../../lib/formatDate";
 import { formatNumber as number } from "../../lib/formatNumber";
 import { ApplicationReference, LearnMore } from "./Resources";
+import { RecoveryScenario } from "./RecoveryScenario";
 import { ZoneIdentity } from "./ZoneIdentity";
 import { CountUp } from "./CountUp";
 
@@ -301,56 +302,7 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice, onChang
           </button>}
         </section>
 
-        {p.remediation.recovery_scenario && (
-          <div className="recovery-scenario-box" style={{ marginTop: "1rem", padding: "10px", background: "var(--surface-subtle, #141b22)", borderRadius: "6px", border: "1px solid #ffb74d33" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h4>Escenario de recuperación (NDVI) a 3 y 5 años</h4>
-            </div>
-            <p className="badge-provisional" style={{ display: "inline-block", margin: "4px 0 8px 0", color: "#ffb74d" }}>
-              {p.remediation.recovery_scenario.mandatory_label}
-            </p>
-            <table style={{ width: "100%", fontSize: "0.82rem", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ borderBottom: "1px solid #333", textAlign: "left" }}>
-                  <th style={{ padding: "4px" }}>Horizonte</th>
-                  <th style={{ padding: "4px" }}>NDVI esperado</th>
-                  <th style={{ padding: "4px" }}>Evolución estimada</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr style={{ borderBottom: "1px solid #222" }}>
-                  <td style={{ padding: "4px" }}>Año 0 (actual)</td>
-                  <td style={{ padding: "4px" }}>{p.remediation.recovery_scenario.baseline_ndvi.toFixed(2)}</td>
-                  <td style={{ padding: "4px" }}><small className="muted">Ladera o parcela degradada</small></td>
-                </tr>
-                {p.remediation.recovery_scenario.projected.year_1 && (
-                  <tr style={{ borderBottom: "1px solid #222" }}>
-                    <td style={{ padding: "4px" }}>Año 1</td>
-                    <td style={{ padding: "4px" }}><strong>{p.remediation.recovery_scenario.projected.year_1.ndvi.toFixed(2)}</strong> (+{p.remediation.recovery_scenario.projected.year_1.gain_ndvi.toFixed(2)})</td>
-                    <td style={{ padding: "4px" }}><small className="muted">{p.remediation.recovery_scenario.projected.year_1.description}</small></td>
-                  </tr>
-                )}
-                {p.remediation.recovery_scenario.projected.year_3 && (
-                  <tr style={{ borderBottom: "1px solid #222" }}>
-                    <td style={{ padding: "4px" }}>Año 3</td>
-                    <td style={{ padding: "4px" }}><strong>{p.remediation.recovery_scenario.projected.year_3.ndvi.toFixed(2)}</strong> (+{p.remediation.recovery_scenario.projected.year_3.gain_ndvi.toFixed(2)})</td>
-                    <td style={{ padding: "4px" }}><small className="muted">{p.remediation.recovery_scenario.projected.year_3.description}</small></td>
-                  </tr>
-                )}
-                {p.remediation.recovery_scenario.projected.year_5 && (
-                  <tr>
-                    <td style={{ padding: "4px" }}>Año 5</td>
-                    <td style={{ padding: "4px" }}><strong>{p.remediation.recovery_scenario.projected.year_5.ndvi.toFixed(2)}</strong> (+{p.remediation.recovery_scenario.projected.year_5.gain_ndvi.toFixed(2)})</td>
-                    <td style={{ padding: "4px" }}><small className="muted">{p.remediation.recovery_scenario.projected.year_5.description}</small></td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-            <p className="muted" style={{ fontSize: "0.78rem", marginTop: "6px" }}>
-              Tasa estimada: {p.remediation.recovery_scenario.annual_rate_label} · Cita: {p.remediation.recovery_scenario.citation}
-            </p>
-          </div>
-        )}
+        {p.remediation.recovery_scenario && <RecoveryScenario scenario={p.remediation.recovery_scenario} />}
 
         {!p.remediation.cost_benefit && (
           <p className="status-message">

@@ -436,14 +436,16 @@ def generate_certificate_pdf(
     )
     pdf.y -= 20.0
     proj = (rec_scen or {}).get("projected", {})
-    if rec_scen:
-        pdf.add_kv("NDVI Supuesto (Ano 0):", f"{rec_scen.get('baseline_ndvi', 0):.2f} (supuesto, no medido)")
+    if rec_scen.get("citation_status") == "verificado":
         for key, label in (("year_3", "3"), ("year_5", "5")):
             if proj.get(key):
-                pdf.add_kv(f"NDVI Escenario a {label} anos:", f"{proj[key]['ndvi']:.2f}")
+                pdf.add_kv(
+                    f"Ganancia relativa NDVI a {label} anos:",
+                    f"+{proj[key]['gain_ndvi']:.2f} (supuesto)",
+                )
         pdf.add_kv("Cita:", str(rec_scen.get("citation", "")))
     else:
-        pdf.add_kv("Escenario:", "No aplica: causa por verificar")
+        pdf.add_kv("Escenario:", "No incluido: falta una fuente verificada o una causa respaldada")
     pdf.y -= 12.0
 
     pdf.add_rect(pdf.margin_x, pdf.y - 36, pdf.content_width, 40, r=0.95, g=0.95, b=0.95, fill=True)

@@ -70,7 +70,9 @@ def test_recovery_scenario_mandatory_label():
         assert "year_1" in scen["projected"]
         assert "year_3" in scen["projected"]
         assert "year_5" in scen["projected"]
-        assert scen["projected"]["year_5"]["ndvi"] > scen["projected"]["year_3"]["ndvi"]
+        assert scen["projected"]["year_5"]["gain_ndvi"] > scen["projected"]["year_3"]["gain_ndvi"]
+        assert "baseline_ndvi" not in scen
+        assert scen["citation_status"] == "por_verificar"
         assert scen["citation"] != ""
 
 

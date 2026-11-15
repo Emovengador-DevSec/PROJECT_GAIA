@@ -365,21 +365,23 @@ def _build_cost_benefit(
     }
 
 
-def _build_recovery_scenario(risk_id: str) -> dict[str, Any]:
-    """Retrieves 3- and 5-year NDVI recovery trajectory and citations (Fase 3.2)."""
+def _build_recovery_scenario(risk_id: str) -> dict[str, Any] | None:
+    """Publish relative assumptions only; no per-zone NDVI has been measured."""
     rec_cfg = _recovery()
-    default_label = "Escenario con supuestos. No es una observación ni una promesa."
-    mandatory_label = rec_cfg.get("mandatory_label", default_label)
-    scenarios = rec_cfg.get("scenarios", {})
-    scen = scenarios.get(risk_id) or scenarios.get("erosion_huaico", {})
+    scen = rec_cfg.get("scenarios", {}).get(risk_id)
+    if not scen:
+        return None
+    verified = (scen.get("citation_status") == "verificado" and scen.get("citation_url")
+                and scen.get("citation") and "por verificar" not in scen["citation"].lower())
     return {
-        "mandatory_label": mandatory_label,
+        "mandatory_label": rec_cfg["mandatory_label"],
         "risk_id": risk_id,
-        "risk_name": scen.get("risk_name", "Recuperación de cobertura"),
-        "baseline_ndvi": scen.get("baseline_ndvi", 0.20),
-        "projected": scen.get("projected", {}),
-        "annual_rate_label": scen.get("annual_rate_label", "+0.06 NDVI / año"),
-        "citation": scen.get("citation", "MINAM / SERFOR (2021)"),
+        "risk_name": scen.get("risk_name"),
+        "basis": "relative_gain_assumption",
+        "citation_status": "verificado" if verified else "por_verificar",
+        "projected": {year: {"gain_ndvi": item["gain_ndvi"]}
+                      for year, item in scen.get("projected", {}).items() if "gain_ndvi" in item},
+        "citation": scen.get("citation", ""),
         "citation_url": scen.get("citation_url", ""),
         "limiting_factors": scen.get("limiting_factors", []),
     }
