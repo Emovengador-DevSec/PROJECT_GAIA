@@ -3,6 +3,8 @@ import { api, type AlertFeature, type RemediationBulletinResponse } from "../../
 import { formatDate } from "../../lib/formatDate";
 import { formatNumber as number } from "../../lib/formatNumber";
 import { ApplicationReference, LearnMore } from "./Resources";
+import { ZoneClimate, ZoneDiagnosis } from "./ZoneSheetPanels";
+import "./zone-sheet.css";
 import { BudgetSummary } from "./BudgetSummary";
 import { RecoveryScenario } from "./RecoveryScenario";
 import { ZoneIdentity } from "./ZoneIdentity";
@@ -17,13 +19,15 @@ function ExposureMetric({ label, value, unit }: { label: string; value?: number 
 
 export function AlertDetails({ feature, onBack, onResources, focusVoice, onChanges }: { feature: AlertFeature; onBack: () => void; onResources: () => void; focusVoice?: boolean; onChanges?: () => void }) {
   const p = feature.properties;
+  const [sheetTab, setSheetTab] = useState("diagnosis");
+  useEffect(() => { if (focusVoice) setSheetTab("voice"); }, [focusVoice]);
   const [bulletinData, setBulletinData] = useState<RemediationBulletinResponse | null>(null);
   const voiceSection = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!focusVoice || !bulletinData) return;
     voiceSection.current?.focus({ preventScroll: true });
     voiceSection.current?.scrollIntoView({ block: "start", behavior: "instant" });
-  }, [focusVoice, bulletinData]);
+  }, [focusVoice, bulletinData, sheetTab]);
   const [bulletinLang, setBulletinLang] = useState<"es" | "qu">("es");
   const [copiedScript, setCopiedScript] = useState(false);
   const [minkaCommunity, setMinkaCommunity] = useState("");
@@ -105,14 +109,7 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice, onChang
   const external = httpsUrl(p.source_url);
   const exposure = p.exposure;
   const exposureSources = Object.values(exposure?.sources ?? {});
-  return <article className="alert-detail" data-kind={p.kind}>
-    <button type="button" className="text-button detail-back" onClick={onBack}>Volver a las observaciones</button>
-    {p.remediation ? <ZoneIdentity feature={feature} /> : <>
-    <div className="source-row"><span className="source-label">{source}</span><span className="alert-level" data-level={p.level}>Prioridad {p.level}</span></div>
-    <h3>{p.title}</h3>
-    <p className="alert-place">{p.place}</p>
-    <p className="muted">{formatDate(p.date)}</p>
-    </>}
+  const observationDetails = <>
     {p.comparison_summary && <p className="muted">
       La zona de estudio registra {number(p.comparison_summary.loss_area_ha)} ha con caída de señal HV.
       {" "}{p.comparison_summary.alerts} manchas delimitadas reúnen {number(p.comparison_summary.mapped_loss_area_ha)} ha.
@@ -178,8 +175,32 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice, onChang
       </> : <p className="empty-inline">La exposición aún no está calculada. Se necesitan capas de población, cobertura del suelo y centros poblados para estimar personas y cultivos.</p>}
     </section>
 
+  </>;
+  return <article className={`alert-detail${p.remediation ? " zone-sheet" : ""}`} data-kind={p.kind}>
+    <button type="button" className="text-button detail-back" onClick={onBack}>Volver a las observaciones</button>
+    {p.remediation ? <ZoneIdentity feature={feature} /> : <>
+    <div className="source-row"><span className="source-label">{source}</span><span className="alert-level" data-level={p.level}>Prioridad {p.level}</span></div>
+    <h3>{p.title}</h3>
+    <p className="alert-place">{p.place}</p>
+    <p className="muted">{formatDate(p.date)}</p>
+    </>}
+    {!p.remediation && observationDetails}
+    {p.remediation && <div className="zone-sheet-tabs" role="tablist" aria-label="Secciones de la ficha">
+      {[["diagnosis", "Diagnóstico"], ["climate", "Clima"], ["future", "Futuro y costos"], ["voice", "Voz y Minka"]].map(([id, label]) =>
+        <button key={id} type="button" role="tab" id={`zone-tab-${id}`} aria-selected={sheetTab === id}
+          aria-controls={`zone-panel-${id}`} onClick={() => { setSheetTab(id); document.querySelector(".inspector-content")?.scrollTo(0, 0); }}
+          onKeyDown={event => {
+            const ids = ["diagnosis", "climate", "future", "voice"];
+            const next = event.key === "ArrowRight" ? (ids.indexOf(id) + 1) % 4
+              : event.key === "ArrowLeft" ? (ids.indexOf(id) + 3) % 4 : event.key === "Home" ? 0 : event.key === "End" ? 3 : -1;
+            if (next >= 0) { event.preventDefault(); setSheetTab(ids[next]); document.getElementById(`zone-tab-${ids[next]}`)?.focus(); }
+          }} tabIndex={sheetTab === id ? 0 : -1}>{label}</button>)}
+    </div>}
     {p.remediation && (
       <section className="remediation-section">
+        {sheetTab === "diagnosis" && <section role="tabpanel" id="zone-panel-diagnosis" aria-labelledby="zone-tab-diagnosis">
+          <ZoneDiagnosis feature={feature} />
+          <details className="zone-sheet-more"><summary>Ver más · diagnóstico y exposición</summary>
         <div className="source-row">
           <span className="source-label">Solución basada en la naturaleza (SbN)</span>
           <span className="alert-level" data-level={p.remediation.level} style={{ borderColor: p.remediation.color_hex, color: p.remediation.color_hex }}>
@@ -224,6 +245,13 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice, onChang
           </div>
         )}
 
+          {observationDetails}
+          </details>
+        </section>}
+        {sheetTab === "climate" && <section role="tabpanel" id="zone-panel-climate" aria-labelledby="zone-tab-climate">
+          <ZoneClimate aoi={p.aoi_id ?? p.remediation.aoi_id} />
+        </section>}
+        {sheetTab === "future" && <section role="tabpanel" id="zone-panel-future" aria-labelledby="zone-tab-future">
         <BudgetSummary items={p.remediation.budget ?? []} />
 
         <details className="technical-details">
@@ -314,6 +342,9 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice, onChang
           </a>
         </div>
 
+        </section>}
+        {sheetTab === "voice" && <section role="tabpanel" id="zone-panel-voice" aria-labelledby="zone-tab-voice">
+          {!bulletinData && <p role="status">Boletín sin cargar. Reabre la ficha para consultar el guion publicado.</p>}
         {bulletinData && (
           <div className="last-mile-section" ref={voiceSection} tabIndex={-1} aria-label="GAIA Voz y Minka" style={{ marginTop: "1rem", borderTop: "1px solid var(--border-subtle, #30363d)", paddingTop: "1rem" }}>
             <h4 style={{ margin: "0 0 6px 0", color: "#f9a825", display: "flex", alignItems: "center", gap: "6px" }}>
@@ -547,10 +578,12 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice, onChang
           </div>
         )}
 
-        <p className="status-message" style={{ marginTop: "1rem" }}>
-          {p.remediation.disclaimer}
-        </p>
+        </section>}
+        <p className="zone-sheet-notice">{p.remediation.disclaimer}</p>
+      </section>
+    )}
 
+    {p.remediation ? <details className="zone-sheet-more"><summary>Compartir, imprimir y fuentes</summary>
         <div className="printable-qr" style={{ marginTop: "1rem", display: "flex", alignItems: "center", gap: "1rem" }}>
           <img
             src={`https://api.qrserver.com/v1/create-qr-code/?size=96x96&data=${encodeURIComponent(shareUrl.href)}`}
@@ -564,16 +597,23 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice, onChang
             <p className="muted" style={{ margin: 0, fontSize: "0.8rem" }}>Escanea el código QR para consultar las coordenadas y las capas de monitoreo en vivo.</p>
           </div>
         </div>
-      </section>
-    )}
-
     {!!p.granules?.length && <details className="technical-details"><summary>Gránulos de origen</summary><ul className="granule-list">{p.granules.map(granule => <li key={granule}>{granule}</li>)}</ul></details>}
     <div className="detail-actions">
       <a className="primary-action" href={`https://wa.me/?text=${encodeURIComponent(message)}`} target="_blank" rel="noopener noreferrer">Compartir alerta</a>
-      <button type="button" className="secondary-action" onClick={() => window.print()}>Imprimir ficha</button>
+      <button type="button" className="secondary-action" onClick={() => window.print()}>{p.remediation ? "Imprimir esta pestaña" : "Imprimir ficha"}</button>
     </div>
     {external && <a className="source-link" href={external} target="_blank" rel="noopener noreferrer">Consultar la observación original ↗</a>}
     <ApplicationReference kind={p.kind} aoi={p.aoi_id} />
     <LearnMore kind={p.kind} onResources={onResources} />
+    </details> : <>
+    {!!p.granules?.length && <details className="technical-details"><summary>Gránulos de origen</summary><ul className="granule-list">{p.granules.map(granule => <li key={granule}>{granule}</li>)}</ul></details>}
+    <div className="detail-actions">
+      <a className="primary-action" href={`https://wa.me/?text=${encodeURIComponent(message)}`} target="_blank" rel="noopener noreferrer">Compartir alerta</a>
+      <button type="button" className="secondary-action" onClick={() => window.print()}>{p.remediation ? "Imprimir esta pestaña" : "Imprimir ficha"}</button>
+    </div>
+    {external && <a className="source-link" href={external} target="_blank" rel="noopener noreferrer">Consultar la observación original ↗</a>}
+    <ApplicationReference kind={p.kind} aoi={p.aoi_id} />
+    <LearnMore kind={p.kind} onResources={onResources} />
+    </>}
   </article>;
 }

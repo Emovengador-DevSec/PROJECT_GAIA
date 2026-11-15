@@ -1,0 +1,24 @@
+.zone-sheet-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin: 8px 0 10px; position: sticky; top: 0; z-index: 1; background: var(--panel-bg, #050506); }
+.zone-sheet .last-mile-section { scroll-margin-top: 80px; }
+.zone-sheet-tabs button { min-height: 32px; padding: 6px 5px; border: 1px solid var(--panel-line, #303035); border-radius: 6px; color: #cad8e2; background: #101113; font: 600 12px/1.2 var(--font-body); cursor: pointer; }
+.zone-sheet-tabs button[aria-selected="true"] { background: #1455ff; border-color: #477bff; color: #fff; }
+.zone-sheet .detail-back { margin-bottom: 4px; padding-block: 4px; min-height: 28px; font-size: 12px; }
+.zone-sheet.zone-sheet > .zone-identity { margin: 4px 0 8px; padding-bottom: 8px; gap: 4px; }
+.zone-sheet .remediation-section { margin-top: 0; padding-top: 0; }
+.zone-sheet .zone-sheet-notice { margin: 8px 0; color: #b8c6ce; font-size: 11px; line-height: 1.35; }
+.zone-sheet .zone-diagnosis-brief p { margin: 0 0 6px; font-size: 13px; line-height: 1.35; }
+.zone-sheet .zone-diagnosis-brief .zone-sheet-provenance { font-size: 11px; color: #adbfc9; }
+.zone-sheet-more { margin-top: 7px; font-size: 12px; }
+.zone-sheet-more > summary { min-height: 25px; color: #a5edf7; cursor: pointer; }
+.inspector-content:has(.zone-sheet) > .source-health { margin-top: 4px; padding-top: 4px; }
+.inspector-content:has(.zone-sheet) > .source-health > summary { min-height: 22px; font-size: 12px; }
+.zone-climate-values { display: grid; gap: 8px; }
+.zone-climate-values dt { color: #aec4ce; font-size: 12px; }
+.zone-climate-values dd { margin: 0; color: #a5edf7; font-size: 20px; }
+@media (max-width: 720px) {
+  .zone-sheet-tabs button { min-height: 44px; }
+  .shell[data-workspace][data-workspace] .inspector:has(.zone-sheet) { top: 150px; bottom: calc(100px + env(safe-area-inset-bottom)); max-height: none; }
+}
+@media print {
+  .zone-sheet-tabs { display: none; }
+}
