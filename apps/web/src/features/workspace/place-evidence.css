@@ -98,3 +98,133 @@
 .zone-gallery-box { grid-template-columns: minmax(0, 1fr); }
 .zone-gallery-stage { height: min(60svh, 560px); }
 .zone-gallery-stage img { width: auto; height: 100%; max-width: 100%; }
+/* Deck at the bottom, just above the tab bar */
+.zone-deck { top: auto; bottom: 96px; }
+.shell[data-workspace] .field-view-caption { top: 84px; }
+@media (max-width: 1100px) { .zone-deck { bottom: 170px; } }
+/* Plant thumbnails inside the bottom deck; hover or focus enlarges above the bar */
+.zone-deck { align-items: center; }
+.plant-strip { display: flex; align-items: center; gap: 5px; padding: 3px 8px 3px 12px; border-radius: 999px; border: 1.5px solid #10b981; background: rgb(16 185 129 / 12%); }
+.plant-strip-label { margin-right: 4px; font: 700 13px/1 var(--font-body); color: #10b981; white-space: nowrap; }
+.plant-thumb { position: relative; margin: 0; width: 34px; height: 34px; flex: none; cursor: zoom-in; outline: none; }
+.plant-thumb > img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; border: 2px solid #10b981; transition: transform .18s ease; }
+.plant-thumb:hover > img, .plant-thumb:focus-visible > img { transform: scale(1.15); }
+.plant-thumb figcaption { position: absolute; bottom: calc(100% + 12px); left: 50%; transform: translateX(-50%) scale(.92); transform-origin: bottom center;
+  width: 240px; padding: 8px; border-radius: 10px; border: 1px solid #10b981; background: #070d14f5; box-shadow: 0 12px 30px #000a;
+  opacity: 0; pointer-events: none; transition: opacity .15s ease, transform .15s ease; z-index: 6; display: grid; gap: 3px; }
+.plant-thumb:hover figcaption, .plant-thumb:focus-visible figcaption { opacity: 1; transform: translateX(-50%) scale(1); }
+.plant-thumb figcaption img { width: 100%; height: 150px; object-fit: cover; border-radius: 6px; }
+.plant-thumb figcaption strong { color: #10b981; font-size: 14px; }
+.plant-thumb figcaption em { color: #9fb0bf; font-size: 11.5px; }
+.plant-thumb figcaption span { color: #e8f1f7; font-size: 12px; line-height: 1.35; }
+.plant-thumb figcaption small { color: #8fa3b3; font-size: 10.5px; }
+@media (prefers-reduced-motion: reduce) { .plant-thumb > img, .plant-thumb figcaption { transition: none; } }
+/* Zone study: wide view on the main screen */
+.zone-deck button[data-tone="study"] { --t: #a78bfa; }
+.zone-study-box { width: min(1180px, 100%); grid-template-rows: auto 1fr; }
+.zone-study-body { min-height: 0; overflow-y: auto; padding-right: 4px; }
+.place-evidence.wide { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 10px 18px; align-items: start; }
+.place-evidence.wide > .place-timeline { grid-column: 1; }
+.place-evidence.wide > .place-satellite, .place-evidence.wide > .place-future { grid-column: 1; }
+.place-evidence.wide > .place-block { grid-column: 2; margin: 0; padding: 8px 10px; border: 1px solid #24394a; border-radius: 8px; background: #0b141d; }
+.place-evidence.wide > .place-block > summary { color: #10b981; font-weight: 700; }
+.place-evidence.wide .place-satellite img { width: 100%; height: auto; max-height: 52svh; object-fit: contain; image-rendering: auto; }
+.place-evidence.wide .place-timeline { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+@media (max-width: 900px) { .place-evidence.wide { grid-template-columns: 1fr; } .place-evidence.wide > * { grid-column: 1 !important; } }
+.greenness-bars { display: flex; align-items: flex-end; gap: 3px; height: 110px; margin: 8px 0 4px; padding-bottom: 14px; border-bottom: 1px solid #24394a; }
+.greenness-bars span { position: relative; flex: 1; min-width: 6px; border-radius: 3px 3px 0 0; background: linear-gradient(#10b981, #065f46); }
+.greenness-bars span i { position: absolute; bottom: -14px; left: 50%; transform: translateX(-50%); font: 9px/1 var(--font-body); color: #8fa3b3; font-style: normal; }
+
+/* Study dashboard: fits the screen, no scrolling */
+.zone-study-box { width: min(1180px, 100%); max-height: calc(100svh - 48px); grid-template-rows: auto minmax(0, 1fr); }
+.zone-study-box header { flex-wrap: wrap; }
+.study-cause { padding: 2px 9px; border-radius: 999px; font-weight: 700; font-size: 12.5px; color: #05070a !important; background: var(--risk); }
+.study-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) repeat(2, minmax(0, 1fr)); gap: 10px; min-height: 0; align-content: start; }
+.study-image { grid-row: 1 / span 3; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 6px; min-height: 0; }
+.study-image img { width: 100%; height: 100%; max-height: min(52svh, 440px); object-fit: contain; background: #000; border-radius: 8px; }
+.study-image small { color: #9fb0bf; font-size: 11.5px; }
+.study-moments { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.study-moments button { min-height: 32px; border-radius: 8px; border: 1.5px solid #22d3ee; background: transparent; color: #22d3ee; font: 700 12.5px/1 var(--font-body); cursor: pointer; }
+.study-moments button[aria-pressed="true"] { color: #05070a; background: #22d3ee; }
+.study-card { --t: #10b981; position: relative; padding: 8px 10px; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--t) 45%, transparent); background: color-mix(in srgb, var(--t) 7%, #070d14); }
+.study-card[data-tone="soil"] { --t: #f59e0b; }
+.study-card[data-tone="people"] { --t: #facc15; }
+.study-card[data-tone="climate"] { --t: #38bdf8; }
+.study-card[data-tone="life"] { --t: #e879f9; }
+.study-card h5 { margin: 0 0 4px; color: var(--t); font-size: 13.5px; }
+.study-card ul { margin: 0; padding-left: 16px; display: grid; gap: 2px; font-size: 12.5px; line-height: 1.35; color: #e8f1f7; }
+.study-card ul li::marker { color: var(--t); }
+.study-card b { color: color-mix(in srgb, var(--t) 70%, #fff); }
+.study-thumb { position: absolute; top: 8px; right: 8px; width: 46px; height: 46px; object-fit: cover; border-radius: 6px; border: 1px solid var(--t); }
+.study-thumbs { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+.study-thumbs img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; }
+.study-empty { margin: 0; font-size: 12px; color: #8fa3b3; }
+.greenness-bars.small { height: 52px; padding-bottom: 0; margin: 2px 0 6px; }
+@media (max-width: 900px) { .study-grid { grid-template-columns: 1fr; } .study-image { grid-row: auto; } .zone-study-box { overflow-y: auto; } }
+/* Quick satellite thumbnails next to "Estudio de la zona" */
+.study-strip { display: flex; align-items: center; gap: 5px; padding: 3px 8px 3px 3px; border-radius: 999px; border: 1.5px solid #a78bfa; background: rgb(167 139 250 / 12%); }
+.study-strip > button[data-tone="study"] { border: 0; background: transparent; }
+.study-thumb-mini > img { border-color: #a78bfa; border-radius: 8px; }
+.study-thumb-mini figcaption { border-color: #a78bfa; }
+.study-thumb-mini figcaption img { height: 200px; object-fit: contain; background: #000; }
+.study-thumb-mini figcaption strong { color: #a78bfa; }
+/* Soil card: the soil photo is the protagonist */
+.study-card[data-tone="soil"] { grid-row: span 2; display: grid; grid-template-rows: auto auto 1fr; }
+.soil-photo { margin: 6px 0 0; display: grid; gap: 3px; min-height: 0; }
+.soil-photo img { width: 100%; height: 100%; max-height: 190px; object-fit: cover; border-radius: 6px; border: 1px solid #f59e0b; }
+.soil-photo figcaption { font-size: 10.5px; color: #9fb0bf; }
+/* Study strip thumbnails: bigger tiles, not dots; the soil photo stands out first */
+.study-thumb-mini { width: 46px; height: 46px; }
+.study-thumb-mini > img { border-width: 2px; }
+.soil-thumb { width: 58px; height: 46px; }
+.soil-thumb > img { border-color: #f59e0b !important; box-shadow: 0 0 10px rgb(245 158 11 / 55%); }
+.soil-thumb figcaption { border-color: #f59e0b !important; }
+.soil-thumb figcaption strong { color: #f59e0b !important; }
+.soil-thumb figcaption img { object-fit: cover !important; }
+/* Deck in a single row, side by side */
+.zone-deck { flex-wrap: nowrap; max-width: calc(100% - 2 * 372px); overflow-x: auto; overflow-y: visible; scrollbar-width: none; gap: 8px; padding: 5px 8px; }
+.zone-deck::-webkit-scrollbar { display: none; }
+.zone-deck > * { flex: none; }
+.zone-deck .study-strip, .zone-deck .plant-strip { gap: 4px; }
+.zone-deck .study-thumb-mini { width: 38px; height: 38px; }
+.zone-deck .soil-thumb { width: 48px; height: 38px; }
+.zone-deck .plant-thumb:not(.study-thumb-mini) { width: 30px; height: 30px; }
+.zone-deck button { padding: 6px 11px; }
+.zone-deck { overflow: visible; gap: 6px; padding: 4px 6px; }
+.zone-deck button { padding: 5px 9px; font-size: 12.5px; }
+.zone-deck .study-strip, .zone-deck .plant-strip { gap: 3px; padding: 2px 6px 2px 2px; }
+.zone-deck .plant-strip-label { font-size: 12.5px; margin-right: 2px; }
+.zone-deck .study-thumb-mini { width: 34px; height: 34px; }
+.zone-deck .soil-thumb { width: 42px; height: 34px; }
+.zone-deck .plant-thumb:not(.study-thumb-mini) { width: 28px; height: 28px; }
+.zone-deck .plant-more { width: 30px; height: 30px; padding: 0; border-radius: 50%; border: 1.5px solid #10b981; background: #10b981; color: #05070a; font: 800 11.5px/1 var(--font-body); cursor: pointer; justify-content: center; }
+.zone-deck { gap: 4px; padding: 4px; } .zone-deck button { padding: 5px 8px; }
+/* Deck with full labels: while a zone is open it takes the timeline's place, from the left edge to the right panel */
+.shell[data-workspace]:has(.zone-deck) .event-timeline { display: none; }
+@media (min-width: 721px) {
+  .zone-deck { left: 20px; transform: none; max-width: calc(100% - 20px - 372px - 12px); bottom: 96px; justify-content: flex-start;
+    gap: 8px; padding: 6px 8px; }
+  .zone-deck button { padding: 6px 13px; font-size: 13px; }
+  .zone-deck .study-strip, .zone-deck .plant-strip { gap: 5px; padding: 3px 8px 3px 4px; }
+  .zone-deck .plant-strip-label { font-size: 13px; margin-right: 4px; }
+  .zone-deck .study-thumb-mini { width: 42px; height: 42px; }
+  .zone-deck .soil-thumb { width: 54px; height: 42px; }
+  .zone-deck .plant-thumb:not(.study-thumb-mini) { width: 36px; height: 36px; }
+  .zone-deck .plant-more { width: 36px; height: 36px; font-size: 12.5px; }
+}
+@media (min-width: 721px) { .zone-deck { gap: 6px; } }
+@media (min-width: 721px) { .zone-deck { gap: 5px; padding: 6px; } .zone-deck button { padding: 6px 10px; } .zone-deck .study-strip, .zone-deck .plant-strip { padding: 3px 6px 3px 3px; } }
+@media (min-width: 721px) { .zone-deck { gap: 4px; } }
+/* Deck centered: true screen center when there is room, otherwise centered in the free area left of the panel */
+@media (min-width: 721px) {
+  .zone-deck { left: 20px; right: 384px; width: fit-content; max-width: none; margin: 0 auto; transform: none; }
+}
+@media (min-width: 1500px) {
+  .zone-deck { left: 50%; right: auto; margin: 0; transform: translateX(-50%); max-width: calc(100% - 2 * 384px); }
+}
+/* Crisp HTML tag that follows the selected zone */
+.zone-tag { position: absolute; left: 0; top: 0; z-index: 3; display: grid; justify-items: center; gap: 4px; pointer-events: none; will-change: transform; }
+.zone-tag span { padding: 4px 10px; border-radius: 6px; background: rgb(7 16 26 / 90%); border: 1px solid rgb(255 255 255 / 12%);
+  font: 700 14px/1.2 var(--font-body); white-space: nowrap; box-shadow: 0 4px 14px #0008; }
+.zone-tag-name { color: #facc15; }
+.zone-tag-climate { font-size: 13px !important; }

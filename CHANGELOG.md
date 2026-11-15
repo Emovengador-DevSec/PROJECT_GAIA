@@ -4,6 +4,50 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- Ruta guiada de Lugar a Avisar, disponibilidad de radar por territorio, pasos de Historia conectados al mapa y comparación en lenguaje claro. Las rutas de los rásteres se guardan relativas para poder mover GAIA entre computadoras.
+
+- Arreglo del radar antes/después: la API reubica las rutas absolutas de otra PC guardadas en los manifiestos bajo data/03_processed de esta PC (las teselas daban 404). Plan 28 para Codex: ruta guiada de 5 pasos, Lugares honesto, Historia conectada al mapa y Cambios claro.
+
+- Selector de lugares con cambio directo, búsqueda sin tildes, navegación por teclado y reapertura de todos los territorios. El cambio reinicia los filtros temporales del mapa.
+
+- El selector Público / Técnico queda al final de Historia, junto a las fuentes.
+- El calendario agrícola y de ganado se abre desde una tarjeta destacada al inicio de Historia de Ayacucho.
+- Historia de Ayacucho identifica los cambios de señal en cultivos y laderas y lista las causas por verificar. Las tarjetas usan bordes de grosor uniforme.
+
+- Historia de Ayacucho abre con tarjetas de color para vegetación OPERA, cultivos HLS y mosaico NISAR, con controles directos al globo.
+
+- Historia prioriza el recorrido, la cortina y las capas, resume la evidencia en puntos y reúne los enlaces al final.
+
+- Vista de zona más limpia: nombre y aviso de clima como texto HTML nítido que sigue a la zona; contorno fino y suavizado sin relleno amarillo; las manchas NISAR se dibujan con bordes suavizados (solo visualización, el área publicada no cambia).
+
+- Etiquetas del mapa nítidas (texto a doble resolución) con fondo oscuro y texto de color: zona en amarillo y aviso de clima en celeste, siempre en el mismo orden (aviso arriba, zona abajo) en todas las zonas; las manchas NISAR se pintan más suaves para que se lea el relieve.
+
+- La barra de la zona queda centrada en la pantalla (o en el espacio libre junto al panel en pantallas angostas).
+
+- La barra de la zona recupera sus textos completos y tamaños: mientras hay una zona abierta ocupa el lugar de la línea de tiempo (de la izquierda al panel derecho), en una sola fila.
+
+- Barra de la zona más compacta para caber en una fila entre los paneles: miniaturas de antes y después, «Satélite» y «Ubicar» como iconos, «Campo» con su número y 4 plantas más un botón «+N» que abre todas.
+
+- La barra de la zona queda en una sola fila, lado a lado: «Suelo» con sus miniaturas, «Satélite» y «Plantas» con las suyas.
+
+- En la barra del mapa, junto a «Estudio del suelo», la foto del suelo aparece primero y destacada (borde ámbar), y las miniaturas satelitales son más grandes.
+
+- «Estudio de la zona» pasa a «Estudio del suelo» y la foto del perfil de suelo se muestra grande en su tarjeta, con lugar, autor y licencia.
+
+- Junto a «Estudio de la zona» aparecen miniaturas satelitales de pasado, antes y después; al pasar el mouse se agrandan con fecha y resolución, y un clic abre el estudio.
+
+- «Estudio de la zona» es un tablero que cabe en la pantalla sin desplazarse: imagen pasado, antes y después, y tarjetas con viñetas de suelo (tipo explicado, textura, pendiente, humedad), verdor 2000–2025, comunidad, clima 2050 y vida cercana.
+
+- «📊 Estudio de la zona» en la barra del mapa abre en la pantalla principal una vista amplia: pasado, antes, después y futuro en grande a la izquierda; verdor histórico, vida cercana, comunidad y suelo abiertos a la derecha. La sección ya no está en el panel derecho.
+
+- Las secciones de la ficha (Diagnóstico, Clima, Futuro y costos, Voz y Minka, Explorar la zona) se eligen en un menú desplegable en vez de una cuadrícula de botones.
+
+- «Explorar la zona» en el panel derecho ya no repite lo que está en la barra del mapa (mirada satelital, fotos de campo, plantas e informes sin ubicación confirmada).
+
+- «Plantas que curan la tierra» se muestran como miniaturas en la barra del mapa; al pasar el mouse (o con el teclado) se agrandan con nombre, beneficio y crédito, sin abrir la galería.
+
+- La barra de la zona baja a la parte inferior del mapa, sobre las pestañas, y «Plantas nativas» pasa a «Plantas que curan la tierra».
+
 - Al llegar a una zona aparece sobre el mapa una barra «Mirada satelital · Fotos de campo · Plantas nativas · Vida cercana · Ubicar fotos» que abre galerías grandes en la pantalla principal (con flechas, miniaturas, leyenda y crédito); la pestaña pasa a «Explorar la zona».
 
 - 12 especies nativas andinas con para qué sirven, contra qué fenómeno ayudan (erosión, huaicos, heladas, sequía, incendios, agua) y su rango de altura (config/nbs/native_species.yaml); se reemplazan vetiver, maguey y tuna por chillihua, cabuya y chachacomo; fotos de plantas tomadas en Perú (11 de 12).

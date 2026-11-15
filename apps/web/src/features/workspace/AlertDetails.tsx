@@ -1,4 +1,3 @@
-import { PlaceEvidencePanel } from "./PlaceEvidence";
 import { useEffect, useRef, useState } from "react";
 import { api, type AlertFeature, type RemediationBulletinResponse } from "../../lib/api";
 import { formatDate } from "../../lib/formatDate";
@@ -10,6 +9,7 @@ import { BudgetSummary } from "./BudgetSummary";
 import { RecoveryScenario } from "./RecoveryScenario";
 import { ZoneIdentity } from "./ZoneIdentity";
 import { CountUp } from "./CountUp";
+import type { ZoneFocus } from "./ExplorationGuide";
 
 
 const httpsUrl = (value?: string) => value?.startsWith("https://") ? value : undefined;
@@ -18,10 +18,31 @@ function ExposureMetric({ label, value, unit }: { label: string; value?: number 
   return <div><dt>{label}</dt><dd>{number(value)} {value != null && unit && <small>{unit}</small>}</dd></div>;
 }
 
-export function AlertDetails({ feature, onBack, onResources, focusVoice, onChanges }: { feature: AlertFeature; onBack: () => void; onResources: () => void; focusVoice?: boolean; onChanges?: () => void }) {
+export function AlertDetails({ feature, onBack, onResources, focusVoice, onChanges, zoneFocus }: {
+  feature: AlertFeature; onBack: () => void; onResources: () => void; focusVoice?: boolean;
+  onChanges?: () => void; zoneFocus?: ZoneFocus;
+}) {
   const p = feature.properties;
   const [sheetTab, setSheetTab] = useState("diagnosis");
   useEffect(() => { if (focusVoice) setSheetTab("voice"); }, [focusVoice]);
+  useEffect(() => {
+    if (zoneFocus) setSheetTab(zoneFocus.section === "voice" ? "voice" : "diagnosis");
+  }, [zoneFocus]);
+  useEffect(() => {
+    if (!zoneFocus) return;
+    const frame = requestAnimationFrame(() => {
+      const scroller = document.querySelector(".inspector-content");
+      if (zoneFocus.section === "diagnosis") { scroller?.scrollTo(0, 0); return; }
+      const selector = zoneFocus.section === "actions" ? ".zone-actions-title"
+        : zoneFocus.section === "voice" ? "#zone-panel-voice" : "#zone-panel-diagnosis";
+      const target = document.querySelector(selector);
+      if (scroller && target) scroller.scrollTo({
+        top: scroller.scrollTop + target.getBoundingClientRect().top - scroller.getBoundingClientRect().top - 12,
+        behavior: "instant",
+      });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [zoneFocus, sheetTab]);
   const [bulletinData, setBulletinData] = useState<RemediationBulletinResponse | null>(null);
   const voiceSection = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -167,21 +188,20 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice, onChang
     <p className="muted">{formatDate(p.date)}</p>
     </>}
     {!p.remediation && observationDetails}
-    {p.remediation && <div className="zone-sheet-tabs" role="tablist" aria-label="Secciones de la ficha">
-      {[["diagnosis", "Diagnóstico"], ["climate", "Clima"], ["future", "Futuro y costos"], ["voice", "Voz y Minka"], ["place", "Explorar la zona"]].map(([id, label]) =>
-        <button key={id} type="button" role="tab" id={`zone-tab-${id}`} aria-selected={sheetTab === id}
-          aria-controls={`zone-panel-${id}`} onClick={() => { setSheetTab(id); document.querySelector(".inspector-content")?.scrollTo(0, 0); }}
-          onKeyDown={event => {
-            const ids = ["diagnosis", "climate", "future", "voice", "place"];
-            const next = event.key === "ArrowRight" ? (ids.indexOf(id) + 1) % ids.length
-              : event.key === "ArrowLeft" ? (ids.indexOf(id) + ids.length - 1) % ids.length : event.key === "Home" ? 0 : event.key === "End" ? ids.length - 1 : -1;
-            if (next >= 0) { event.preventDefault(); setSheetTab(ids[next]); document.getElementById(`zone-tab-${ids[next]}`)?.focus(); }
-          }} tabIndex={sheetTab === id ? 0 : -1}>{label}</button>)}
-    </div>}
+    {p.remediation && <label className="zone-section-picker">
+      <span>Sección de la ficha</span>
+      <select className="pulse-select" value={sheetTab} onChange={event => {
+        setSheetTab(event.target.value); document.querySelector(".inspector-content")?.scrollTo(0, 0);
+      }}>
+        <option value="diagnosis">🩺 Diagnóstico</option>
+        <option value="climate">🌦 Clima</option>
+        <option value="future">💰 Futuro y costos</option>
+        <option value="voice">📻 Voz y Minka</option>
+      </select>
+    </label>}
     {p.remediation && (
       <section className="remediation-section">
-        {sheetTab === "place" && <section role="tabpanel" id="zone-panel-place" aria-labelledby="zone-tab-place"><PlaceEvidencePanel key={p.id} feature={feature} /></section>}
-        {sheetTab === "diagnosis" && <section role="tabpanel" id="zone-panel-diagnosis" aria-labelledby="zone-tab-diagnosis">
+        {sheetTab === "diagnosis" && <section id="zone-panel-diagnosis" aria-live="polite">
           <ZoneDiagnosis feature={feature} />
           <ZoneActions feature={feature} onVoice={() => setSheetTab("voice")} />
           <details className="zone-sheet-more"><summary>Ver más · diagnóstico y exposición</summary>
@@ -232,10 +252,10 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice, onChang
           {observationDetails}
           </details>
         </section>}
-        {sheetTab === "climate" && <section role="tabpanel" id="zone-panel-climate" aria-labelledby="zone-tab-climate">
+        {sheetTab === "climate" && <section id="zone-panel-climate" aria-live="polite">
           <ZoneClimate aoi={p.aoi_id ?? p.remediation.aoi_id} />
         </section>}
-        {sheetTab === "future" && <section role="tabpanel" id="zone-panel-future" aria-labelledby="zone-tab-future">
+        {sheetTab === "future" && <section id="zone-panel-future" aria-live="polite">
         <BudgetSummary items={p.remediation.budget ?? []} />
 
         {p.remediation.cost_benefit && (
@@ -312,7 +332,7 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice, onChang
         </details>
 
         </section>}
-        {sheetTab === "voice" && <section role="tabpanel" id="zone-panel-voice" aria-labelledby="zone-tab-voice">
+        {sheetTab === "voice" && <section id="zone-panel-voice" aria-live="polite">
           {!bulletinData && <p role="status">Boletín sin cargar. Reabre la ficha para consultar el guion publicado.</p>}
         {bulletinData && (
           <div className="last-mile-section" ref={voiceSection} tabIndex={-1} aria-label="GAIA Voz y Minka" style={{ marginTop: "1rem", borderTop: "1px solid var(--border-subtle, #30363d)", paddingTop: "1rem" }}>

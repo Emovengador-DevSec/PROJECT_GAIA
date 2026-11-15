@@ -2,8 +2,8 @@ aoi: sabancaya
 title: Un volcán que respira
 question: ¿Se deforma el terreno alrededor del Sabancaya?
 audience_summary:
-  publico: Cuando el magma se mueve, el suelo se infla o se hunde centímetros. El radar puede medirlo desde el espacio.
-  tecnico: Fase desenvuelta GUNW convertida a desplazamiento en línea de visión (fase P1; rutas HDF5 por verificar).
+  publico: El radar permite estudiar desplazamientos del terreno alrededor del volcán.
+  tecnico: Desplazamiento en línea de visión con GUNW · procesamiento pendiente.
 hypotheses:
   - id: h1
     text: Un patrón concéntrico de franjas alrededor del cráter indicaría inflación o deflación del edificio volcánico.
@@ -21,5 +21,7 @@ steps:
     layer: none
     camera: zone
     context: radarsat1
-    text: La escena histórica de RADARSAT-1 muestra el entorno del Sabancaya en banda C. La deformación necesita pares interferométricos NISAR y control de coherencia.
+    text: RADARSAT-1 muestra el entorno del volcán en banda C.
+    points:
+      - Para medir deformación se necesitan pares NISAR y control de coherencia.
   - { title: Relieve 3D, layer: none, camera: oblique, text: "La deformación se mostrará sobre el relieve real (fase P1)." }

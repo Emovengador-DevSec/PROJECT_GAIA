@@ -13,13 +13,17 @@ const terms = {
   sme2: ["SME2", "Estimación de humedad superficial a partir de NISAR. Es un indicador de condiciones del suelo. No mide la temperatura del aire.", guide],
 } as const;
 
-export function RadarGlossary({ terms: visible = ["retrodispersion", "hh", "hv", "bands", "water", "active"] }: { terms?: (keyof typeof terms)[] }) {
+export const sensorBasicsLink = { name: "Sensores activos y pasivos · NASA Earthdata", href: terms.active[2] };
+
+export function RadarGlossary({ terms: visible = ["retrodispersion", "hh", "hv", "bands", "water", "active"], showLinks = true }: {
+  terms?: (keyof typeof terms)[]; showLinks?: boolean;
+}) {
   return <div className="radar-glossary" aria-label="Glosario de radar">
     {visible.map(id => {
       const [label, description, href] = terms[id];
       return <details key={id}><summary><span aria-hidden="true">?</span> {label}</summary>
         <p>{description}</p>
-        <a className="source-link" href={href} target="_blank" rel="noopener noreferrer">Consultar la fuente ↗</a>
+        {showLinks && <a className="source-link" href={href} target="_blank" rel="noopener noreferrer">Consultar la fuente ↗</a>}
       </details>;
     })}
   </div>;

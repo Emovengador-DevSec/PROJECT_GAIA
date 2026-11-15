@@ -9,6 +9,7 @@ export type AOI = {
   status: "approximate" | "confirmed"; bbox: [number, number, number, number];
   phenomena: string[]; notes?: string;
   camera?: { heading_deg?: number; pitch_deg?: number };
+  availability?: {radar: boolean; comparison: boolean; zones: number; remediation: boolean};
 };
 
 export type LayerManifest = {
@@ -19,6 +20,7 @@ export type LayerManifest = {
   provenance: { source: string; granules: string[] } & Record<string, unknown>;
   quality: { provisional: boolean; valid_area_pct: number };
   comparison?: { before_cog_path: string; after_cog_path: string; range: { min: number; max: number } };
+  change_summary?: {loss_area_ha: number; mapped_loss_area_ha: number; alerts: number};
 };
 
 export type Audience = "publico" | "tecnico";
@@ -29,7 +31,8 @@ export type Story = {
   audience_summary: Record<Audience, string>;
   hypotheses: { id: string; text: string; test: string; status: string }[];
   physics: string; human_factors: string; complementary: string[]; future: string;
-  steps: { title: string; layer: string; camera: CameraMode; text: string; context?: string }[];
+  steps: { title: string; layer: string; camera: CameraMode; text: string; points?: string[]; context?: string;
+    observation?: "fire" | "quake" | "surface_change"; action?: "changes" | "action" | "series" | "quality" | "agriculture"}[];
 };
 
 export type ContextLayer = {
@@ -455,6 +458,24 @@ async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
 }
 
 export const api = {
+  checkRadar: async (layer: LayerManifest, comparison: boolean, rgb: boolean, signal: AbortSignal): Promise<void> => {
+    const bounds = layer.coverage_bbox;
+    if (!bounds) return;
+    const lon = (bounds[0] + bounds[2]) / 2;
+    const latitude = Math.min(85, Math.max(-85, (bounds[1] + bounds[3]) / 2)) * Math.PI / 180;
+    const z = 8;
+    const x = Math.floor((lon + 180) / 360 * 2 ** z);
+    const y = Math.floor((1 - Math.asinh(Math.tan(latitude)) / Math.PI) / 2 * 2 ** z);
+    const stages = comparison ? ["before", "after"] as const : ["change"] as const;
+    await Promise.all(stages.map(async stage => {
+      const url = api.tileUrl(layer, stage, rgb).replace("{z}", String(z)).replace("{x}", String(x)).replace("{y}", String(y));
+      const response = await fetch(url, {signal});
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        throw new Error(typeof payload?.detail === "string" ? payload.detail : `El servidor devolvió un error ${response.status} al cargar el radar.`);
+      }
+    }));
+  },
   placeEvidence: (aoi: string, zone: string, signal?: AbortSignal) =>
     get<PlaceEvidence>(`/remediation/${encodeURIComponent(aoi)}/${encodeURIComponent(zone)}/place`, signal),
   streetView: (aoi: string, zone: string) =>

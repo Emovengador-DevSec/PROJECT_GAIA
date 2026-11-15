@@ -100,6 +100,7 @@ def main(argv: list[str] | None = None) -> int:
     imagery = sub.add_parser("place-imagery", help="Publica recortes georreferenciados de cada mancha")
     imagery.add_argument("--aoi", required=True)
     imagery.add_argument("--zone", help="Opcional: una sola mancha publicada")
+    sub.add_parser("fix-manifests", help="Convierte rutas de capas publicadas a rutas relativas portables")
     evidence_jobs = {
         "field-photos": "Publica fotos de campo de informes oficiales",
         "climate-future": "Publica proyecciones climáticas CMIP6 hasta 2050",
@@ -110,6 +111,14 @@ def main(argv: list[str] | None = None) -> int:
         job = sub.add_parser(command, help=help_text)
         job.add_argument("--aoi", required=True)
     a = ap.parse_args(argv)
+    if a.cmd == "fix-manifests":
+        from .publish.manifest import fix_manifests
+
+        try:
+            print(json.dumps(fix_manifests(), ensure_ascii=False))
+        except (OSError, ValueError) as exc:
+            ap.error(str(exc))
+        return 0
     if a.cmd in evidence_jobs:
         from importlib import import_module
         publish = import_module("." + a.cmd.replace("-", "_"), package=__package__).publish

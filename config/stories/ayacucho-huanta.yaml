@@ -1,9 +1,9 @@
 aoi: ayacucho-huanta
-title: "Ayacucho: qué cambió entre junio y octubre"
+title: Ayacucho · cambios de señal radar en cultivos y laderas
 question: ¿Qué cambios de señal muestran las observaciones radar en Huanta y La Mar entre junio y octubre de 2026?
 audience_summary:
-  publico: Comparamos observaciones NISAR de la misma zona para localizar cambios en el territorio. Los focos de calor de NASA FIRMS ayudan a investigar si esos cambios coinciden con incendios.
-  tecnico: Comparación GCOV HH/HV de la trayectoria 147 ascendente, marco 171, el 24 de junio y el 10 de octubre de 2026. La cobertura válida común es del 99,91 %. HV registra 3.607 ha con caída de señal, de las cuales 938,28 ha forman 498 manchas delimitadas. OPERA coincide con el 2,25 % de esas manchas. La atribución a incendios continúa por verificar.
+  publico: Incendios o sequía, erosión o huaicos, laderas inestables tras sismos y estrés hídrico agrícola.
+  tecnico: GCOV provisional · HH/HV · trayectoria 147 ascendente · marco 171.
 hypotheses:
   - id: perdida_vegetacion
     text: Una caída persistente en HV, mayor que en HH y coincidente con focos FIRMS, sería compatible con pérdida de vegetación por incendio.
@@ -25,34 +25,60 @@ steps:
   - title: Sudamérica y los Andes
     layer: none
     camera: overview
-    text: Ayacucho forma parte de un territorio donde los procesos naturales y la actividad humana dejan huellas observables desde el espacio.
+    observation: quake
+    text: El recorrido sitúa Huamanga, Huanta y La Mar en los Andes.
   - title: El fuego como hipótesis
     layer: none
     camera: zone
-    text: Una hipótesis es que algunos cambios se relacionen con incendios. Para evaluarla, hay que contrastar su lugar y fecha con focos históricos de NASA FIRMS y con observaciones independientes. Los focos recientes aportan contexto actual.
+    observation: fire
+    text: Incendios como posible causa, por verificar.
+    points:
+      - Contrastar fecha y ubicación del cambio con focos históricos NASA FIRMS e imagen óptica.
+      - Los focos recientes muestran actividad actual.
   - title: Cómo se obtienen las observaciones
     layer: none
     camera: zone
-    text: Una imagen óptica de luz visible depende de la iluminación solar y puede quedar tapada por nubes o humo. NISAR emite sus propios pulsos de microondas y registra el eco de día o de noche. FIRMS aporta focos térmicos en horas. NISAR repite la geometría orbital cada 12 días, y la publicación del producto añade demora.
+    context: nisar-gcov
+    text: NISAR registra ecos de día y de noche a través de las nubes.
+    points:
+      - Una imagen óptica necesita luz solar y puede quedar oculta por nubes o humo.
+      - FIRMS aporta focos térmicos en horas. NISAR repite la geometría cada 12 días, más el tiempo de publicación.
   - title: La comparación radar
     layer: diff_hvhv
     camera: zone
-    text: Desliza la cortina para explorar las observaciones NISAR. La comparación procesada usa HH/HV del 24 de junio y el 10 de octubre de 2026 y conserva el 99,91 % de la zona. Los mosaicos oficiales están disponibles como referencia adicional.
+    action: changes
+    text: Desliza la cortina del 24 de junio al 10 de octubre de 2026.
+    points:
+      - NISAR GCOV provisional · 99,91 % de cobertura válida común.
+      - 3.607 ha con caída de señal HV · 938,28 ha agrupadas en 498 manchas.
   - title: El territorio expuesto
     layer: diff_hvhv
     camera: oblique
-    text: Abre una mancha en Observaciones para consultar población WorldPop 2025, cobertura ESA WorldCover 2021 y centros poblados OpenStreetMap a 2 km. La disponibilidad de cada fuente acompaña a la cifra. Son estimaciones de exposición territorial.
+    observation: surface_change
+    action: action
+    text: Abre una mancha en Alertas para consultar exposición estimada.
+    points:
+      - Población de WorldPop 2025, cobertura ESA WorldCover 2021 y poblados OpenStreetMap a 2 km.
   - title: La vegetación desde otra fuente
     layer: none
     camera: zone
     context: opera
-    text: Los rásteres originales OPERA del 13 de octubre contrastan toda la cobertura radar. Coinciden en 21,08 ha, el 2,25 % de las manchas HV delimitadas. Abre Calidad para consultar ambas métricas de concordancia y sus gránulos. Esta coincidencia limitada mantiene abierta la interpretación del cambio.
+    action: quality
+    text: OPERA del 13 de octubre coincide en 21,08 ha, el 2,25 % de las manchas HV.
+    points:
+      - Abre Calidad para consultar el contraste cuantitativo, su cobertura y sus gránulos. La causa sigue por verificar.
   - title: Seguir la recuperación
     layer: diff_hvhv
     camera: zone
-    text: Una serie de cuatro fechas o más permite explorar tendencias con incertidumbre. La hipótesis de recuperación se contrasta con lluvias, imagen óptica y conocimiento local.
+    action: series
+    text: Explorar una tendencia requiere al menos cuatro fechas comparables.
+    points:
+      - Contrastar una posible recuperación con lluvia, imagen óptica y conocimiento local.
   - title: Cultivos, laderas y lluvias
     layer: none
     camera: zone
     context: hls-optical
-    text: La ficha cruza las manchas radar con cultivos y pendiente real del terreno. Desliza la comparación óptica HLS del 22 de junio y 8 de octubre. La cosecha y la preparación de la tierra son hipótesis que requieren registros locales. Ni la caída de HV ni una ladera inclinada confirman suelo desnudo o erosión.
+    action: agriculture
+    text: Desliza la comparación óptica HLS del 22 de junio y el 8 de octubre.
+    points:
+      - Cultivos y clima detalla la superficie por pendiente. Cosecha, suelo desnudo y erosión siguen por verificar.

@@ -15,6 +15,7 @@ from rasterio.features import rasterize
 from rasterio.warp import reproject, transform_geom
 
 from .. import settings
+from ..publish.paths import local_cog
 
 
 def compare_opera(layer_id: str, status: Path, onset: Path, granule: str, observed: str,
@@ -37,9 +38,7 @@ def compare_opera(layer_id: str, status: Path, onset: Path, granule: str, observ
         if len(parts) < 7 or date.fromisoformat(acquired) < last or acquired.replace("-", "") != parts[4][:8]:
             raise ValueError("La fecha OPERA debe coincidir con el gránulo y alcanzar la última fecha NISAR.")
 
-    raster_path = Path(manifest["cog_path"]).resolve()
-    if not raster_path.is_relative_to(settings.PROCESSED.resolve()):
-        raise ValueError("La capa de cambio debe estar publicada localmente.")
+    raster_path = local_cog(manifest["cog_path"], settings.PROCESSED)
     origin = date(2020, 12, 31)
     with rasterio.open(raster_path) as radar:
         if not radar.crs or not radar.crs.is_projected:

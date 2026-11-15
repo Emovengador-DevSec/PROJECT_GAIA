@@ -23,6 +23,8 @@ type Props = {
   radarBounds?: AOI["bbox"];
   contextOverlay?: { url: string; credit: string; beforeUrl?: string };
   exaggeration: number; camera?: CameraMode; alerts: AlertFeature[]; selected?: AlertFeature;
+  cameraStep?: number;
+  radarRevision?: number; onRadarError: (message: string) => void;
   fireCells: AlertFeature[];
   active: boolean;
   cutoff?: number;
@@ -37,6 +39,21 @@ const CAUSE_COLORS: Record<string, string> = { incendio_sequia: "#ff6b4a", erosi
   ladera_inestable_sismo: "#c084fc", estres_hidrico_agricola: "#38bdf8", causa_por_verificar: "#9fb0bf" };
 const COLORS = { quake: "#fbbf24", fire: "#ff3b3b", surface_change: "#c69aff", deformation: "#a855f7", climate_anomaly: "#38bdf8" };
 
+/** Chaikin corner cutting: softens the staircase edges of radar-pixel polygons for display only. */
+function smoothRing(ring: number[][], iterations = 2): number[][] {
+  let pts = ring.slice(0, -1);
+  for (let k = 0; k < iterations; k++) {
+    const next: number[][] = [];
+    for (let i = 0; i < pts.length; i++) {
+      const [x0, y0] = pts[i];
+      const [x1, y1] = pts[(i + 1) % pts.length];
+      next.push([x0 * .75 + x1 * .25, y0 * .75 + y1 * .25], [x0 * .25 + x1 * .75, y0 * .25 + y1 * .75]);
+    }
+    pts = next;
+  }
+  return [...pts, pts[0]];
+}
+
 function marker(kind: string, color: string): string {
   const shapes: Record<string, string> = {
     quake: '<circle cx="20" cy="20" r="7"/><circle cx="20" cy="20" r="14" fill="none" stroke-width="2"/>',
@@ -49,11 +66,13 @@ function marker(kind: string, color: string): string {
 }
 
 export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint, tileUrl, beforeUrl,
-  afterUrl, radarBounds, contextOverlay, split, exaggeration, camera = "oblique",
+  afterUrl, radarBounds, contextOverlay, split, exaggeration, camera = "oblique", cameraStep, radarRevision, onRadarError,
   alerts, fireCells, active, cutoff, orbitData, orbitVisible, satelliteFocus, selected, onSelect, onStatus, offline = false,
   realTimeLighting }: Props) {
   const {data: placeEvidence} = usePlaceEvidence(selected);
   const [fieldRequest, setFieldRequest] = useState<FieldViewRequest>();
+  const [zoneTag, setZoneTag] = useState<{ zone: string; climate?: { text: string; color: string } }>();
+  const zoneTagEl = useRef<HTMLDivElement>(null);
   const [designStatus, setDesignStatus] = useState<"loading" | "ready" | "unavailable">();
   const [aerialLoaded, setAerialLoaded] = useState(false);
   const fieldMode = useRef(false);
@@ -67,6 +86,8 @@ export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint
   const reportPickerRef = useRef(reportPicker);
   reportPickerRef.current = reportPicker;
   const statusRef = useRef(onStatus);
+  const radarErrorRef = useRef(onRadarError);
+  radarErrorRef.current = onRadarError;
   const lastInput = useRef(performance.now());
   const [hover, setHover] = useState<{ feature: AlertFeature; x: number; y: number }>();
   const cutoffRef = useRef(cutoff);
@@ -388,7 +409,7 @@ export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint
       offset: new Cesium.HeadingPitchRange(Cesium.Math.toRadians(radarBounds ? 0 : cam.heading_deg ?? 20),
         Cesium.Math.toRadians(radarBounds || camera === "zone" ? -90 : camera === "overview" ? -60 : cam.pitch_deg ?? -38), range),
       duration: window.matchMedia(REDUCED).matches ? 0 : 2.4, easingFunction: Cesium.EasingFunction.QUINTIC_IN_OUT });
-  }, [aoi, communityCenter, radarBounds, camera, offline, active, reduceMotion]);
+  }, [aoi, communityCenter, radarBounds, camera, cameraStep, offline, active, reduceMotion]);
 
   useEffect(() => {
     const v = viewer.current;
@@ -432,18 +453,26 @@ export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint
     const v = viewer.current;
     if (!v || fieldRequest) return;
     const overlays: Cesium.ImageryLayer[] = [];
+    const removeErrors: (() => void)[] = [];
     const sources: [string | undefined, Cesium.SplitDirection][] = beforeUrl && afterUrl
       ? [[beforeUrl, Cesium.SplitDirection.LEFT], [afterUrl, Cesium.SplitDirection.RIGHT]]
       : [[tileUrl, Cesium.SplitDirection.NONE]];
     for (const [url, direction] of sources) if (url) {
-      const layer = v.imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({ url, maximumLevel: 16,
-        rectangle: aoi ? Cesium.Rectangle.fromDegrees(...aoi.bbox) : undefined }));
+      const provider = new Cesium.UrlTemplateImageryProvider({ url, maximumLevel: 16,
+        rectangle: aoi ? Cesium.Rectangle.fromDegrees(...aoi.bbox) : undefined });
+      removeErrors.push(provider.errorEvent.addEventListener(() => radarErrorRef.current(
+        "El servidor no pudo entregar las imágenes radar. Reintenta la carga.",
+      )));
+      const layer = v.imageryLayers.addImageryProvider(provider);
       layer.alpha = .9;
       layer.splitDirection = direction;
       overlays.push(layer);
     }
-    return () => { if (!v.isDestroyed()) for (const layer of overlays) v.imageryLayers.remove(layer); };
-  }, [tileUrl, beforeUrl, afterUrl, aoi, offline, fieldRequest]);
+    return () => {
+      removeErrors.forEach(remove => remove());
+      if (!v.isDestroyed()) for (const layer of overlays) v.imageryLayers.remove(layer);
+    };
+  }, [tileUrl, beforeUrl, afterUrl, aoi, offline, fieldRequest, radarRevision]);
   useEffect(() => { if (viewer.current) viewer.current.scene.splitPosition = split / 100; }, [split, offline]);
 
   const contextUrl = contextOverlay?.url;
@@ -646,7 +675,11 @@ export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint
     v.dataSources.add(data);
     let cancelled = false;
     if (primary.length) Cesium.GeoJsonDataSource.load({
-      type: "FeatureCollection", features: primary.map(item => ({ ...item, id: item.properties.id })),
+      type: "FeatureCollection", features: primary.map(item => ({ ...item, id: item.properties.id,
+        // Display only: soften the staircase edges of radar-pixel polygons (areas stay the published ones).
+        geometry: item.geometry?.type === "Polygon"
+          ? { ...item.geometry, coordinates: (item.geometry.coordinates as number[][][]).map(ring => smoothRing(ring)) }
+          : item.geometry })),
     }, { clampToGround: true, fill: Cesium.Color.fromCssColorString(COLORS.surface_change).withAlpha(.22),
       stroke: Cesium.Color.fromCssColorString(COLORS.surface_change), strokeWidth: 3 }).then(source => {
       if (cancelled || v.isDestroyed()) return;
@@ -659,10 +692,10 @@ export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint
           entity.polygon.outlineColor = new Cesium.ConstantProperty(Cesium.Color.fromCssColorString(colorHex));
           if (!reduce) {
             entity.polygon.material = new Cesium.ColorMaterialProperty(
-              new Cesium.CallbackProperty((_time, result) => Cesium.Color.fromCssColorString(colorHex).withAlpha(.42 + .14 * Math.sin(phase() * Math.PI), result), false),
+              new Cesium.CallbackProperty((_time, result) => Cesium.Color.fromCssColorString(colorHex).withAlpha(.24 + .08 * Math.sin(phase() * Math.PI), result), false),
             );
           } else {
-            entity.polygon.material = new Cesium.ColorMaterialProperty(Cesium.Color.fromCssColorString(colorHex).withAlpha(.5));
+            entity.polygon.material = new Cesium.ColorMaterialProperty(Cesium.Color.fromCssColorString(colorHex).withAlpha(.28));
           }
         }
       }
@@ -717,6 +750,8 @@ export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint
     // Bright outline of the studied zone at the real (exaggerated) terrain height, plus a label.
     // Ground-clamped primitives drift with verticalExaggeration, so heights are sampled and scaled here.
     const outline: Cesium.Entity[] = [];
+    let removeFollow: (() => void) | undefined;
+    setZoneTag(undefined);
     if (zone) {
       const rings: number[][][] = selected.geometry.type === "Polygon" ? [(selected.geometry.coordinates as number[][][])[0]]
         : (selected.geometry.coordinates as number[][][][]).map(poly => poly[0]);
@@ -724,38 +759,38 @@ export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint
       const place = selected.properties.remediation?.nearby_places?.[0];
       const lift = (c: Cesium.Cartographic) => (Number.isFinite(c.height)
         ? c.height * v.scene.verticalExaggeration : v.scene.globe.getHeight(c) ?? elevation) + 8;
-      const cartos = rings.map(ring => ring.map(([x, y]) => Cesium.Cartographic.fromDegrees(x, y)));
+      const cartos = rings.map(ring => smoothRing(ring).map(([x, y]) => Cesium.Cartographic.fromDegrees(x, y)));
       const center = Cesium.Cartographic.fromDegrees(lon, lat);
       sampleFieldSurface(v.terrainProvider, [...cartos.flat(), center]).then(() => {
           if (cancelled || v.isDestroyed()) return;
           for (const ring of cartos) {
             const pts = ring.map(c => Cesium.Cartesian3.fromRadians(c.longitude, c.latitude, lift(c)));
-            outline.push(v.entities.add({ polyline: { positions: pts,
-              width: new Cesium.CallbackProperty(() => fieldMode.current ? 5 : 10, false),
-              arcType: Cesium.ArcType.NONE,
-              material: new Cesium.PolylineGlowMaterialProperty({ color: tone, glowPower: .45 }) } }));
+            outline.push(v.entities.add({ polyline: { positions: pts, width: 3, arcType: Cesium.ArcType.NONE,
+              material: new Cesium.PolylineOutlineMaterialProperty({ color: tone, outlineColor: Cesium.Color.BLACK.withAlpha(.6), outlineWidth: 1 }) } }));
             outline.push(v.entities.add({ polygon: { hierarchy: pts, perPositionHeight: true,
               material: new Cesium.ColorMaterialProperty(new Cesium.CallbackProperty(
-                () => tone.withAlpha(fieldMode.current ? 0 : .45), false,
+                () => tone.withAlpha(fieldMode.current ? 0 : .12), false,
               )) } }));
           }
-          outline.push(v.entities.add({ position: Cesium.Cartesian3.fromRadians(center.longitude, center.latitude, lift(center) + 40),
-            label: { text: `Zona ${selected.properties.id.slice(-3)}${place ? ` · ${place.name}` : ""}`, font: "700 15px sans-serif",
-              fillColor: Cesium.Color.fromCssColorString("#05070a"), showBackground: true, backgroundColor: tone,
-              backgroundPadding: new Cesium.Cartesian2(8, 5), pixelOffset: new Cesium.Cartesian2(0, -18),
-              disableDepthTestDistance: Number.POSITIVE_INFINITY } }));
+          // Crisp HTML tag that follows the zone on screen (WebGL labels look blurry).
+          const anchor = Cesium.Cartesian3.fromRadians(center.longitude, center.latitude, lift(center) + 20);
+          setZoneTag(tag => ({ ...tag, zone: `Zona ${selected.properties.id.slice(-3)}${place ? ` · ${place.name}` : ""}` }));
+          const follow = () => {
+            const el = zoneTagEl.current;
+            if (!el) return;
+            const pos = Cesium.SceneTransforms.worldToWindowCoordinates(v.scene, anchor);
+            el.style.display = pos && !fieldMode.current ? "" : "none";
+            if (pos) el.style.transform = `translate(${Math.round(pos.x)}px, ${Math.round(pos.y)}px) translate(-50%, calc(-100% - 10px))`;
+          };
+          removeFollow = v.scene.postRender.addEventListener(follow);
         });
       const aoiId = selected.properties.aoi_id;
       if (aoiId) api.climate(aoiId).then(climate => {
         const text = climateSummary(climate);
         if (cancelled || v.isDestroyed() || !climate?.anomalies?.length || /^Sin anomal|sin publicar|desactualizado|sin evaluar/i.test(text)) return;
         const kind = /helada/i.test(text) ? "#38bdf8" : /calor/i.test(text) ? "#ff6b4a" : "#818cf8";
-        outline.push(v.entities.add({ position: Cesium.Cartesian3.fromRadians(center.longitude, center.latitude, lift(center) + 40),
-          label: { text: `${/helada/i.test(text) ? "❄ " : "▲ "}${text.replace(/(\d+)\.(\d)/g, "$1,$2")}`, font: "700 14px sans-serif",
-            show: new Cesium.CallbackProperty(() => !fieldMode.current, false),
-            fillColor: Cesium.Color.fromCssColorString("#05070a"), showBackground: true, backgroundColor: Cesium.Color.fromCssColorString(kind),
-            backgroundPadding: new Cesium.Cartesian2(8, 5), pixelOffset: new Cesium.Cartesian2(0, -52),
-            disableDepthTestDistance: Number.POSITIVE_INFINITY } }));
+        setZoneTag(tag => ({ zone: tag?.zone ?? "", climate: { color: kind,
+          text: `${/helada/i.test(text) ? "❄ " : "▲ "}${text.replace(/(\d+)\.(\d)/g, "$1,$2")}` } }));
       }).catch(() => undefined);
     }
     const fly = (aim: Cesium.Cartesian3) => v.camera.flyToBoundingSphere(new Cesium.BoundingSphere(aim, 0), {
@@ -776,6 +811,8 @@ export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint
     } else fly(target);
     return () => {
       cancelled = true;
+      removeFollow?.();
+      setZoneTag(undefined);
       if (!v.isDestroyed()) {
         outline.forEach(entity => v.entities.remove(entity));
         v.camera.cancelFlight();
@@ -913,6 +950,10 @@ export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint
   const metric = hover && observationMetric(hover.feature);
   return <>
     <div ref={host} className="globe" aria-label="Globo satelital de Sudamérica con observaciones georreferenciadas" />
+    {zoneTag?.zone && <div ref={zoneTagEl} className="zone-tag" aria-hidden="true">
+      {zoneTag.climate && <span className="zone-tag-climate" style={{ color: zoneTag.climate.color }}>{zoneTag.climate.text}</span>}
+      <span className="zone-tag-name">{zoneTag.zone}</span>
+    </div>}
     {fieldRequest && <aside className="field-view-caption" aria-live="polite">
       <strong>{fieldRequest.design ? "Diseño propuesto sobre el terreno" : "Mirada satelital de la zona"}</strong>
       <small>{aerialLoaded && placeEvidence?.field_aerial
@@ -935,7 +976,7 @@ export function Globe({ aoi, communityCenter, reports, reportPicker, reportPoint
         requestAnimationFrame(() => fieldTrigger.current?.focus());
       }}>Cerrar vista</button>
     </aside>}
-    {placeEvidence && selected?.properties.remediation && <ZoneDeck data={placeEvidence}
+    {placeEvidence && selected?.properties.remediation && <ZoneDeck data={placeEvidence} feature={selected}
       zoneId={selected.properties.remediation.alert_id} fieldOn={!!fieldRequest} onShowPins={() => {
         const v = viewer.current;
         if (!v || !placeEvidence.pins.length) return;

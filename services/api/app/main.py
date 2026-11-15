@@ -122,7 +122,30 @@ def public_config():
 
 @app.get("/api/aois")
 def aois():
-    return [_yaml(p) for p in sorted((CONFIG / "aois").glob("*.yaml"))]
+    result = []
+    for path in sorted((CONFIG / "aois").glob("*.yaml")):
+        region = _yaml(path)
+        manifests = layers(region["id"], active_only=True)
+        radar, comparison = False, False
+        periods = set()
+        for manifest in manifests:
+            try:
+                _local_cog(manifest.get("cog_path"))
+                radar = True
+                pair = manifest.get("comparison") or {}
+                _local_cog(pair.get("before_cog_path"))
+                _local_cog(pair.get("after_cog_path"))
+                comparison = True
+                periods.add(f"{manifest['dates']['a']}__{manifest['dates']['b']}")
+            except HTTPException:
+                continue
+        remediation = PROCESSED.parent / "04_published" / "remediation" / f"{region['id']}.json"
+        data = json.loads(remediation.read_text(encoding="utf-8")) if remediation.is_file() else {}
+        zones = len(data.get("alerts", [])) if data.get("period") in periods else 0
+        result.append({**region, "availability": {
+            "radar": radar, "comparison": comparison, "zones": zones, "remediation": zones > 0,
+        }})
+    return result
 
 
 @app.get("/api/layers")
@@ -144,12 +167,14 @@ def layer(layer_id: str):
 
 
 def _local_cog(path_value: str | None) -> Path:
+    from sarlab_pipeline.publish.paths import local_cog
+
     if not path_value:
         raise HTTPException(404, "No existe esa observación en el manifiesto.")
-    path = (PROCESSED / path_value).resolve()
-    if not path.is_relative_to(PROCESSED.resolve()) or not path.is_file():
-        raise HTTPException(404, "El archivo procesado no está disponible localmente.")
-    return path
+    try:
+        return local_cog(path_value, PROCESSED)
+    except ValueError:
+        raise HTTPException(404, "El archivo procesado no está disponible localmente.") from None
 
 
 def _rgb_tile(manifest: dict, stage: str, x: int, y: int, z: int) -> bytes:

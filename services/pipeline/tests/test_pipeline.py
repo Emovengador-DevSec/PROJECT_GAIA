@@ -107,10 +107,10 @@ def test_change_workflow_end_to_end(data_dirs, tmp_path, monkeypatch):
     assert man["change_summary"]["loss_area_ha"] == r["loss_area_ha"]
     assert man["change_summary"]["alerts"] == r["alerts"]
     import rasterio
-    with rasterio.open(man["cog_path"]) as src:
+    with rasterio.open(workflows.S.PROCESSED / man["cog_path"]) as src:
         assert src.crs.to_epsg() == 32719 and src.count == 1
     assert man["comparison"]["range"]["min"] < man["comparison"]["range"]["max"]
-    assert Path(man["comparison"]["before_cog_path"]).exists()
+    assert (workflows.S.PROCESSED / man["comparison"]["before_cog_path"]).exists()
     collection = json.loads((Path(r["out_dir"]) / "alerts_hvhv.geojson").read_text())
     assert collection["crs_epsg"] == 4326
     for feature in collection["features"]:

@@ -4,7 +4,6 @@ import {formatNumber as number} from "../../lib/formatNumber";
 import "./place-evidence.css";
 
 export const FIELD_VIEW = "gaia:field-view";
-const HELP_LABEL: Record<string, string> = { erosion: "Erosión", huaico: "Huaicos", incendio: "Incendios", helada: "Heladas", sequia: "Sequía", agua: "Agua" };
 export type FieldViewRequest = {zoneId: string; design: boolean};
 
 export function usePlaceEvidence(feature?: AlertFeature) {
@@ -72,14 +71,18 @@ function ClimateProjection({data}: {data: PlaceEvidence["future_climate"]}) {
   </section>;
 }
 
-function Greenness({data}: {data: PlaceEvidence["greenness"]}) {
-  return <details className="place-block">
+function Greenness({data, open = false}: {data: PlaceEvidence["greenness"]; open?: boolean}) {
+  return <details className="place-block" open={open}>
     <summary>Verdor histórico del territorio</summary>
     {data?.years.length ? <>
-      <p className="place-note">{data.product} · píxel de referencia de {data.resolution_m} m en {number(data.center.latitude, 3)}, {number(data.center.longitude, 3)}. Medianas del {data.season} con compuestos de buena calidad.</p>
-      <table className="greenness-series"><thead><tr><th>Año</th><th>NDVI</th><th>Compuestos</th></tr></thead>
+      <div className="greenness-bars" role="img" aria-label={`Verdor NDVI por año, ${data.years[0].year}–${data.years.at(-1)!.year}`}>
+        {data.years.map(year => <span key={year.year} title={`${year.year}: NDVI ${number(year.median, 3)}`}
+          style={{ height: `${Math.max(4, Math.min(1, year.median / 0.7) * 100)}%` }}><i>{String(year.year).slice(2)}</i></span>)}
+      </div>
+      <p className="place-note">NDVI (verdor) en temporada {data.season} · {data.product} · píxel de {data.resolution_m} m del territorio, no solo de esta mancha.</p>
+      <details><summary>Ver tabla</summary><table className="greenness-series"><thead><tr><th>Año</th><th>NDVI</th><th>Compuestos</th></tr></thead>
         <tbody>{data.years.map(year => <tr key={year.year}><th scope="row">{year.year}</th><td>{number(year.median, 3)}</td><td>{year.count}</td></tr>)}</tbody>
-      </table>
+      </table></details>
       {!!data.incomplete_years.length && <p className="place-note">Años sin observaciones suficientes en la temporada publicada · {data.incomplete_years.join(", ")}.</p>}
       <a href={data.source_url} target="_blank" rel="noopener noreferrer">NASA · producto y metodología ↗</a>
     </> : <p className="place-empty">No hay una serie histórica de verdor publicada para este territorio.</p>}
@@ -104,7 +107,7 @@ function StreetView({aoi, zone}: {aoi: string; zone: string}) {
   {status === "error" && <p role="status">No se pudo consultar Google Street View.</p>}</div>;
 }
 
-export function PlaceEvidencePanel({feature}: {feature: AlertFeature}) {
+export function PlaceEvidencePanel({feature, wide = false}: {feature: AlertFeature; wide?: boolean}) {
   const {data, error, retry} = usePlaceEvidence(feature);
   const [moment, setMoment] = useState<"past" | "before" | "after" | "future">("after");
   const rem = feature.properties.remediation!;
@@ -119,22 +122,8 @@ export function PlaceEvidencePanel({feature}: {feature: AlertFeature}) {
     FIELD_VIEW, {detail: {zoneId: rem.alert_id, design}},
   ));
   const hasInfiltration = rem.budget?.some(line => line.intervention_id === "zanjas_infiltracion");
-  return <div className="place-evidence">
-    <h4>Explorar la zona</h4>
-    {!!data.field_photos?.length && <details className="place-block" open>
-      <summary>Fotos de campo cercanas · {data.field_photos.length}</summary>
-      <p className="place-note">Fotos de informes técnicos de lugares cercanos, en el año del informe.</p>
-      {data.field_photos.map(photo => <PhotoFigure key={photo.id} photo={photo} />)}
-    </details>}
-    <button type="button" className="primary-action" onClick={() => viewField()}>Mirada satelital de la zona</button>
-    <p className="place-note">{data.field_aerial
-      ? <>{data.field_aerial.source} · {data.field_aerial.date} · {data.field_aerial.resolution_m} m · <a href={data.field_aerial.license_url} target="_blank" rel="noopener noreferrer">Condiciones de uso</a></>
-      : "Imagen del globo · proveedor en la atribución del mapa · fecha variable según proveedor."}</p>
+  return <div className={wide ? "place-evidence wide" : "place-evidence"}>
     {data.street_view_enabled && <StreetView key={rem.alert_id} aoi={data.aoi_id} zone={rem.alert_id} />}
-    {!!data.field_references?.length && <details className="place-block">
-      <summary>Informes con ubicación sin confirmar</summary>
-      {data.field_references.map(ref => <p key={ref.source_url}><a href={ref.source_url} target="_blank" rel="noopener noreferrer">{ref.place} · {ref.author}, {ref.taken_at} · pág. PDF {ref.page} ↗</a></p>)}
-    </details>}
     {!data.available && <p className="status-message">Catálogo fotográfico sin publicar. Ejecuta el recolector de fotos para este territorio.</p>}
     <div className="place-timeline" role="group" aria-label="Momento del lugar">
       {([["past", "Pasado · 2016–2018"], ["before", "Antes del radar"], ["after", "Después del radar"], ["future", "Futuro · escenario"]] as const).map(([id, label]) =>
@@ -159,23 +148,12 @@ export function PlaceEvidencePanel({feature}: {feature: AlertFeature}) {
         {technique.photos.length ? technique.photos.map(photo => <PhotoFigure key={photo.id} photo={photo} />) : <p className="place-empty">No hay fotografías de esta técnica publicadas en el servidor.</p>}
       </section>) : <p className="place-empty">Esta mancha no tiene una técnica con fotografías verificadas.</p>}
     </section>}
-    <Greenness data={data.greenness} />
-    <details className="place-block" open><summary>Plantas nativas que sanan esta zona</summary>
-      <p className="place-note">Plantas nativas que ayudan contra el problema de esta zona. Fotos tomadas en Perú cuando existen.</p>
-      {data.species.map(species => <section key={species.scientific} className="species-card"><h4>{species.name} <em>{species.scientific}</em>{species.native && <span className="native-badge">Nativa</span>}</h4>
-        <p className="species-benefit">{species.benefit ?? species.function}</p>
-        {(!!species.helps?.length || species.altitude_m) && <p className="species-tags">
-          {species.helps?.map(h => <span key={h} data-help={h}>{HELP_LABEL[h] ?? h}</span>)}
-          {species.altitude_m && <span data-help="alt">{number(species.altitude_m[0], 0)}–{number(species.altitude_m[1], 0)} m</span>}
-        </p>}
-        {species.photo ? <PhotoFigure photo={species.photo} /> : <p className="place-empty">Foto con autor, fecha y licencia aún no disponible.</p>}
-      </section>)}
-    </details>
-    <details className="place-block"><summary>Plantas observadas cerca · hasta 5 km</summary>
+    <Greenness data={data.greenness} open={wide} />
+    <details className="place-block" open={wide}><summary>Plantas observadas cerca · hasta 5 km</summary>
       <p className="place-note">Observaciones iNaturalist de grado de investigación, con coordenadas públicas y precisión declarada ≤ 100 m.</p>
       {data.nearby.length ? data.nearby.map(photo => <PhotoFigure photo={photo} key={photo.id} />) : <p className="place-empty">No hay observaciones verificadas publicadas dentro de 5 km de esta mancha.</p>}
     </details>
-    <details className="place-block"><summary>Comunidad y exposición</summary>
+    <details className="place-block" open={wide}><summary>Comunidad y exposición</summary>
       <p>{data.community?.name ?? "Poblado cercano sin coordenadas publicadas"}</p>
       {(rem.nearby_places ?? []).map((place, i) => <p key={`${place.name}-${i}`}>{place.name} · {number(place.distance_m / 1000, 2)} km de la mancha</p>)}
       <p>Población estimada dentro de la mancha: {exposure?.people != null ? `${number(exposure.people, 0)} personas` : "sin cobertura válida publicada"}.</p>
@@ -188,7 +166,7 @@ export function PlaceEvidencePanel({feature}: {feature: AlertFeature}) {
       </>}
       <p className="place-note">Para aportar una foto propia, abre «Mi comunidad» y elige «Enviar un reporte».</p>
     </details>
-    <details className="place-block"><summary>Suelo estimado</summary>
+    <details className="place-block" open={wide}><summary>Suelo estimado</summary>
       {data.soil ? <><p>{data.soil.wrb_name}{data.soil.wrb_probability_pct != null && ` · probabilidad publicada ${number(data.soil.wrb_probability_pct, 0)} %`}.</p><p className="place-note">{data.soil.source} · {data.soil.source_date}. Clasificación estimada, no una muestra tomada en campo.</p></> : <p className="place-empty">Clase de suelo sin publicar.</p>}
       {data.soil_photo ? <><p>Ejemplo de este tipo de suelo, fotografiado en otro lugar.</p><PhotoFigure photo={data.soil_photo} /></> : <p className="place-empty">Foto de referencia del suelo con licencia verificada aún no disponible.</p>}
     </details>

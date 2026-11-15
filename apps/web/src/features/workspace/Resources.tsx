@@ -47,11 +47,12 @@ export function applicationLink(kind?: AlertKind, aoi?: string): Link {
   return { name: `${topic.title} · documento de NASA`, href: whitePapers + topic.document };
 }
 
-export function ApplicationReference({ kind, aoi }: { kind?: AlertKind; aoi?: string }) {
+export function ApplicationReference({ kind, aoi, showLink = true }: { kind?: AlertKind; aoi?: string; showLink?: boolean }) {
   const topic = kind === "quake" ? topics.quake
     : kind === "fire" || aoi === "ayacucho-huanta" ? topics.fire
     : aoi === "chosica-rimac" ? topics.landslide
     : kind === "deformation" || aoi === "sabancaya" ? topics.volcano : topics.forest;
+  if (!showLink) return <p>{topic.text}</p>;
   return <section className="alert-application">
     <h4>¿Para qué sirve esto?</h4>
     <p>{topic.text}</p>
@@ -133,13 +134,18 @@ export function ResourceLink({ name, href }: Link) {
   </a>;
 }
 
-export function LearnMore({ aoi, date, kind, onResources }: { aoi?: AOI; date?: string; kind?: AlertKind; onResources: () => void }) {
+export function LearnMore({ aoi, date, kind, onResources, title = "Aprende más", extraLinks = [], children }: {
+  aoi?: AOI; date?: string; kind?: AlertKind; onResources: () => void;
+  title?: string; extraLinks?: Link[]; children?: React.ReactNode;
+}) {
   const localReferences = kind ? alertReferences[kind] : storyReferences[aoi?.id ?? ""] ?? [];
   const map = worldviewLink(aoi, date);
-  const links = kind ? localReferences : [...(map ? [map] : []), ...localReferences, sar, training];
+  const links = [...(kind ? localReferences : [...(map ? [map] : []), ...localReferences, sar, training]), ...extraLinks];
+  const uniqueLinks = [...new Map(links.map(link => [link.href, link])).values()];
   return <details className="technical-details learn-more">
-    <summary>Aprende más</summary>
-    <ul className="resource-links">{links.map(link => <li key={link.href}><ResourceLink {...link} /></li>)}</ul>
+    <summary>{title}</summary>
+    {children}
+    <ul className="resource-links">{uniqueLinks.map(link => <li key={link.href}><ResourceLink {...link} /></li>)}</ul>
     {map && !kind && <p className="muted">En Worldview puedes elegir la fecha y revisar la cobertura de la fuente complementaria.</p>}
     <button type="button" className="text-button" onClick={onResources}>Ver todas las fuentes del reto</button>
   </details>;

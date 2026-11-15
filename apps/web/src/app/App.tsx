@@ -9,6 +9,8 @@ import { LiveSummary } from "../features/workspace/LiveSummary";
 import { EventTimeline } from "../features/workspace/EventTimeline";
 import { OrbitCard } from "../features/workspace/OrbitCard";
 import { ActionSummary, type ActionDestination } from "../features/workspace/ActionSummary";
+import { PlaceSearch } from "../features/workspace/PlaceSearch";
+import type { GuideStep, ZoneFocus } from "../features/workspace/ExplorationGuide";
 import { api, type AOI, type AlertFeature, type AlertKind, type Audience, type Catalog, type CitizenReport,
   type CommunityPlace, type ContextLayer, type FeedStatus, type GlobeStatus, type Health, type LayerManifest, type OrbitData, type PolarizationSummary, type Rainfall, type Story, type TimeSeries, type Trend, type Validation } from "../lib/api";
 import { TABS, type TabId } from "../config/tabs";
@@ -49,6 +51,13 @@ export function App() {
   const [sources, setSources] = useState<FeedStatus[]>([]);
   const [selected, setSelected] = useState<AlertFeature>();
   const [focusVoice, setFocusVoice] = useState(false);
+  const [zoneFocus, setZoneFocus] = useState<ZoneFocus>();
+  const [guideStep, setGuideStep] = useState<GuideStep>(0);
+  const [guideIntroduction, setGuideIntroduction] = useState(() => {
+    try { return localStorage.getItem("gaia_exploration_seen") !== "1"; } catch { return true; }
+  });
+  const [tileError, setTileError] = useState<string>();
+  const [radarRevision, setRadarRevision] = useState(0);
   const [alertKind, setAlertKind] = useState<AlertKind | "all">("all");
   const [alertLevel, setAlertLevel] = useState("all");
   const [alertsLoading, setAlertsLoading] = useState(false);
@@ -64,8 +73,6 @@ export function App() {
   const stopSweep = useRef<(() => void) | undefined>(undefined);
   const [sweeping, setSweeping] = useState(false);
   const [panelOpen, setPanelOpen] = useState(() => window.innerWidth > 720 || new URLSearchParams(location.search).has("lugar"));
-  const [search, setSearch] = useState("");
-  const [searchMessage, setSearchMessage] = useState("");
   const [ready, setReady] = useState(false);
   const [cutoff, setCutoff] = useState<number>();
   const [orbitData, setOrbitData] = useState<OrbitData>();
@@ -88,6 +95,11 @@ export function App() {
   const onIntroDone = useCallback(() => setReady(true), []);
   const onCoverReady = useCallback(() => setWarm(true), []);
   const onEnter = useCallback(() => { setWarm(true); setEntered(true); }, []);
+  useEffect(() => {
+    if (ready && guideIntroduction) {
+      try { localStorage.setItem("gaia_exploration_seen", "1"); } catch { /* Keep the route usable without storage. */ }
+    }
+  }, [ready, guideIntroduction]);
   const refreshOrbit = useCallback(() => {
     api.orbit().then(setOrbitData).catch(() => setOrbitData({ status: "unavailable", source_url: "https://celestrak.org/",
       message: "No se pudieron consultar los elementos orbitales. Reintenta con conexión." }));
@@ -209,7 +221,7 @@ export function App() {
   const showRadar = !!layer && (cutoff == null || Date.parse(layer.dates.b) <= cutoff);
   const preview = activeContext?.before ? activeContext : undefined;
   const radarComparison = !!health?.tiles && showRadar && !!layer?.comparison && !activeContext &&
-    ((tab === "changes" && compare) || storyStep?.layer?.startsWith("diff_"));
+    ((tab === "changes" && compare) || !!storyStep?.layer?.startsWith("diff_"));
   const comparison = radarComparison || (!!preview && showContext);
   const comparisonDates = preview?.before ? { a: preview.before, b: preview.date } : layer?.dates;
   const canUseFalseColor = !!layer?.comparison && layer.kind === "backscatter_diff_db" &&
@@ -221,9 +233,19 @@ export function App() {
       item.provenance.granules.every((granule, index) => granule === layer.provenance.granules[index])
     ));
   const rgb = tab === "changes" && canUseFalseColor && falseColor;
-  const radarBounds = radarComparison && tab === "changes" ? layer?.coverage_bbox : undefined;
-  const automaticRadar = tab === "changes" && current?.id === "ayacucho-huanta"
-    && !!health?.tiles && canUseFalseColor && !contextLoading;
+  const radarBounds = radarComparison ? layer?.coverage_bbox : undefined;
+  const automaticRadar = tab === "changes" && !!layer?.comparison && !!health?.tiles && !contextLoading;
+
+  useEffect(() => {
+    setTileError(undefined);
+    if (!layer || !showRadar || activeContext || !health?.tiles) return;
+    const request = new AbortController();
+    api.checkRadar(layer, radarComparison, rgb, request.signal).catch(error => {
+      if (!request.signal.aborted) setTileError(error instanceof TypeError
+        ? "No se pudo conectar con el servidor de imágenes." : error.message);
+    });
+    return () => request.abort();
+  }, [layer?.id, showRadar, activeContext?.id, health?.tiles, radarComparison, rgb, radarRevision]);
 
   useEffect(() => {
     if (!automaticRadar) { openedRadar.current = undefined; return; }
@@ -232,9 +254,9 @@ export function App() {
     setCutoff(undefined);
     setContextChoice(null);
     setCompare(true);
-    setFalseColor(true);
-    setSplit(reduceMotion ? 50 : 0);
-    setSweeping(!reduceMotion);
+    setFalseColor(false);
+    setSplit(50);
+    setSweeping(false);
   }, [automaticRadar, current?.id, reduceMotion]);
 
   useEffect(() => {
@@ -255,14 +277,26 @@ export function App() {
   useEffect(() => { if (tab !== "changes" && sweeping) { setSweeping(false); setSplit(50); } }, [tab, sweeping]);
 
   const pick = (aoi: AOI) => {
-    setCurrent(aoi);
+    cancelSweep();
+    setCurrent({ ...aoi });
     setSelected(undefined);
+    setCommunityCenter(undefined);
+    setPickingReport(false);
+    setFocusVoice(false);
+    setZoneFocus(undefined);
+    setGuideStep(0);
+    setGuideIntroduction(false);
+    setCutoff(undefined);
+    setContextChoice(undefined);
+    setCompare(false);
+    setSplit(50);
     setTab("story");
     setPanelOpen(true);
-    setSearchMessage("");
   };
   const pickAlert = useCallback((feature: AlertFeature) => {
     setFocusVoice(false);
+    setZoneFocus(undefined);
+    setGuideStep(2);
     setSelected(feature);
     setContextChoice(null);
     setCompare(false);
@@ -283,12 +317,48 @@ export function App() {
   }, [alerts, fireCells, pickAlert]);
   const chooseTab = (id: TabId) => {
     setFocusVoice(false);
+    setZoneFocus(undefined);
+    if (id === "cases") setGuideStep(0);
+    if (id === "changes") { setGuideStep(1); setCutoff(undefined); setContextChoice(null); }
+    if (id === "action") setGuideStep(2);
     if (id === "series") {
       cancelSweep();
       setCompare(false);
       setContextChoice(null);
     }
     setPickingReport(false); setTab(id); setSelected(undefined); setPanelOpen(true);
+  };
+  const priority = alerts.filter(feature => feature.properties.aoi_id === current?.id
+    && feature.properties.remediation?.recipe && feature.properties.remediation.risk_id !== "causa_por_verificar")
+    .sort((a, b) => b.properties.remediation!.index - a.properties.remediation!.index
+      || a.properties.id.localeCompare(b.properties.id))[0];
+  const guidedZone = selected && selected.properties.aoi_id === current?.id && selected.properties.remediation ? selected : priority;
+  const guide = (next: GuideStep) => {
+    setGuideIntroduction(false);
+    cancelSweep();
+    setCutoff(undefined);
+    setContextChoice(null);
+    setPickingReport(false);
+    setFocusVoice(false);
+    setPanelOpen(true);
+    setGuideStep(next);
+    if (next === 0 || next === 1) {
+      setSelected(undefined);
+      setZoneFocus(undefined);
+      setTab(next === 0 ? "cases" : "changes");
+      return;
+    }
+    setTab("action");
+    setSelected(guidedZone);
+    setZoneFocus(previous => ({
+      section: next === 4 ? "voice" : next === 3 ? "actions" : "diagnosis",
+      revision: (previous?.revision ?? 0) + 1,
+    }));
+  };
+  const storyAction = (action: NonNullable<Story["steps"][number]["action"]>) => {
+    if (action === "changes") guide(1);
+    else if (action === "action") guide(2);
+    else if (action === "series" || action === "quality") chooseTab(action);
   };
   const openActionSummary = (destination: ActionDestination, aoi: AOI, zoneId?: string) => {
     setCurrent(aoi);
@@ -322,6 +392,8 @@ export function App() {
     data-sequence={!comparison && tab !== "community" && tab !== "series" || undefined}>
     {warm && <Suspense fallback={null}>
       <Globe aoi={current} communityCenter={tab === "community" ? communityCenter : undefined} active={ready} exaggeration={exaggeration} camera={activeContext ? "zone" : storyStep?.camera ?? "oblique"}
+        cameraStep={tab === "story" ? step : undefined}
+        radarRevision={radarRevision} onRadarError={setTileError}
         reports={reportLayer ? reports : undefined}
         reportPicker={tab === "community" && pickingReport ? point => { setReportPoint(point); setPickingReport(false); } : undefined}
         reportPoint={tab === "community" ? reportPoint : undefined}
@@ -332,7 +404,8 @@ export function App() {
         contextOverlay={activeContext && current && showContext
           ? { url: api.contextImage(current.id, activeContext), credit: activeContext.source,
             beforeUrl: preview ? api.contextImage(current.id, preview, preview.before) : undefined } : undefined}
-        split={split} alerts={filteredAlerts} fireCells={visibleFireCells} cutoff={cutoff}
+        split={split} alerts={storyStep?.observation ? alerts.filter(item => item.properties.kind === storyStep.observation) : filteredAlerts}
+        fireCells={storyStep?.observation && storyStep.observation !== "fire" ? [] : visibleFireCells} cutoff={cutoff}
         orbitData={orbitData} orbitVisible={orbitVisible && cutoff == null} satelliteFocus={satelliteFocus}
         selected={selected} onSelect={pickAlert} onStatus={setMapStatus} />
     </Suspense>}
@@ -343,20 +416,7 @@ export function App() {
           <svg viewBox="0 0 32 32" width="32" height="32" fill="none" aria-hidden="true"><circle cx="16" cy="16" r="13" stroke="currentColor" /><path d="M3 16h26M16 3c-9 7-9 19 0 26 9-7 9-19 0-26Z" stroke="currentColor" /><path d="M8 6c4 3 12 3 16 0M8 26c4-3 12-3 16 0" stroke="currentColor" /></svg>
           <span>GAIA <span>RIKCHAY</span></span>
         </a>
-        <form className="place-search" role="search" onSubmit={event => {
-          event.preventDefault();
-          const term = search.trim().toLocaleLowerCase("es");
-          const match = term && aois.find(aoi => aoi.name.toLocaleLowerCase("es").includes(term) || aoi.id.includes(term));
-          if (match) pick(match);
-          else setSearchMessage("Elige uno de los lugares disponibles en la lista.");
-        }}>
-          <SectionIcon id="cases" />
-          <input type="search" aria-label="Buscar un lugar" placeholder="Buscar un lugar"
-            list="gaia-places" value={search} onChange={event => { setSearch(event.target.value); setSearchMessage(""); }} />
-          <datalist id="gaia-places">{aois.map(aoi => <option key={aoi.id} value={aoi.name} />)}</datalist>
-          <button type="submit" aria-label="Ir al lugar">Buscar</button>
-          {searchMessage && <p className="search-feedback" role="status">{searchMessage}</p>}
-        </form>
+        <PlaceSearch places={aois} current={current} onSelect={pick} />
         <div className="workspace-controls">
         <label className="workspace-light">
           <span>Luz</span>
@@ -390,8 +450,13 @@ export function App() {
       </nav>
 
       {panelOpen ? <Inspector tab={tab} aois={aois} current={current} layers={layers} layer={layer} story={story} ts={ts} trend={trend} catalog={catalog}
+        tileError={tileError} onRetryRadar={() => setRadarRevision(value => value + 1)}
+        guideStep={guideStep} onGuide={guide} canAct={!!guidedZone && !alertsLoading}
+        guideIntroduction={guideIntroduction} onDismissGuide={() => setGuideIntroduction(false)} zoneFocus={zoneFocus}
+        onStoryAction={storyAction}
         polarizationSummary={polarizations.length === 1 ? polarizations[0] : undefined}
-        step={step} setStep={value => { setStep(value); setContextChoice(undefined); }} audience={audience} setAudience={setAudience} pol={pol} setPol={setPol}
+        step={step} setStep={value => { cancelSweep(); setStep(value); setContextChoice(undefined); setCutoff(undefined); setSplit(50); }}
+        audience={audience} setAudience={setAudience} pol={pol} setPol={setPol}
         context={context} activeContext={activeContext} validation={validation}
         onContext={id => { cancelSweep(); setSplit(50); setCompare(false); setContextChoice(id); }} moistureCatalog={moistureCatalog} rainfall={rainfall}
         error={error} contextLoading={contextLoading} onPick={pick} exaggeration={exaggeration} setExaggeration={setExaggeration}

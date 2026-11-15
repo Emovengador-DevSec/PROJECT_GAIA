@@ -2,8 +2,8 @@ aoi: chosica-rimac
 title: Cuando la quebrada baja
 question: ¿Qué cambió en las quebradas de Chosica después de la temporada de lluvias?
 audience_summary:
-  publico: Los huaicos arrastran lodo y piedras. El radar muestra dónde cambió la superficie, de día o de noche.
-  tecnico: Cambio de retrodispersión HH y HV entre fechas antes y después de eventos; GUNW para coherencia en fase P1.
+  publico: Lluvia y escorrentía en las quebradas de Chosica.
+  tecnico: Cambio HH/HV entre fechas comparables · coherencia GUNW prevista.
 hypotheses:
   - id: h1
     text: Los cauces activos mostrarán cambios de rugosidad (subidas o bajadas de HH) por depósito de material.
@@ -21,5 +21,7 @@ steps:
     layer: none
     camera: zone
     context: gpm
-    text: El 25 de febrero de 2026, INDECI registró escorrentía superficial en quebradas de Chosica. La visualización GPM del día muestra intensidad estimada. Sirve para situar el episodio y contrastarlo con un eventual cambio de señal en NISAR.
+    text: INDECI registró escorrentía en Chosica el 25 de febrero de 2026.
+    points:
+      - GPM muestra la intensidad estimada de lluvia ese día para contrastar el episodio con el radar.
   - { title: El cambio, layer: diff_hhhh, camera: oblique, text: "Cambios de rugosidad a lo largo de los cauces." }

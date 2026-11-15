@@ -2,8 +2,8 @@ aoi: madre-de-dios-la-pampa
 title: De bosque a mina, visto a través de las nubes
 question: ¿Dónde y cuánto bosque se perdió en La Pampa entre las fechas analizadas?
 audience_summary:
-  publico: La selva amazónica suele estar cubierta de nubes. El radar de NISAR la ve igual y muestra dónde el bosque desaparece.
-  tecnico: Caída de retrodispersión HV (dispersión de volumen) entre dos pasadas del mismo track, umbral robusto mediana + k·MAD.
+  publico: El radar permite buscar cambios de señal bajo las nubes de la Amazonía.
+  tecnico: Retrodispersión HV entre pasadas de la misma trayectoria · umbral mediana + k·MAD.
 hypotheses:
   - id: h1
     text: Si la caída de señal se concentra en HV más que en HH, el cambio es compatible con pérdida de dosel (menos dispersión de volumen).
@@ -26,7 +26,9 @@ steps:
     layer: none
     camera: zone
     context: radarsat1
-    text: RADARSAT-1 observó esta parte de Madre de Dios en abril de 1998. La escena de banda C ofrece una referencia visual de otra época. La cortina de cambio cuantitativo requiere dos fechas NISAR comparables.
+    text: RADARSAT-1 · banda C · abril de 1998.
+    points:
+      - Referencia visual histórica. El cambio cuantitativo exige dos fechas NISAR comparables.
   - { title: Antes, layer: before_hvhv, camera: zone, text: "Así se veía la señal HV en la primera fecha." }
   - { title: Después, layer: after_hvhv, camera: zone, text: "La misma zona en la segunda fecha." }
   - { title: El cambio, layer: diff_hvhv, camera: oblique, text: "En rojo, dónde la señal cayó más de lo normal para esta imagen." }

@@ -12,6 +12,7 @@ from .detection.change import polygons, robust_threshold
 from .processing.backscatter import boxcar, diff_db, to_db
 from .publish import manifest as M
 from .publish.cog import write_cog
+from .publish.paths import relative_cog
 from .readers import gcov
 
 
@@ -99,7 +100,8 @@ def change_between(aoi_id: str, before: Path, after: Path, layer: str = "HVHV",
     low, high = np.percentile(observations, (2, 98))
     if high <= low:
         low, high = float(low) - .5, float(high) + .5
-    man["comparison"] = {"before_cog_path": str(before_cog), "after_cog_path": str(after_cog),
+    man["comparison"] = {"before_cog_path": relative_cog(before_cog, S.PROCESSED),
+                         "after_cog_path": relative_cog(after_cog, S.PROCESSED),
                          "range": {"min": float(low), "max": float(high)}}
     alerts = polygons(res.loss, ref.transform, thr.min_alert_pixels)
     px_area_ha = abs(ref.transform.a * ref.transform.e) / 1e4
