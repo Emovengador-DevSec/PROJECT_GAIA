@@ -20,6 +20,32 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 - P1 del plan 24: tarjeta «Del radar a la acción» con riesgo y clima publicados, acceso a recetas y al guion español de la zona prioritaria; estados vacíos, fuentes y fechas visibles sin inventar costos ni audio.
 
+- Entrada al globo con barrido azul eléctrico y trazos orbitales en lugar de ondas arcoíris; animación decorativa sin WebGL adicional y omitida con movimiento reducido.
+
+- Marca del botón principal renombrada a GAIA RIKCHAY en mayúsculas.
+
+- Botón GAIA Alerta extendido a 340 px y contenido centrado para coincidir con ambos bordes del panel izquierdo.
+
+- Marca GAIA Alerta con forma de botón azul eléctrico, icono y texto blancos, conservando su acceso al mapa.
+
+- Los tres controles superiores usan fondo azul eléctrico y texto blanco contrastado.
+
+- Acciones orbitales rediseñadas como cápsulas negras con iconos lineales y contornos violeta y menta.
+
+- Acciones de órbita con botones de igual ancho, foco visible y acción Ver satélite en turquesa.
+
+- La fuente de la órbita NISAR es una nota discreta («Fuente: CelesTrak · elementos del …») que enlaza a la página de CelesTrak, no a su API en JSON.
+
+- Paneles con fondo negro espacial y cifras de Alertas por fuente: violeta NISAR, ámbar USGS y coral FIRMS; los grupos conservan sus etiquetas y unidades.
+
+- Grupo de controles superiores ajustado a 340 px para coincidir con ambos bordes del panel Alertas.
+
+- Controles superiores de luz, Sudamérica y Mi comunidad alineados al borde derecho del panel inferior, con margen de 20 px.
+
+- Buscador de lugares centrado en escritorio, con estilo de cápsula y botón Buscar de mayor contraste.
+
+- Paneles laterales simétricos y más delgados (340 px a cada lado, borde superior turquesa, cifras en tarjetas compactas), alineados con la línea de tiempo.
+
 - Línea de tiempo y leyenda en una tarjeta compacta de 340 px al costado izquierdo, en vez de la barra ancha; el panel Acción cuenta solo las 498 manchas evaluadas y filtra «causa por verificar».
 
 - Revisión de las fases 1–4: el riesgo usa la caída HV, la pendiente y la humedad NISAR SME2 medidas dentro de cada mancha y la clase de suelo real de SoilGrids; cada causa exige su evidencia (sin sismo no hay «ladera tras sismo») y sin evidencia la mancha queda como «causa por verificar», sin receta.

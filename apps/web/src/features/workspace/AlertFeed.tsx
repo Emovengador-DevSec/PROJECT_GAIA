@@ -47,7 +47,7 @@ function AlertRow({ feature, onSelect }: { feature: AlertFeature; onSelect: (ite
 
 function AlertGroup({ name, items, onSelect }: { name: string; items: AlertFeature[]; onSelect: (item: AlertFeature) => void }) {
   const [limit, setLimit] = useState(20);
-  return <details className="alert-group">
+  return <details className="alert-group" data-kind={items[0]?.properties.kind}>
     <summary><span>{name}<small>{items[0].properties.place}</small></span><strong>{items.length}</strong></summary>
     <div className="alert-list">{items.slice(0, limit).map(item => <AlertRow key={item.properties.id} feature={item} onSelect={onSelect} />)}</div>
     {items.length > limit && <button type="button" className="text-button" onClick={() => setLimit(value => value + 20)}>Ver 20 observaciones más</button>}

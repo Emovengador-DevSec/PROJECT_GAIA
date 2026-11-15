@@ -338,9 +338,9 @@ export function App() {
     {entered ? <FringeIntro onDone={onIntroDone} /> : <GaiaCover onEnter={onEnter} onReady={onCoverReady} />}
     {ready && <>
       <header className="workspace-bar">
-        <a className="workspace-brand" href="#mapa" onClick={event => { event.preventDefault(); setPanelOpen(false); }} aria-label="GAIA Alerta, explorar mapa">
+        <a className="workspace-brand" href="#mapa" onClick={event => { event.preventDefault(); setPanelOpen(false); }} aria-label="GAIA RIKCHAY, explorar mapa">
           <svg viewBox="0 0 32 32" width="32" height="32" fill="none" aria-hidden="true"><circle cx="16" cy="16" r="13" stroke="currentColor" /><path d="M3 16h26M16 3c-9 7-9 19 0 26 9-7 9-19 0-26Z" stroke="currentColor" /><path d="M8 6c4 3 12 3 16 0M8 26c4-3 12-3 16 0" stroke="currentColor" /></svg>
-          <span>GAIA <span>Alerta</span></span>
+          <span>GAIA <span>RIKCHAY</span></span>
         </a>
         <form className="place-search" role="search" onSubmit={event => {
           event.preventDefault();
@@ -353,9 +353,10 @@ export function App() {
           <input type="search" aria-label="Buscar un lugar" placeholder="Buscar un lugar"
             list="gaia-places" value={search} onChange={event => { setSearch(event.target.value); setSearchMessage(""); }} />
           <datalist id="gaia-places">{aois.map(aoi => <option key={aoi.id} value={aoi.name} />)}</datalist>
-          <button type="submit" aria-label="Ir al lugar">Ir</button>
+          <button type="submit" aria-label="Ir al lugar">Buscar</button>
           {searchMessage && <p className="search-feedback" role="status">{searchMessage}</p>}
         </form>
+        <div className="workspace-controls">
         <label className="workspace-light">
           <span>Luz</span>
           <select value={realTimeLighting ? "real" : "day"} onChange={event => setRealTimeLighting(event.target.value === "real")}>
@@ -365,6 +366,7 @@ export function App() {
         </label>
         <button type="button" className="workspace-action" onClick={() => { setCurrent(undefined); setSelected(undefined); setTab("alerts"); setPanelOpen(true); }}>Sudamérica</button>
         <button type="button" className="workspace-action community-entry" onClick={() => chooseTab("community")}>Mi comunidad</button>
+        </div>
       </header>
 
       <div className="map-context" aria-live="polite">
