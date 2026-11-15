@@ -8,6 +8,7 @@ import { SectionIcon } from "../features/workspace/SectionIcon";
 import { LiveSummary } from "../features/workspace/LiveSummary";
 import { EventTimeline } from "../features/workspace/EventTimeline";
 import { OrbitCard } from "../features/workspace/OrbitCard";
+import { ActionSummary, type ActionDestination } from "../features/workspace/ActionSummary";
 import { api, type AOI, type AlertFeature, type AlertKind, type Audience, type Catalog, type CitizenReport,
   type CommunityPlace, type ContextLayer, type FeedStatus, type GlobeStatus, type Health, type LayerManifest, type OrbitData, type PolarizationSummary, type Rainfall, type Story, type TimeSeries, type Trend, type Validation } from "../lib/api";
 import { TABS, type TabId } from "../config/tabs";
@@ -47,6 +48,7 @@ export function App() {
   const [fireCells, setFireCells] = useState<AlertFeature[]>([]);
   const [sources, setSources] = useState<FeedStatus[]>([]);
   const [selected, setSelected] = useState<AlertFeature>();
+  const [focusVoice, setFocusVoice] = useState(false);
   const [alertKind, setAlertKind] = useState<AlertKind | "all">("all");
   const [alertLevel, setAlertLevel] = useState("all");
   const [alertsLoading, setAlertsLoading] = useState(false);
@@ -260,6 +262,7 @@ export function App() {
     setSearchMessage("");
   };
   const pickAlert = useCallback((feature: AlertFeature) => {
+    setFocusVoice(false);
     setSelected(feature);
     setContextChoice(null);
     setCompare(false);
@@ -278,12 +281,27 @@ export function App() {
     if (match) { linkedAlert.current = null; pickAlert(match); }
   }, [alerts, fireCells, pickAlert]);
   const chooseTab = (id: TabId) => {
+    setFocusVoice(false);
     if (id === "series") {
       cancelSweep();
       setCompare(false);
       setContextChoice(null);
     }
     setPickingReport(false); setTab(id); setSelected(undefined); setPanelOpen(true);
+  };
+  const openActionSummary = (destination: ActionDestination, aoi: AOI, zoneId?: string) => {
+    setCurrent(aoi);
+    setCutoff(undefined);
+    setCompare(false);
+    setContextChoice(null);
+    if (destination === "voice") {
+      const feature = alerts.find(item => item.properties.id === zoneId && item.properties.aoi_id === aoi.id);
+      if (!feature) { chooseTab("action"); return; }
+      pickAlert(feature);
+      setFocusVoice(true);
+      return;
+    }
+    chooseTab(destination === "climate" ? "series" : "action");
   };
   const locateCommunity = useCallback((place: CommunityPlace) => {
     const zone = aois.find(item => item.id === "ayacucho-huanta");
@@ -358,6 +376,7 @@ export function App() {
         {!current && !alertsLoading && !alertsError && <LiveSummary alerts={cutoff == null ? alerts : timelineAlerts} sources={sources} onKind={kind => {
           setAlertKind(kind); setSelected(undefined); chooseTab("alerts");
         }} />}
+        <ActionSummary aoi={current ?? aois.find(aoi => aoi.role === "flagship")} onOpen={openActionSummary} />
         {!selected && !radarBounds && <OrbitCard data={orbitData} visible={orbitVisible} historical={cutoff != null}
           onToggle={() => setOrbitVisible(value => !value)} onFocus={() => { setCurrent(undefined); setSatelliteFocus(value => value + 1); }} onRefresh={refreshOrbit} />}
       </div>
@@ -373,7 +392,7 @@ export function App() {
         context={context} activeContext={activeContext} validation={validation}
         onContext={id => { cancelSweep(); setSplit(50); setCompare(false); setContextChoice(id); }} moistureCatalog={moistureCatalog} rainfall={rainfall}
         error={error} contextLoading={contextLoading} onPick={pick} exaggeration={exaggeration} setExaggeration={setExaggeration}
-        alerts={timelineAlerts} alertsLoading={alertsLoading} alertsError={alertsError} sources={sources} selected={selected}
+        alerts={timelineAlerts} alertsLoading={alertsLoading} alertsError={alertsError} sources={sources} selected={selected} focusVoice={focusVoice}
         onSelectAlert={pickAlert} onClearAlert={() => setSelected(undefined)} onRefresh={refreshAlerts} alertKind={alertKind}
         setAlertKind={value => { setAlertKind(value); setSelected(undefined); }} alertLevel={alertLevel}
         setAlertLevel={value => { setAlertLevel(value); setSelected(undefined); }} health={health} mapStatus={mapStatus}

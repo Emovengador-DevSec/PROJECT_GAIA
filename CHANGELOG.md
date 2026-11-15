@@ -4,6 +4,8 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- P1 del plan 24: tarjeta «Del radar a la acción» con riesgo y clima publicados, acceso a recetas y al guion español de la zona prioritaria; estados vacíos, fuentes y fechas visibles sin inventar costos ni audio.
+
 - Línea de tiempo y leyenda en una tarjeta compacta de 340 px al costado izquierdo, en vez de la barra ancha; el panel Acción cuenta solo las 498 manchas evaluadas y filtra «causa por verificar».
 
 - Revisión de las fases 1–4: el riesgo usa la caída HV, la pendiente y la humedad NISAR SME2 medidas dentro de cada mancha y la clase de suelo real de SoilGrids; cada causa exige su evidencia (sin sismo no hay «ladera tras sismo») y sin evidencia la mancha queda como «causa por verificar», sin receta.

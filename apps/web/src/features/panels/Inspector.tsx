@@ -23,7 +23,7 @@ type Props = {
   error?: string; contextLoading: boolean; onPick: (aoi: AOI) => void;
   exaggeration: number; setExaggeration: (value: number) => void;
   alerts: AlertFeature[]; alertsLoading: boolean; alertsError?: string; sources: FeedStatus[];
-  selected?: AlertFeature; onSelectAlert: (alert: AlertFeature) => void; onClearAlert: () => void; onRefresh: () => void;
+  selected?: AlertFeature; focusVoice?: boolean; onSelectAlert: (alert: AlertFeature) => void; onClearAlert: () => void; onRefresh: () => void;
   alertKind: AlertKind | "all"; setAlertKind: (value: AlertKind | "all") => void;
   alertLevel: string; setAlertLevel: (value: string) => void;
   health?: Health; mapStatus: GlobeStatus; compare: boolean; setCompare: (value: boolean) => void;
@@ -270,7 +270,7 @@ export function Inspector(p: Props) {
       </>}
 
       {tab === "alerts" && <>
-        {p.selected ? <AlertDetails feature={p.selected} onBack={p.onClearAlert} onResources={p.onResources} /> : <>
+        {p.selected ? <AlertDetails feature={p.selected} focusVoice={p.focusVoice} onBack={p.onClearAlert} onResources={p.onResources} /> : <>
           <div className="panel-subheading"><p>Observaciones con fuente y fecha</p><button type="button" className="text-button" disabled={p.alertsLoading} onClick={p.onRefresh}>{p.alertsLoading ? "Actualizando…" : "Actualizar"}</button></div>
           <div className="alert-filters">
             <label>Observación<select value={p.alertKind} onChange={event => p.setAlertKind(event.target.value as AlertKind | "all")}>
@@ -386,7 +386,7 @@ export function Inspector(p: Props) {
       </>}
 
       {tab === "series" && <>
-        <ClimateArcs alerts={p.alerts} sources={p.sources} rainfall={p.rainfall} />
+        <ClimateArcs key={p.current?.id} aoiId={p.current?.id} alerts={p.alerts} sources={p.sources} rainfall={p.rainfall} />
         <p className="panel-introduction">La evolución de la señal radar por fecha ayuda a estudiar qué cambia y qué permanece.</p>
         {p.ts ? <Sparkline ts={p.ts} trend={p.trend} polarization={p.pol} /> : !p.contextLoading && <EmptyState title="Sin serie procesada">Elige un lugar y procesa sus observaciones compatibles para seguir la evolución de HH y HV.</EmptyState>}
         <section className="trend-explanation"><h3>Proyección de tendencia</h3>

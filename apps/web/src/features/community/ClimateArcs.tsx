@@ -3,6 +3,7 @@ import { api, type AlertFeature, type Climate, type FeedStatus, type Rainfall } 
 import { formatDate } from "../../lib/formatDate";
 import { formatNumber as number } from "../../lib/formatNumber";
 import { FireHistory } from "./FireHistory";
+import { climateSummary } from "../workspace/actionSummaryModel";
 
 type Period = "past" | "present" | "future";
 const periods: [Period, string][] = [["past", "Pasado"], ["present", "Presente"], ["future", "Futuro"]];
@@ -28,17 +29,19 @@ function ClimatePlot({ climate, projected }: { climate: Climate; projected: bool
   </svg>;
 }
 
-export function ClimateArcs({ alerts, sources, rainfall }: { alerts: AlertFeature[]; sources: FeedStatus[]; rainfall?: Rainfall }) {
+export function ClimateArcs({ alerts, sources, rainfall, aoiId = "ayacucho-huanta" }: { alerts: AlertFeature[]; sources: FeedStatus[]; rainfall?: Rainfall; aoiId?: string }) {
   const [period, setPeriod] = useState<Period>("past");
   const [climate, setClimate] = useState<Climate | null>();
   const [error, setError] = useState(false);
   useEffect(() => {
     const request = new AbortController();
-    api.climate("ayacucho-huanta", request.signal).then(setClimate).catch(() => {
+    setClimate(undefined);
+    setError(false);
+    api.climate(aoiId, request.signal).then(value => { if (!request.signal.aborted) setClimate(value); }).catch(() => {
       if (!request.signal.aborted) setError(true);
     });
     return () => request.abort();
-  }, []);
+  }, [aoiId]);
   const current = climate?.current;
   const history = climate?.annual ?? [];
   const latest = history.at(-1);
@@ -46,7 +49,9 @@ export function ClimateArcs({ alerts, sources, rainfall }: { alerts: AlertFeatur
   const quake = sources.find(source => source.source === "USGS");
   return <section className="community-block climate-arcs">
     <h3>Calor, tierra y agua</h3>
-    <p className="muted">Clima de Ayacucho y observaciones recientes de las fuentes del globo.</p>
+    <p className="muted">Clima de {aoiId} y observaciones recientes de las fuentes del globo.</p>
+    <p className="status-message">{climateSummary(climate)}</p>
+    {climate?.typical_season && <p>{climate.typical_season.description}</p>}
     <div className="climate-periods" role="group" aria-label="Periodo de los arcos">{periods.map(([id, name]) =>
       <button type="button" key={id} aria-pressed={period === id} onClick={() => setPeriod(id)}>{name}</button>)}</div>
     <section className="climate-lane"><h4>Calor y aire</h4>
@@ -71,7 +76,7 @@ export function ClimateArcs({ alerts, sources, rainfall }: { alerts: AlertFeatur
       </>}
       {period === "future" && <p className="muted">Aquí se muestran las mediciones históricas de lluvia y los eventos observados en sus periodos correspondientes.</p>}
     </section>
-    {!climate && <p role="status" className="muted">{error ? "No se pudo cargar el clima." : climate === null ? "Falta publicar la serie NASA POWER para Ayacucho." : "Cargando la serie diaria…"}</p>}
+    {!climate && <p role="status" className="muted">{error ? "No se pudo cargar el clima." : climate === null ? `Falta publicar la serie NASA POWER: sarlab climate --aoi ${aoiId}.` : "Cargando la serie diaria…"}</p>}
     {climate && <p className="muted"><a href={climate.source_url} target="_blank" rel="noreferrer">{climate.source}</a> · {climate.version} · {formatDate(climate.fetched_at)}. Estimación regional en una celda de reanálisis. Climatología 1991–2020.</p>}
   </section>;
 }

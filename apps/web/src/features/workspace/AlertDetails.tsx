@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, type AlertFeature, type RemediationBulletinResponse } from "../../lib/api";
 import { formatDate } from "../../lib/formatDate";
 import { formatNumber as number } from "../../lib/formatNumber";
@@ -12,9 +12,15 @@ function ExposureMetric({ label, value, unit }: { label: string; value?: number 
   return <div><dt>{label}</dt><dd>{number(value)} {value != null && unit && <small>{unit}</small>}</dd></div>;
 }
 
-export function AlertDetails({ feature, onBack, onResources }: { feature: AlertFeature; onBack: () => void; onResources: () => void }) {
+export function AlertDetails({ feature, onBack, onResources, focusVoice }: { feature: AlertFeature; onBack: () => void; onResources: () => void; focusVoice?: boolean }) {
   const p = feature.properties;
   const [bulletinData, setBulletinData] = useState<RemediationBulletinResponse | null>(null);
+  const voiceSection = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!focusVoice || !bulletinData) return;
+    voiceSection.current?.focus({ preventScroll: true });
+    voiceSection.current?.scrollIntoView({ block: "start", behavior: "instant" });
+  }, [focusVoice, bulletinData]);
   const [bulletinLang, setBulletinLang] = useState<"es" | "qu">("es");
   const [copiedScript, setCopiedScript] = useState(false);
   const [minkaCommunity, setMinkaCommunity] = useState("");
@@ -416,7 +422,7 @@ export function AlertDetails({ feature, onBack, onResources }: { feature: AlertF
         </div>
 
         {bulletinData && (
-          <div className="last-mile-section" style={{ marginTop: "1rem", borderTop: "1px solid var(--border-subtle, #30363d)", paddingTop: "1rem" }}>
+          <div className="last-mile-section" ref={voiceSection} tabIndex={-1} aria-label="GAIA Voz y Minka" style={{ marginTop: "1rem", borderTop: "1px solid var(--border-subtle, #30363d)", paddingTop: "1rem" }}>
             <h4 style={{ margin: "0 0 6px 0", color: "#f9a825", display: "flex", alignItems: "center", gap: "6px" }}>
               <span>📻</span> Boletín radial «GAIA Voz» y Minka comunal
             </h4>
