@@ -5,6 +5,7 @@ import type { AOI, AlertFeature, AlertKind, Audience, Catalog, ContextLayer, Fee
 import { TABS, type TabId } from "../../config/tabs";
 import { formatDate } from "../../lib/formatDate";
 import { formatNumber as number } from "../../lib/formatNumber";
+import { ZoneIdentity, groupZones } from "../workspace/ZoneIdentity";
 import { AlertDetails } from "../workspace/AlertDetails";
 import { ApplicationReference, LearnMore, Resources, nisarGuide, training, uavsarPostcards } from "../workspace/Resources";
 import { RadarGlossary, vertexGranule } from "../workspace/RadarGlossary";
@@ -184,46 +185,12 @@ function ActionPanel({
         </label>
       </div>
 
-      <div className="case-list" style={{ marginTop: "1rem" }}>
-        {remediationAlerts.map(feature => {
-          const p = feature.properties;
-          const rem = p.remediation;
-          const levelColor = rem?.color_hex ?? (p.level === "alto" ? "#F44336" : p.level === "medio" ? "#FF9800" : "#4CAF50");
-          return (
-            <button
-              key={p.id}
-              type="button"
-              className="case"
-              style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", textAlign: "left", gap: "4px" }}
-              onClick={() => onSelect(feature)}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", width: "100%", alignItems: "center" }}>
-                <strong style={{ fontSize: "0.95rem" }}>{rem?.risk_name ?? p.title}</strong>
-                <span
-                  className="alert-level"
-                  data-level={rem?.level ?? p.level}
-                  style={{ borderColor: levelColor, color: levelColor }}
-                >
-                  {rem?.level ?? p.level}
-                </span>
-              </div>
-              <small className="muted">
-                {p.place} · {p.metrics.area_ha != null ? `${number(p.metrics.area_ha)} ha` : ""}
-                {rem ? ` · Índice ${(rem.index * 100).toFixed(0)}%` : ""}
-              </small>
-              {rem?.recipe && (
-                <small style={{ color: "var(--accent, #64b5f6)" }}>
-                  Receta: {rem.recipe.species_primary?.slice(0, 2).join(", ")}
-                </small>
-              )}
-              {rem?.budget?.[0] && (
-                <small className="muted">
-                  Presupuesto: {rem.budget[0].cost_label}
-                </small>
-              )}
-            </button>
-          );
-        })}
+      <div className="case-list zone-cause-list">
+        {groupZones(remediationAlerts).map(group => <section className="zone-cause-group" key={group.id}>
+          <h3>{group.name}<span>{group.items.length}</span></h3>
+          {group.items.map(feature => <button key={feature.properties.id} type="button" className="case"
+            onClick={() => onSelect(feature)}><ZoneIdentity feature={feature} compact /></button>)}
+        </section>)}
       </div>
 
       {!remediationAlerts.length && (

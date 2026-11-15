@@ -10,7 +10,8 @@ const zones = causes.map(cause => data.alerts.find(zone => zone.risk_id === caus
   ?? data.alerts.find(zone => zone.risk_id === cause));
 assert(zones.every(Boolean), "Three actual causes must exist in the published dataset");
 assert.equal(new Set(zones.map(zone => zone.summary)).size, 3);
-const out = "deploy/verificacion-f1";
+const identityMode = process.argv.includes("--identity");
+const out = identityMode ? "deploy/verificacion-f2" : "deploy/verificacion-f1";
 await mkdir(out, { recursive: true });
 const browser = await puppeteer.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe",
   headless: true, args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"] });
@@ -33,9 +34,9 @@ try {
       assert(!zone.summary.toLowerCase().includes("focos"));
       assert(!zone.cause_explanation.toLowerCase().includes("focos"));
     }
-    await page.$eval(".remediation-section", el => el.scrollIntoView({ block: "start", behavior: "instant" }));
+    if (!identityMode) await page.$eval(".remediation-section", el => el.scrollIntoView({ block: "start", behavior: "instant" }));
     await page.screenshot({ path: `${out}/${zone.risk_id}-1366.png` });
-    const visible = await page.$eval(".zone-diagnosis-cause", el => {
+    const visible = await page.$eval(identityMode ? ".alert-detail > .zone-identity" : ".zone-diagnosis-cause", el => {
       const panel = document.querySelector(".inspector-content").getBoundingClientRect();
       const r = el.getBoundingClientRect();
       return r.top >= panel.top && r.bottom <= panel.bottom;

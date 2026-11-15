@@ -3,6 +3,7 @@ import { api, type AlertFeature, type RemediationBulletinResponse } from "../../
 import { formatDate } from "../../lib/formatDate";
 import { formatNumber as number } from "../../lib/formatNumber";
 import { ApplicationReference, LearnMore } from "./Resources";
+import { ZoneIdentity } from "./ZoneIdentity";
 import { CountUp } from "./CountUp";
 
 
@@ -104,10 +105,12 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice }: { fea
   const exposureSources = Object.values(exposure?.sources ?? {});
   return <article className="alert-detail" data-kind={p.kind}>
     <button type="button" className="text-button detail-back" onClick={onBack}>Volver a las observaciones</button>
+    {p.remediation ? <ZoneIdentity feature={feature} /> : <>
     <div className="source-row"><span className="source-label">{source}</span><span className="alert-level" data-level={p.level}>Prioridad {p.level}</span></div>
     <h3>{p.title}</h3>
     <p className="alert-place">{p.place}</p>
     <p className="muted">{formatDate(p.date)}</p>
+    </>}
     {p.comparison_summary && <p className="muted">
       La zona de estudio registra {number(p.comparison_summary.loss_area_ha)} ha con caída de señal HV.
       {" "}{p.comparison_summary.alerts} manchas delimitadas reúnen {number(p.comparison_summary.mapped_loss_area_ha)} ha.

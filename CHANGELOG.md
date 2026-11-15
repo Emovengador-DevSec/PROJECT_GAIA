@@ -4,6 +4,8 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- F2 del plan 25: cabecera por mancha con área y principales factores medidos; lista Acción agrupada por causa y ordenada por índice, sin especies ni presupuesto en sus tarjetas.
+
 - F1 del plan 25: diagnóstico compuesto con las mediciones y las evidencias de cada mancha; se retiran el texto fijo de causa y la condición interna de la receta de la ficha.
 
 - P1 del plan 24: tarjeta «Del radar a la acción» con riesgo y clima publicados, acceso a recetas y al guion español de la zona prioritaria; estados vacíos, fuentes y fechas visibles sin inventar costos ni audio.
