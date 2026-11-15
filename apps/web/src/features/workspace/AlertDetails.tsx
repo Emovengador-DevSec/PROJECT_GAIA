@@ -310,7 +310,7 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice, onChang
             rel="noopener noreferrer"
             style={{ width: "100%", justifyContent: "center" }}
           >
-            Descargar constancia oficial (PDF)
+            Descargar constancia (PDF)
           </a>
         </div>
 
@@ -339,7 +339,7 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice, onChang
                 style={{ fontSize: "0.78rem", padding: "4px 10px" }}
                 onClick={() => setBulletinLang("qu")}
               >
-                Quechua Chanka ({bulletinData.bulletin.duration_qu_seconds} s)
+                {bulletinData.audio_url_qu ? "Quechua · grabación de hablante" : "Quechua · borrador sin grabar"}
               </button>
             </div>
 
@@ -406,8 +406,8 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice, onChang
               </div>
             </div>
 
-            {/* Emisoras aliadas */}
-            <details style={{ marginTop: "8px", fontSize: "0.78rem" }}>
+            {/* Mostrar emisoras solo cuando existan registros publicados. */}
+            {!!bulletinData.bulletin.stations.length && <details style={{ marginTop: "8px", fontSize: "0.78rem" }}>
               <summary style={{ cursor: "pointer", color: "var(--accent, #64b5f6)" }}>
                 Radios locales aliadas para emisión ({bulletinData.bulletin.stations.length})
               </summary>
@@ -418,7 +418,7 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice, onChang
                   </li>
                 ))}
               </ul>
-            </details>
+            </details>}
 
             {/* Minka comunal */}
             <div className="minka-box" style={{ marginTop: "10px", padding: "10px", background: "rgba(76, 175, 80, 0.08)", border: "1px solid rgba(76, 175, 80, 0.3)", borderRadius: "6px" }}>
@@ -533,17 +533,7 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice, onChang
               </p>
             </div> : <p className="status-message">SMS no disponible: falta un poblado cercano publicado.</p>}
 
-            {/* Yachaq Digital & Tambos PAIS */}
-            <div style={{ marginTop: "10px", padding: "8px", background: "var(--surface-subtle, #141b22)", borderRadius: "6px", border: "1px solid var(--border-subtle, #30363d)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <h6 style={{ margin: 0, color: "#90caf9", fontSize: "0.78rem" }}>{bulletinData.roadmap_yachaq.title}</h6>
-                <span className="badge-provisional" style={{ fontSize: "0.68rem", padding: "1px 5px" }}>Hoja de ruta</span>
-              </div>
-              <p className="muted" style={{ fontSize: "0.72rem", margin: "4px 0 0 0" }}>
-                {bulletinData.roadmap_yachaq.description}
-              </p>
-            </div>
-
+            {/* Yachaq se conserva como hoja de ruta en docs/23, fuera de la ficha. */}
             <div style={{ marginTop: "8px" }}>
               <button
                 type="button"
