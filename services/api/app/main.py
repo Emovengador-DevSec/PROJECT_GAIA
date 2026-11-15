@@ -11,6 +11,7 @@ from collections import OrderedDict
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from functools import cache, lru_cache
+from hashlib import sha256
 from pathlib import Path
 from threading import Lock
 from time import monotonic
@@ -837,8 +838,10 @@ def remediation_audio_wav(aoi: str, zone_id: str, lang: Literal["es", "qu"] = "e
     b_data = generate_radio_script(target_alert, aoi_id=aoi)
     script_text = b_data["script_es"] if lang == "es" else b_data["script_qu"]
 
+    script_hash = sha256(script_text.encode("utf-8")).hexdigest()[:16]
     cache_path = (
-        PROCESSED.parent / "04_published" / "remediation" / "audio" / f"{aoi}_{zone_id}_{lang}.wav"
+        PROCESSED.parent / "04_published" / "remediation" / "audio"
+        / f"{aoi}_{zone_id}_{lang}_{script_hash}.wav"
     )
     wav_bytes = synthesize_bulletin_audio_wav(script_text, cache_path=cache_path)
     return Response(

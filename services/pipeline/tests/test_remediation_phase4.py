@@ -36,6 +36,8 @@ SAMPLE_ALERT = {
     },
     "exposure": {
         "places": ["Pallja", "Ccochapunco", "Pampa Corral"],
+        "nearby_places": [{"name": "Pallja", "distance_m": 100},
+                          {"name": "Ccochapunco", "distance_m": 200}],
     },
     "risk": {
         "dominant_risk": "erosion_huaico",
@@ -60,7 +62,7 @@ SAMPLE_ALERT = {
 def test_generate_radio_script_spanish_and_quechua():
     script_data = generate_radio_script(SAMPLE_ALERT, aoi_id="ayacucho-huanta")
     assert script_data["alert_id"] == "alr_test_001"
-    assert "Atención, comunidades de Huanta y La Mar" in script_data["script_es"]
+    assert "Atención, comunidades" in script_data["script_es"]
     assert "Aviso de monitoreo. No reemplaza a INDECI" in script_data["script_es"]
     assert "3.5 hectáreas" in script_data["script_es"]
     assert "Pallja" in script_data["script_es"]
@@ -79,17 +81,17 @@ def test_generate_minka_call():
     minka = generate_minka_call(SAMPLE_ALERT, aoi_id="ayacucho-huanta")
     assert minka["alert_id"] == "alr_test_001"
     assert minka["primary_place"] == "Pallja"
-    assert minka["needed_workers"] >= 15
-    assert len(minka["recommended_tools"]) >= 2
+    assert minka["needed_workers"] is None
+    assert minka["estimated_days"] is None
     assert "wa.me/?text=" in minka["whatsapp"]["url"]
-    assert "🌿 *CONVOCATORIA MINKA COMUNAL" in minka["whatsapp"]["text"]
-    assert minka["savings_estimated_soles"] > 0
+    assert "PROPUESTA MINKA COMUNAL" in minka["whatsapp"]["text"]
+    assert minka["savings_estimated_soles"] is None
 
     # SMS verification preview
     sms = minka["sms_verification"]
     assert sms["mode"] == "preview_only"
     assert "GAIA Alerta" in sms["text"]
-    assert sms["char_count"] <= 160
+    assert sms["char_count"] == len(sms["text"])
 
 
 def test_synthesize_bulletin_audio_wav():

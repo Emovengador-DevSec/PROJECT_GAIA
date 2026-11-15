@@ -4,6 +4,8 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- F5 del plan 25: costos sin verificar sin fuentes ni descuentos visibles; Minka sin cuadrillas, días o ahorros supuestos; tres poblados cercanos por mancha y SMS solo cuando hay un poblado identificado.
+
 - F4 del plan 25: escenarios solo como ganancias relativas bajo «Ver supuestos» mientras sus citas no estén verificadas; sin NDVI «actual» ni valores absolutos en la publicación o el PDF.
 
 - F3 del plan 25: se retiran las fotos HLS regionales de las fichas por falta de georreferencia archivada verificable; acceso a la imagen regional en Cambios, sin presentarla como foto de cada mancha.

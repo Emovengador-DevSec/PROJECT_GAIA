@@ -51,15 +51,11 @@ def load_minka_config() -> dict[str, Any]:
 
 def _get_places_str(alert_data: dict[str, Any]) -> tuple[str, str]:
     """Extrae nombres de centros poblados cercanos para español y quechua."""
-    places = alert_data.get("exposure", {}).get("places") or []
-    if not places:
-        factors = alert_data.get("factors", {})
-        places = factors.get("places") or []
-    if isinstance(places, list) and places:
-        primary = str(places[0])
-        top3 = [str(p) for p in places[:3]]
-        return ", ".join(top3), primary
-    return "", ""
+    nearby = alert_data.get("nearby_places") or (alert_data.get("exposure") or {}).get("nearby_places") or []
+    places = sorted((p for p in nearby if p.get("name") and p.get("distance_m") is not None
+                     and p["distance_m"] >= 0), key=lambda p: p["distance_m"])[:3]
+    names = [p["name"] for p in places]
+    return (", ".join(names), names[0]) if names else ("", "")
 
 
 def generate_radio_script(alert_data: dict[str, Any], aoi_id: str = "ayacucho-huanta") -> dict[str, Any]:
@@ -91,11 +87,11 @@ def generate_radio_script(alert_data: dict[str, Any], aoi_id: str = "ayacucho-hu
     species_str = ", ".join(species[:3])
 
     places_top3, primary_place = _get_places_str(alert_data)
-    where = f"cerca de {places_top3}" if places_top3 else "en la zona de Huanta y La Mar"
+    where = f"cerca de {places_top3}" if places_top3 else "en el área satelital analizada"
 
     # Guion en español: solo frases respaldadas por datos de la mancha
     parts = [
-        "Atención, comunidades de Huanta y La Mar. GAIA Voz informa:",
+        "Atención, comunidades. GAIA Voz informa:",
         f"el radar NISAR detectó cambios en {area_ha:.1f} hectáreas {where}.",
     ]
     if slope_deg is not None:
@@ -131,7 +127,8 @@ def generate_radio_script(alert_data: dict[str, Any], aoi_id: str = "ayacucho-hu
     return {
         "alert_id": alert_id,
         "aoi_id": aoi_id,
-        "headline": f"Boletín radial: Alerta {level.upper()} en {primary_place}",
+        "headline": f"Boletín radial: monitoreo {level.upper()}"
+                    + (f" cerca de {primary_place}" if primary_place else ""),
         "script_es": script_es,
         "script_qu": script_qu,
         "duration_es_seconds": duration_es_s,
@@ -155,79 +152,40 @@ def generate_minka_call(alert_data: dict[str, Any], aoi_id: str = "ayacucho-huan
     """Genera la convocatoria a Minka Digital para WhatsApp, SMS o asamblea comunal."""
     m_cfg = load_minka_config()
     defaults = m_cfg.get("minka", {}).get("defaults_by_intervention", {})
-    alert_id = alert_data.get("alert_id") or alert_data.get("id", "alr_001")
-    area_ha = float(alert_data.get("area_ha") or alert_data.get("metrics", {}).get("area_ha") or 0.0)
-    level = alert_data.get("level", "medio").lower()
-
+    alert_id = alert_data.get("alert_id") or alert_data.get("id", "")
     places_top3, primary_place = _get_places_str(alert_data)
-
-    recipe = alert_data.get("recipe") or {}
-    interventions = recipe.get("interventions") or []
-    int_id = interventions[0].get("intervention_id") if interventions else "zanjas_infiltracion"
-
-    int_cfg = defaults.get(int_id, defaults.get("zanjas_infiltracion", {}))
-    workers_per_ha = int(int_cfg.get("workers_per_ha", 25))
-    total_workers = max(15, min(80, int(math.ceil(workers_per_ha * max(0.5, min(area_ha, 3.0))))))
-    days_est = int(int_cfg.get("days_estimated", 3))
-
-    tools = int_cfg.get("recommended_tools", ["Picos", "Palas", "Barretas", "Nivel en A"])
-    supplies = int_cfg.get("supplies", ["Plantones nativos y piedras locales"])
-    traditional_support = int_cfg.get("traditional_support", "Olla común con el comité de regantes")
-
-    cost_data = alert_data.get("cost_benefit") or {}
-    minka_savings = cost_data.get("minka_savings_soles")
-
-    recipe_title = recipe.get("risk_name") or "Verificación en campo (causa por confirmar)"
-
-    wa_text = (
-        f"🌿 *CONVOCATORIA MINKA COMUNAL - GAIA ALERTA* 🌿\n\n"
-        f"📍 *Sector:* {primary_place} ({places_top3})\n"
-        f"🛰️ *Detección radar NISAR:* {area_ha:.1f} ha con riesgo {level.upper()}\n"
-        f"🌱 *Solución natural:* {recipe_title}\n"
-        f"👥 *Meta comunal:* {total_workers} comuneros durante {days_est} días\n"
-        f"🛠️ *Herramientas:* {', '.join(tools[:3])}\n"
-        f"🍲 *Apoyo:* {traditional_support}\n"
-        + (f"💰 *Ahorro comunal estimado:* S/ {minka_savings:,.0f}\n" if minka_savings else "")
-        + "\n"
-        "🔗 *Evidencia satelital:* http://localhost:5173\n"
-        "⚠️ *Aviso de monitoreo. No reemplaza a INDECI. Verificar en campo.*"
-    )
-    wa_url = f"https://wa.me/?text={urllib.parse.quote(wa_text)}"
-
-    # SMS compacto de verificación (Fase 4.2)
-    sms_text = (
-        f"GAIA Alerta ({alert_id[-8:]}): Cambio radar en {primary_place}. "
-        f"¿Viste fuego o derrumbe? Responde 1 para SI, 2 para NO. "
-        f"Aviso de monitoreo. Verificar en campo."
-    )
-    if len(sms_text) > 160:
-        sms_text = sms_text[:157] + "..."
-
+    techniques = [{"name": b["name"], "timing": b.get("timing")}
+                  for b in alert_data.get("budget", []) if b.get("name")]
+    tools = list(dict.fromkeys(tool for b in alert_data.get("budget", [])
+                 for tool in defaults.get(b.get("intervention_id"), {}).get("recommended_tools", [])))
+    area = alert_data.get("area_ha")
+    lines = ["PROPUESTA MINKA COMUNAL - GAIA", f"Zona satelital: {alert_id}"]
+    if primary_place:
+        lines.append(f"Poblados cercanos: {places_top3}")
+    if area is not None:
+        lines.append(f"Area de cambio radar: {area:.2f} ha")
+    for technique in techniques:
+        lines.append(f"Tecnica sugerida: {technique['name']}" +
+                     (f". Temporada: {technique['timing']}" if technique.get("timing") else ""))
+    if tools:
+        lines.append("Herramientas sugeridas: " + ", ".join(tools))
+    notice = "Aviso de monitoreo. No reemplaza a INDECI ni a la autoridad local. Verificar en campo."
+    lines.append(notice)
+    text = "\n".join(lines)
+    sms = None
+    if primary_place:
+        sms_text = f"GAIA Alerta: cambio radar cerca de {primary_place}. {notice}"
+        sms = {"text": sms_text, "char_count": len(sms_text), "mode": "preview_only",
+               "notice": "Vista previa. No se ha enviado ningun SMS."}
     return {
-        "alert_id": alert_id,
-        "aoi_id": aoi_id,
-        "title": f"Faena Comunal Minka en {primary_place}",
-        "primary_place": primary_place,
-        "target_communities": places_top3.split(", ") if places_top3 else [primary_place],
-        "needed_workers": total_workers,
-        "estimated_days": days_est,
-        "recommended_tools": tools,
-        "supplies": supplies,
-        "traditional_support": traditional_support,
-        "savings_estimated_soles": minka_savings,
-        "whatsapp": {
-            "text": wa_text,
-            "url": wa_url,
-        },
-        "sms_verification": {
-            "text": sms_text,
-            "char_count": len(sms_text),
-            "mode": "preview_only",
-            "notice": (
-                "Modo vista previa: ningún SMS enviado sin credencial Twilio "
-                "ni consentimiento explícito registrado."
-            ),
-        },
+        "alert_id": alert_id, "aoi_id": aoi_id,
+        "title": "Propuesta de Minka comunal", "primary_place": primary_place,
+        "target_communities": places_top3.split(", ") if places_top3 else [],
+        "techniques": techniques, "needed_workers": None, "estimated_days": None,
+        "savings_estimated_soles": None, "recommended_tools": tools,
+        "supplies": [], "traditional_support": "",
+        "whatsapp": {"text": text, "url": f"https://wa.me/?text={urllib.parse.quote(text)}"},
+        "sms_verification": sms,
     }
 
 

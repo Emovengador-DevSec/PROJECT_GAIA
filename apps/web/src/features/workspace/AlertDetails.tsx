@@ -3,6 +3,7 @@ import { api, type AlertFeature, type RemediationBulletinResponse } from "../../
 import { formatDate } from "../../lib/formatDate";
 import { formatNumber as number } from "../../lib/formatNumber";
 import { ApplicationReference, LearnMore } from "./Resources";
+import { BudgetSummary } from "./BudgetSummary";
 import { RecoveryScenario } from "./RecoveryScenario";
 import { ZoneIdentity } from "./ZoneIdentity";
 import { CountUp } from "./CountUp";
@@ -26,8 +27,8 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice, onChang
   const [bulletinLang, setBulletinLang] = useState<"es" | "qu">("es");
   const [copiedScript, setCopiedScript] = useState(false);
   const [minkaCommunity, setMinkaCommunity] = useState("");
-  const [minkaVolunteers, setMinkaVolunteers] = useState(10);
-  const [minkaTools, setMinkaTools] = useState("Picos y palas");
+  const [minkaVolunteers, setMinkaVolunteers] = useState<number | "">("");
+  const [minkaTools, setMinkaTools] = useState("");
   const [minkaContact, setMinkaContact] = useState("");
   const [commitSuccess, setCommitSuccess] = useState(false);
   const [commitSubmitting, setCommitSubmitting] = useState(false);
@@ -59,9 +60,9 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice, onChang
     setCommitSubmitting(true);
     try {
       const res = await api.postMinkaCommitment(aoi, zoneId, {
-        community: minkaCommunity || "Comunidad vecina",
-        volunteers: Number(minkaVolunteers) || 5,
-        tools: minkaTools || "Herramientas de labranza",
+        community: minkaCommunity.trim(),
+        volunteers: Number(minkaVolunteers),
+        tools: minkaTools.trim(),
         contact_name: minkaContact,
       });
       if (bulletinData) {
@@ -223,51 +224,7 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice, onChang
           </div>
         )}
 
-        <h4>Presupuesto estimado de intervención</h4>
-        {p.remediation.budget?.length > 0 ? (
-          <div className="budget-table-wrap">
-            <table className="budget-table" style={{ width: "100%", fontSize: "0.85rem", borderCollapse: "collapse", marginTop: "0.5rem" }}>
-              <thead>
-                <tr style={{ borderBottom: "1px solid var(--border, #333)", textAlign: "left" }}>
-                  <th style={{ padding: "4px" }}>Técnica</th>
-                  <th style={{ padding: "4px" }}>Temporada</th>
-                  <th style={{ padding: "4px" }}>Unidad</th>
-                  <th style={{ padding: "4px" }}>Presupuesto</th>
-                </tr>
-              </thead>
-              <tbody>
-                {p.remediation.budget.map((b) => (
-                  <tr key={b.intervention_id} style={{ borderBottom: "1px solid var(--border-subtle, #222)" }}>
-                    <td style={{ padding: "6px 4px" }}>
-                      <strong>{b.name}</strong>
-                      <br />
-                      <small className="muted">{b.notes}</small>
-                      {b.source && (
-                        <div>
-                          <small className="muted">Fuente: {b.source}</small>
-                        </div>
-                      )}
-                      {b.minka_discount_pct && (
-                        <div>
-                          <small className="badge-provisional">
-                            Minka comunal: hasta {b.minka_discount_pct}% menos en efectivo
-                          </small>
-                        </div>
-                      )}
-                    </td>
-                    <td style={{ padding: "6px 4px" }}><small>{b.timing}</small></td>
-                    <td style={{ padding: "6px 4px" }}><small>{b.unit}</small></td>
-                    <td style={{ padding: "6px 4px" }}>
-                      <strong>{b.cost_label}</strong>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <p className="empty-inline">Sin intervenciones presupuestadas.</p>
-        )}
+        <BudgetSummary items={p.remediation.budget ?? []} />
 
         <details className="technical-details">
           <summary>Procedencia y fuentes de remediación</summary>
@@ -466,27 +423,13 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice, onChang
             {/* Minka comunal */}
             <div className="minka-box" style={{ marginTop: "10px", padding: "10px", background: "rgba(76, 175, 80, 0.08)", border: "1px solid rgba(76, 175, 80, 0.3)", borderRadius: "6px" }}>
               <h5 style={{ margin: "0 0 4px 0", color: "#81c784" }}>Minka Digital · Convocatoria comunal</h5>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", margin: "6px 0" }}>
-                <div style={{ background: "rgba(255,255,255,0.03)", padding: "6px", borderRadius: "4px" }}>
-                  <span className="muted" style={{ fontSize: "0.72rem" }}>Meta comunal</span>
-                  <p style={{ margin: 0, fontWeight: "bold", fontSize: "0.85rem" }}>{bulletinData.minka.needed_workers} comuneros</p>
-                  <small className="muted" style={{ fontSize: "0.7rem" }}>{bulletinData.minka.estimated_days} días de faena</small>
-                </div>
-                <div style={{ background: "rgba(255,255,255,0.03)", padding: "6px", borderRadius: "4px" }}>
-                  <span className="muted" style={{ fontSize: "0.72rem" }}>Ahorro Minka</span>
-                  <p style={{ margin: 0, fontWeight: "bold", fontSize: "0.85rem", color: "#81c784" }}>
-                    S/ {number(bulletinData.minka.savings_estimated_soles)}
-                  </p>
-                  <small className="muted" style={{ fontSize: "0.7rem" }}>Hasta 40% del costo total</small>
-                </div>
-              </div>
-
-              <p style={{ fontSize: "0.78rem", margin: "4px 0" }}>
-                <strong>Comunidades convocadas:</strong> {bulletinData.minka.target_communities.join(" · ")}
+              <ul>{(bulletinData.minka.techniques ?? []).map(item => <li key={item.name}>
+                {item.name}{item.timing && ` · ${item.timing}`}
+              </li>)}</ul>
+              <p><strong>Poblados cercanos (sin convocatoria enviada):</strong>{" "}
+                {bulletinData.minka.target_communities.length ? bulletinData.minka.target_communities.join(" · ") : "Sin poblados publicados para esta mancha"}
               </p>
-              <p style={{ fontSize: "0.78rem", margin: "4px 0" }}>
-                <strong>Herramientas:</strong> {bulletinData.minka.recommended_tools.join(", ")}
-              </p>
+              {!!bulletinData.minka.recommended_tools.length && <p><strong>Herramientas sugeridas:</strong> {bulletinData.minka.recommended_tools.join(", ")}</p>}
 
               <div style={{ marginTop: "8px", display: "flex", gap: "6px" }}>
                 <a
@@ -525,7 +468,8 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice, onChang
                         min="1"
                         max="100"
                         value={minkaVolunteers}
-                        onChange={(e) => setMinkaVolunteers(Number(e.target.value))}
+                        onChange={(e) => setMinkaVolunteers(e.target.value === "" ? "" : Number(e.target.value))}
+                        required
                         style={{ width: "100%", padding: "4px 8px", background: "var(--surface, #1e242c)", color: "inherit", border: "1px solid var(--border-subtle, #333)", borderRadius: "4px", fontSize: "0.78rem" }}
                       />
                     </div>
@@ -574,11 +518,11 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice, onChang
             </div>
 
             {/* Celular básico SMS (Fase 4.2) */}
-            <div className="sms-box" style={{ marginTop: "10px", padding: "10px", background: "rgba(255, 152, 0, 0.08)", border: "1px solid rgba(255, 152, 0, 0.3)", borderRadius: "6px" }}>
+            {bulletinData.minka.sms_verification ? <div className="sms-box" style={{ marginTop: "10px", padding: "10px", background: "rgba(255, 152, 0, 0.08)", border: "1px solid rgba(255, 152, 0, 0.3)", borderRadius: "6px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <h5 style={{ margin: 0, color: "#ffb74d" }}>Celular básico · SMS de verificación</h5>
                 <small style={{ color: "#ffb74d", fontSize: "0.7rem" }}>
-                  {bulletinData.minka.sms_verification.char_count}/160 GSM
+                  {bulletinData.minka.sms_verification.char_count} caracteres · vista previa
                 </small>
               </div>
               <p style={{ margin: "6px 0 0 0", fontFamily: "monospace", fontSize: "0.78rem", background: "rgba(0,0,0,0.3)", padding: "6px", borderRadius: "4px" }}>
@@ -587,7 +531,7 @@ export function AlertDetails({ feature, onBack, onResources, focusVoice, onChang
               <p className="status-message" style={{ fontSize: "0.72rem", margin: "6px 0 0 0" }}>
                 {bulletinData.minka.sms_verification.notice}
               </p>
-            </div>
+            </div> : <p className="status-message">SMS no disponible: falta un poblado cercano publicado.</p>}
 
             {/* Yachaq Digital & Tambos PAIS */}
             <div style={{ marginTop: "10px", padding: "8px", background: "var(--surface-subtle, #141b22)", borderRadius: "6px", border: "1px solid var(--border-subtle, #30363d)" }}>

@@ -193,12 +193,13 @@ export type RemediationMinka = {
   title: string;
   primary_place: string;
   target_communities: string[];
-  needed_workers: number;
-  estimated_days: number;
+  techniques?: { name: string; timing?: string | null }[];
+  needed_workers: number | null;
+  estimated_days: number | null;
   recommended_tools: string[];
   supplies: string[];
   traditional_support: string;
-  savings_estimated_soles: number;
+  savings_estimated_soles: number | null;
   whatsapp: {
     text: string;
     url: string;
@@ -208,7 +209,7 @@ export type RemediationMinka = {
     char_count: number;
     mode: string;
     notice: string;
-  };
+  } | null;
 };
 
 export type RemediationBulletinResponse = {
@@ -234,6 +235,7 @@ export type RemediationAlert = {
   risk_id: string;
   risk_name: string;
   risk_description: string;
+  nearby_places?: { name: string; distance_m: number; url?: string }[];
   summary?: string;
   cause_explanation?: string;
   summary_factor_ids?: string[];

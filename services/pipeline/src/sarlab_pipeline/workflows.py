@@ -414,6 +414,8 @@ def run_remediation(aoi_id: str, *, offline: bool = False) -> dict:
             "hv_drop_db": hv_by_id.get(alert_id),
             "cropland_ha": cropland_val,
             "exposure": exp_data,
+            "nearby_places": (exposure_by_id.get(alert_id) or {}).get("nearby_places") or [],
+            "places_source": ((exposure_by_id.get(alert_id) or {}).get("sources") or {}).get("places"),
         }}
 
         risk = compute_risk_for_alert(

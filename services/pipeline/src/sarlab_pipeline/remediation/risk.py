@@ -260,7 +260,12 @@ def _build_budget(recipe: dict, area_ha: float) -> list[dict]:
         source_note = cost_cfg.get("source_note", "")
         retrieved = cost_cfg.get("retrieved_date")
 
-        if status == "por_verificar":
+        source_text = str(source or source_name).strip()
+        verified = (status == "verificado" and bool(source_text) and bool(retrieved)
+                    and cost_cfg.get("cost_mid") is not None
+                    and "por_verificar" not in source_text.lower()
+                    and "por verificar" not in source_text.lower())
+        if not verified:
             cost_display = None
             cost_label = "costo por confirmar"
         else:
@@ -281,16 +286,16 @@ def _build_budget(recipe: dict, area_ha: float) -> list[dict]:
             "timing": inv.get("timing"),
             "notes": inv.get("notes"),
             "unit": unit,
-            "cost_mid": cost_cfg.get("cost_mid") if status != "por_verificar" else None,
-            "cost_min": cost_cfg.get("cost_min") if status != "por_verificar" else None,
-            "cost_max": cost_cfg.get("cost_max") if status != "por_verificar" else None,
+            "cost_mid": cost_cfg.get("cost_mid") if verified else None,
+            "cost_min": cost_cfg.get("cost_min") if verified else None,
+            "cost_max": cost_cfg.get("cost_max") if verified else None,
             "cost_total_soles": cost_display,
             "cost_label": cost_label,
-            "minka_discount_pct": cost_cfg.get("minka_discount_pct"),
-            "source": source or source_name or None,
-            "source_note": source_note or None,
-            "retrieved_date": retrieved,
-            "status": status,
+            "minka_discount_pct": cost_cfg.get("minka_discount_pct") if verified else None,
+            "source": (source or source_name) if verified else None,
+            "source_note": source_note if verified else None,
+            "retrieved_date": retrieved if verified else None,
+            "status": "verificado" if verified else "por_verificar",
         })
     return items
 
@@ -657,6 +662,12 @@ def compute_risk_for_alert(
         "url": "https://nisar-docs.asf.alaska.edu/gcov/",
     }
     sources_complementary: list[dict] = []
+    places_source = alert.get("places_source")
+    if alert.get("nearby_places") and places_source:
+        sources_complementary.append({
+            "source": places_source.get("name"), "date": places_source.get("date"),
+            "url": places_source.get("url"), "license": places_source.get("license"),
+        })
     if soil_info and soil_info.get("wrb_name") not in (None, "No disponible", "No clasificado"):
         sources_complementary.append({
             "source": soil_info.get("source", "SoilGrids (ISRIC)"),
@@ -689,6 +700,7 @@ def compute_risk_for_alert(
         "alert_id": alert.get("id"),
         "aoi_id": alert.get("aoi_id", "ayacucho-huanta"),
         "area_ha": area_ha,
+        "nearby_places": sorted(alert.get("nearby_places") or [], key=lambda p: p["distance_m"])[:3],
         "risk_id": risk_id or "causa_por_verificar",
         "risk_name": recipe.get("risk_name", risk_id) if recipe else "Causa por verificar",
         **diagnosis,
