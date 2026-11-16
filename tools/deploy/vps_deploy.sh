@@ -16,7 +16,8 @@ if [ -s "$SECRETS/cesium_token" ]; then
 else
   echo "Aviso: sin $SECRETS/cesium_token; el globo usará el modo sin Cesium ion."
 fi
-DOCKER_BUILDKIT=1 docker build "${build_args[@]}" -t gaia-rikchay "$APP"
+# The web stage is always rebuilt: BuildKit does not invalidate cache when a secret changes.
+DOCKER_BUILDKIT=1 docker build --no-cache-filter web "${build_args[@]}" -t gaia-rikchay "$APP"
 
 run_args=(-d --name gaia-rikchay --restart unless-stopped -p 80:7860
           -v /opt/gaia/reports:/srv/gaia/data/reports --memory 3g)
