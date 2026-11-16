@@ -22,6 +22,16 @@ Para compilar con la configuración local de Cesium, usa `docker build --secret 
 
 Abre [la aplicación local](http://127.0.0.1:7860/) y [el estado de la API](http://127.0.0.1:7860/api/health). Entra a Ayacucho, abre Cambios, mueve la cortina y consulta la ficha de exposición. En Observaciones revisa las fechas de USGS y FIRMS. Si añades Cesium en local, autoriza esa URL en un token de desarrollo.
 
+## Publicación en un Space de Hugging Face (sin Docker local)
+
+Hugging Face construye la imagen en la nube, así que no hace falta Docker en la PC.
+
+1. Retira la copia anterior de `deploy/data/` y ejecuta `uv run python tools/deploy/collect_runtime_data.py`.
+2. Ejecuta `uv run python tools/deploy/build_space.py --repo https://github.com/<usuario>/<repo>`. Se crea `deploy/space/` con el código, `deploy/data/`, el `README.md` del Space (`sdk: docker`, `app_port: 7860`) y `.gitattributes` con los binarios en LFS.
+3. Crea el Space (SDK Docker) en Hugging Face. En **Settings → Variables and secrets**, añade estos secretos: `VITE_CESIUM_ION_TOKEN` para la compilación, y `FIRMS_MAP_KEY` y `EARTHDATA_TOKEN` para la ejecución.
+4. Dentro de `deploy/space/`, ejecuta `git init`, `git lfs install`, `git remote add origin https://huggingface.co/spaces/<usuario>/<space>`, `git add .`, `git commit` y `git push -u origin main`. Hugging Face pide iniciar sesión: usa un token de escritura propio y no lo guardes en el proyecto.
+5. Si actualizas los datos, repite los pasos 1 y 2. `build_space.py` conserva la carpeta `.git`, así que basta con hacer `git add .`, `git commit` y `git push`.
+
 ## Publicación
 
 1. El propietario crea un repositorio para el código y un servicio Docker que sirva el puerto `7860` o que proporcione `PORT`. Si el servicio compila desde Git, el contexto del servicio debe incluir `deploy/data/` como artefacto de despliegue. Como alternativa, el servicio puede ejecutar la imagen ya construida desde un registro. `deploy/` está excluido de Git en el repositorio de código.

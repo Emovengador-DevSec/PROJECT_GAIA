@@ -4,6 +4,14 @@ Una línea por cambio relevante: qué cambió y por qué importa.
 
 ## Sin publicar
 
+- Publicación en Hugging Face: el exportador `collect_runtime_data.py` incluye todas las capas publicadas nuevas (Sanar la tierra, suelo, humedad, fotos, verdor, clima 2050) y `tools/deploy/build_space.py` arma el Space Docker en `deploy/space/` (548 MB de datos, binarios en LFS).
+
+- En «Sanar la tierra» y al abrir una zona ya no se superpone la capa de cambio radar (cuadros rojos y azules de 200 m); se ve el terreno real con las zonas. La capa sigue en Cambios, Historia y Calidad.
+
+- Alertas, Sanar la tierra, Mi comunidad y Fuentes muestran su contenido sin la guía de exploración de cinco pasos.
+
+- Se retira el párrafo introductorio de Lugares para abrir directamente la lista de territorios.
+
 - Ruta guiada de Lugar a Avisar, disponibilidad de radar por territorio, pasos de Historia conectados al mapa y comparación en lenguaje claro. Las rutas de los rásteres se guardan relativas para poder mover GAIA entre computadoras.
 
 - Arreglo del radar antes/después: la API reubica las rutas absolutas de otra PC guardadas en los manifiestos bajo data/03_processed de esta PC (las teselas daban 404). Plan 28 para Codex: ruta guiada de 5 pasos, Lugares honesto, Historia conectada al mapa y Cambios claro.

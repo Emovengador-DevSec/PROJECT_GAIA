@@ -398,7 +398,7 @@ export function App() {
         reportPicker={tab === "community" && pickingReport ? point => { setReportPoint(point); setPickingReport(false); } : undefined}
         reportPoint={tab === "community" ? reportPoint : undefined}
         offline={health?.offline} radarBounds={radarBounds} realTimeLighting={realTimeLighting}
-        tileUrl={health?.tiles && layer && showRadar && !comparison && !activeContext && tab !== "community" ? api.tileUrl(layer) : undefined}
+        tileUrl={health?.tiles && layer && showRadar && !comparison && !activeContext && tab !== "community" && tab !== "action" && !selected ? api.tileUrl(layer) : undefined}
         beforeUrl={layer && showRadar && radarComparison ? api.tileUrl(layer, "before", rgb) : undefined}
         afterUrl={layer && showRadar && radarComparison ? api.tileUrl(layer, "after", rgb) : undefined}
         contextOverlay={activeContext && current && showContext

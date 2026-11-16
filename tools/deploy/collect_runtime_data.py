@@ -64,9 +64,13 @@ def collect(destination: Path) -> tuple[int, int]:
             if "alert_count" in report:
                 report["alert_count"] = len(report["alerts"])
             documents[path.relative_to(DATA)] = report
-    for pattern in ("04_published/context/*/*.png", "04_published/rainfall/*.json",
-                    "04_published/community/*.json", "04_published/climate/*.json",
-                    "04_published/agriculture/*.json", "04_published/fire-history/*.json", "catalog/nisar_*.json"):
+    # Every published layer the API reads (zone sheets, soil, photos, imagery, climate...).
+    # Exposure reports are filtered above; validation files follow the active manifests.
+    for path in sorted((DATA / "04_published").rglob("*")):
+        relative = path.relative_to(DATA / "04_published")
+        if path.is_file() and relative.parts[0] not in {"exposure", "validation"}:
+            add(path)
+    for pattern in ("catalog/nisar_*.json", "catalog/live/*.json"):
         for path in sorted(DATA.glob(pattern)):
             add(path)
 

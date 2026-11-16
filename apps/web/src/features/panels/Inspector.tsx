@@ -199,8 +199,8 @@ export function Inspector(p: Props) {
     <div className="inspector-heading"><h2 id={tab === "resources" ? "challenge-resources-title" : undefined}>{title}</h2><button type="button" className="icon-button" onClick={p.onClose} aria-label="Cerrar panel y explorar el mapa">
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
     </button></div>
-    <ExplorationGuide current={p.current} activeStep={p.guideStep} canAct={p.canAct} onStep={p.onGuide}
-      introduction={p.guideIntroduction} onDismiss={p.onDismissGuide} />
+    {!["alerts", "action", "community", "resources"].includes(tab) && <ExplorationGuide current={p.current} activeStep={p.guideStep} canAct={p.canAct} onStep={p.onGuide}
+      introduction={p.guideIntroduction} onDismiss={p.onDismissGuide} />}
     <div className="inspector-content" key={tab}>
       {p.error && tab !== "resources" && <p className="status-message" role="alert">{p.error}</p>}
       {p.contextLoading && tab !== "alerts" && tab !== "cases" && tab !== "resources" && <p className="loading-state" role="status">Consultando las observaciones del lugar…</p>}
@@ -209,7 +209,6 @@ export function Inspector(p: Props) {
       {tab === "community" && <Community {...p.communityProps} />}
 
       {tab === "cases" && <>
-        <p className="panel-introduction">Ayacucho tiene comparación radar y análisis de zonas. Los otros territorios ofrecen historia y contexto.</p>
         <div className="case-list">{p.aois.map(aoi => <button key={aoi.id} type="button" className="case" aria-pressed={p.current?.id === aoi.id} onClick={() => p.onPick(aoi)}>
           <span><strong>{aoi.name}</strong><small>{aoi.phenomena.map(item => PHENOMENA[item] ?? item).join(" · ")}</small></span>
           <span className="place-availability" data-ready={!!aoi.availability?.comparison}>
