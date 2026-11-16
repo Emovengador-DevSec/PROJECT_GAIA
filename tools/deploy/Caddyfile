@@ -1,0 +1,16 @@
+# Caddy in front of GAIA RIKCHAY: automatic HTTPS (Let's Encrypt) and renewal.
+# Install on the VPS as /etc/caddy/Caddyfile, then: systemctl reload caddy
+project-gaia.scriptperu.tech {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+	reverse_proxy 127.0.0.1:7860
+}
+
+# The bare IP sends visitors to the domain.
+http://72.62.3.164 {
+	redir https://project-gaia.scriptperu.tech{uri} permanent
+}

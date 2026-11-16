@@ -19,7 +19,8 @@ fi
 # The web stage is always rebuilt: BuildKit does not invalidate cache when a secret changes.
 DOCKER_BUILDKIT=1 docker build --no-cache-filter web "${build_args[@]}" -t gaia-rikchay "$APP"
 
-run_args=(-d --name gaia-rikchay --restart unless-stopped -p 80:7860
+# Only Caddy (HTTPS on 80/443) is public; the app listens on localhost.
+run_args=(-d --name gaia-rikchay --restart unless-stopped -p 127.0.0.1:7860:7860 -e FORWARDED_ALLOW_IPS=172.17.0.1
           -v /opt/gaia/reports:/srv/gaia/data/reports --memory 3g)
 if [ -s "$SECRETS/.env" ]; then
   run_args+=(--env-file "$SECRETS/.env")
@@ -29,4 +30,4 @@ fi
 docker rm -f gaia-rikchay >/dev/null 2>&1 || true
 docker run "${run_args[@]}" gaia-rikchay
 docker image prune -f >/dev/null
-echo "GAIA RIKCHAY en marcha: http://$(hostname -I | awk '{print $1}')/"
+echo "GAIA RIKCHAY en marcha: https://project-gaia.scriptperu.tech/"
